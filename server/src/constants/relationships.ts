@@ -15,8 +15,3 @@ export const RELATIONSHIPS = [
 ] as const;
 
 export type Relationship = (typeof RELATIONSHIPS)[number];
-
-export interface IFamilyMember {
-  name: string;
-  relationship: Relationship;
-}

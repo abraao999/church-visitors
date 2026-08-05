@@ -1,0 +1,263 @@
+import { Router, Response } from 'express';
+import { Service, type IHymn } from '../models/Service.js';
+import type { IActor } from '../models/Actor.js';
+import {
+  requireAuth,
+  toActor,
+  type AuthenticatedRequest,
+} from '../middleware/auth.js';
+
+const router = Router();
+
+function startOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function parseDateOnly(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function normalizeHymns(
+  hymns: unknown,
+  actor: IActor,
+  previous: IHymn[] = []
+): { data: IHymn[]; error?: string } {
+  if (hymns == null) return { data: [] };
+  if (!Array.isArray(hymns)) {
+    return { data: [], error: 'Lista de louvores inválida' };
+  }
+
+  const data: IHymn[] = [];
+
+  for (const item of hymns) {
+    if (!item || typeof item !== 'object') {
+      return { data: [], error: 'Louvor inválido' };
+    }
+
+    const raw = item as {
+      title?: unknown;
+      artist?: unknown;
+      singer?: unknown;
+      performedBy?: unknown;
+      addedBy?: IActor;
+    };
+
+    const title = String(raw.title ?? '').trim();
+    const artist = String(raw.artist ?? raw.singer ?? '').trim();
+    const performedBy = String(raw.performedBy ?? '').trim();
+    const filled = [title, artist, performedBy].filter(Boolean).length;
+
+    if (filled === 0) continue;
+
+    if (filled < 3) {
+      return {
+        data: [],
+        error: 'Cada louvor precisa de nome, cantor (dono da música) e quem canta no culto',
+      };
+    }
+
+    const previousMatch = previous.find(
+      (h) => h.title === title && h.artist === artist && h.performedBy === performedBy
+    );
+
+    data.push({
+      title,
+      artist,
+      performedBy,
+      addedBy: previousMatch?.addedBy ?? raw.addedBy ?? actor,
+    });
+  }
+
+  return { data };
+}
+
+function weeklyDatesUntilYearEnd(start: Date): Date[] {
+  const dates: Date[] = [];
+  const year = start.getFullYear();
+  const current = new Date(start);
+
+  while (current.getFullYear() === year) {
+    dates.push(new Date(current));
+    current.setDate(current.getDate() + 7);
+  }
+
+  return dates;
+}
+
+function buildPayload(
+  body: Record<string, unknown>,
+  actor: IActor,
+  previousHymns: IHymn[] = []
+) {
+  const title = typeof body.title === 'string' ? body.title.trim() : '';
+  const time = typeof body.time === 'string' ? body.time.trim() : '';
+  const dateRaw = typeof body.date === 'string' ? body.date : '';
+  const date = parseDateOnly(dateRaw.split('T')[0] ?? '');
+  const hymnsResult = normalizeHymns(body.hymns, actor, previousHymns);
+  const recurring = body.recurring === true || body.recurring === 'true';
+
+  if (!title) {
+    return { error: 'Título do culto é obrigatório' as const };
+  }
+
+  if (!date) {
+    return { error: 'Data do culto é obrigatória' as const };
+  }
+
+  if (recurring && !time) {
+    return { error: 'Horário é obrigatório para culto recorrente' as const };
+  }
+
+  if (hymnsResult.error) {
+    return { error: hymnsResult.error };
+  }
+
+  return {
+    data: {
+      title,
+      date,
+      time,
+      hymns: hymnsResult.data,
+    },
+    recurring,
+  };
+}
+
+router.get('/', requireAuth, async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const fromParam = _req.query.from as string | undefined;
+    const toParam = _req.query.to as string | undefined;
+    const dateParam = _req.query.date as string | undefined;
+
+    let filter: Record<string, unknown> = {};
+
+    if (fromParam || toParam) {
+      const from = fromParam ? parseDateOnly(fromParam) : null;
+      const to = toParam ? parseDateOnly(toParam) : null;
+
+      if ((fromParam && !from) || (toParam && !to)) {
+        return res.status(400).json({ error: 'Parâmetros from/to inválidos. Use YYYY-MM-DD' });
+      }
+
+      filter = {
+        date: {
+          ...(from ? { $gte: startOfDay(from) } : {}),
+          ...(to ? { $lte: endOfDay(to) } : {}),
+        },
+      };
+    } else {
+      const date = dateParam ? parseDateOnly(dateParam) : new Date();
+      if (!date) {
+        return res.status(400).json({ error: 'Parâmetro date inválido. Use YYYY-MM-DD' });
+      }
+
+      filter = {
+        date: { $gte: startOfDay(date), $lte: endOfDay(date) },
+      };
+    }
+
+    const services = await Service.find(filter).sort({ date: 1, time: 1, createdAt: 1 });
+    res.json(services);
+  } catch {
+    res.status(500).json({ error: 'Erro ao buscar cultos' });
+  }
+});
+
+router.get('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const service = await Service.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ error: 'Culto não encontrado' });
+    }
+    res.json(service);
+  } catch {
+    res.status(500).json({ error: 'Erro ao buscar culto' });
+  }
+});
+
+router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const actor = toActor(req.user!);
+    const payload = buildPayload(req.body, actor);
+    if ('error' in payload) {
+      return res.status(400).json({ error: payload.error });
+    }
+
+    const { title, date, time, hymns } = payload.data;
+
+    if (payload.recurring) {
+      const dates = weeklyDatesUntilYearEnd(date);
+      const created = await Service.insertMany(
+        dates.map((occurrenceDate) => ({
+          title,
+          date: occurrenceDate,
+          time,
+          hymns: [],
+          createdBy: actor,
+        }))
+      );
+
+      return res.status(201).json({
+        service: created[0],
+        createdCount: created.length,
+      });
+    }
+
+    const service = await Service.create({ title, date, time, hymns, createdBy: actor });
+    res.status(201).json({
+      service,
+      createdCount: 1,
+    });
+  } catch {
+    res.status(500).json({ error: 'Erro ao criar culto' });
+  }
+});
+
+router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const existing = await Service.findById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Culto não encontrado' });
+    }
+
+    const actor = toActor(req.user!);
+    const payload = buildPayload(req.body, actor, existing.hymns);
+    if ('error' in payload) {
+      return res.status(400).json({ error: payload.error });
+    }
+
+    existing.title = payload.data.title;
+    existing.date = payload.data.date;
+    existing.time = payload.data.time;
+    existing.hymns = payload.data.hymns;
+    await existing.save();
+
+    res.json(existing);
+  } catch {
+    res.status(500).json({ error: 'Erro ao atualizar culto' });
+  }
+});
+
+router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const deleted = await Service.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Culto não encontrado' });
+    }
+    res.json({ message: 'Culto removido' });
+  } catch {
+    res.status(500).json({ error: 'Erro ao remover culto' });
+  }
+});
+
+export default router;

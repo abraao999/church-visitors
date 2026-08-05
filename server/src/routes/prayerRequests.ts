@@ -1,5 +1,11 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { PrayerRequest } from '../models/PrayerRequest.js';
+import {
+  requireAuth,
+  requireAuthUnlessLive,
+  toActor,
+  type AuthenticatedRequest,
+} from '../middleware/auth.js';
 
 const router = Router();
 
@@ -15,22 +21,32 @@ function endOfDay(date: Date): Date {
   return d;
 }
 
-router.get('/', async (req: Request, res: Response) => {
+function parseDateOnly(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const dateParam = req.query.date as string | undefined;
-    const date = dateParam ? new Date(dateParam) : new Date();
+    const date = dateParam ? parseDateOnly(dateParam) : new Date();
+
+    if (!date) {
+      return res.status(400).json({ error: 'Parâmetro date inválido. Use YYYY-MM-DD' });
+    }
 
     const requests = await PrayerRequest.find({
       createdAt: { $gte: startOfDay(date), $lte: endOfDay(date) },
     }).sort({ createdAt: -1 });
 
     res.json(requests);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Erro ao buscar pedidos de oração' });
   }
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', requireAuthUnlessLive, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { name, request, source, isAnonymous } = req.body;
 
@@ -53,22 +69,23 @@ router.post('/', async (req: Request, res: Response) => {
       request: request.trim(),
       source,
       isAnonymous: anonymous,
+      ...(source !== 'live' && req.user ? { createdBy: toActor(req.user) } : {}),
     });
 
     res.status(201).json(prayerRequest);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Erro ao registrar pedido de oração' });
   }
 });
 
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const deleted = await PrayerRequest.findByIdAndDelete(req.params.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Pedido não encontrado' });
     }
     res.json({ message: 'Pedido removido' });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Erro ao remover pedido' });
   }
 });

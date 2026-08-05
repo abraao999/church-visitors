@@ -37,13 +37,13 @@ export function HomePage() {
     <div className="home-page">
       <section className="hero card">
         <h1>Painel da Portaria</h1>
-        <p>Bem-vindo! Gerencie visitantes e pedidos de oração do culto de hoje.</p>
+        <p>Bem-vindo! Gerencie visitantes, pedidos de oração e o calendário de cultos.</p>
       </section>
 
       <section className="stats-grid">
         <div className="stat-card card">
           <span className="stat-number">{loading ? '—' : visitors.length}</span>
-          <span className="stat-label">Famílias visitantes</span>
+          <span className="stat-label">Visitantes</span>
           <Link to="/visitantes" className="stat-link">Gerenciar →</Link>
         </div>
         <div className="stat-card card">
@@ -68,12 +68,22 @@ export function HomePage() {
         <Link to="/visitantes" className="action-card card">
           <span className="action-icon">👨‍👩‍👧‍👦</span>
           <h3>Registrar visitantes</h3>
-          <p>Cadastre famílias e membros que chegaram hoje.</p>
+          <p>Cadastre os visitantes que chegaram hoje.</p>
         </Link>
         <Link to="/oracao" className="action-card card">
           <span className="action-icon">🙏</span>
           <h3>Pedidos de oração</h3>
           <p>Registre e visualize pedidos do culto.</p>
+        </Link>
+        <Link to="/cultos" className="action-card card">
+          <span className="action-icon">📅</span>
+          <h3>Calendário de cultos</h3>
+          <p>Organize cultos e os hinos que serão louvados.</p>
+        </Link>
+        <Link to="/paineis" className="action-card card">
+          <span className="action-icon">🖥️</span>
+          <h3>Painéis</h3>
+          <p>Visualize louvores, visitantes e pedidos de oração.</p>
         </Link>
       </section>
     </div>

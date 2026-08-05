@@ -1,6 +1,11 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { Visitor, RELATIONSHIPS } from '../models/Visitor.js';
-import type { IFamilyMember } from '../constants/relationships.js';
+import type { Relationship } from '../constants/relationships.js';
+import {
+  requireAuth,
+  toActor,
+  type AuthenticatedRequest,
+} from '../middleware/auth.js';
 
 const router = Router();
 
@@ -16,82 +21,97 @@ function endOfDay(date: Date): Date {
   return d;
 }
 
-function normalizeMembers(members: unknown): IFamilyMember[] {
-  if (!Array.isArray(members)) return [];
-
-  return members
-    .map((item) => {
-      if (typeof item === 'string') {
-        const name = item.trim();
-        return name ? { name, relationship: 'outro' as const } : null;
-      }
-
-      if (item && typeof item === 'object' && 'name' in item && 'relationship' in item) {
-        const name = String(item.name).trim();
-        const relationship = String(item.relationship);
-
-        if (!name || !RELATIONSHIPS.includes(relationship as (typeof RELATIONSHIPS)[number])) {
-          return null;
-        }
-
-        return { name, relationship: relationship as IFamilyMember['relationship'] };
-      }
-
-      return null;
-    })
-    .filter((item): item is IFamilyMember => item !== null);
+function parseDateOnly(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
-router.get('/', async (req: Request, res: Response) => {
+function isRelationship(value: string): value is Relationship {
+  return RELATIONSHIPS.includes(value as Relationship);
+}
+
+type VisitorInput = {
+  name: string;
+  relationship: Relationship;
+  city: string;
+};
+
+function normalizeVisitors(body: Record<string, unknown>): VisitorInput[] {
+  const rawList = Array.isArray(body.visitors)
+    ? body.visitors
+    : body.name != null
+      ? [{ name: body.name, relationship: body.relationship, city: body.city }]
+      : [];
+
+  return rawList
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const name = String((item as { name?: unknown }).name ?? '').trim();
+      const relationship = String((item as { relationship?: unknown }).relationship ?? '');
+      const city = String((item as { city?: unknown }).city ?? '').trim();
+
+      if (!name || !city || !isRelationship(relationship)) return null;
+      return { name, relationship, city };
+    })
+    .filter((item): item is VisitorInput => item !== null);
+}
+
+router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const dateParam = req.query.date as string | undefined;
-    const date = dateParam ? new Date(dateParam) : new Date();
+    const date = dateParam ? parseDateOnly(dateParam) : new Date();
+
+    if (!date) {
+      return res.status(400).json({ error: 'Parâmetro date inválido. Use YYYY-MM-DD' });
+    }
 
     const visitors = await Visitor.find({
       visitDate: { $gte: startOfDay(date), $lte: endOfDay(date) },
     }).sort({ createdAt: -1 });
 
     res.json(visitors);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Erro ao buscar visitantes' });
   }
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { familyName, members, origin, visitDate } = req.body;
+    const people = normalizeVisitors(req.body);
 
-    if (!familyName?.trim() || !origin?.trim()) {
-      return res.status(400).json({ error: 'Nome da família e origem são obrigatórios' });
+    if (people.length === 0) {
+      return res.status(400).json({
+        error: 'Informe ao menos um visitante com nome, parentesco e cidade',
+      });
     }
 
-    const memberList = normalizeMembers(members);
+    const createdBy = toActor(req.user!);
+    const visitDate = req.body.visitDate ? new Date(req.body.visitDate) : new Date();
+    const created = await Visitor.insertMany(
+      people.map((person) => ({
+        name: person.name,
+        relationship: person.relationship,
+        city: person.city,
+        visitDate,
+        createdBy,
+      }))
+    );
 
-    if (memberList.length === 0) {
-      return res.status(400).json({ error: 'Informe ao menos um membro da família' });
-    }
-
-    const visitor = await Visitor.create({
-      familyName: familyName.trim(),
-      members: memberList,
-      origin: origin.trim(),
-      visitDate: visitDate ? new Date(visitDate) : new Date(),
-    });
-
-    res.status(201).json(visitor);
-  } catch (error) {
+    res.status(201).json(created.length === 1 ? created[0] : created);
+  } catch {
     res.status(500).json({ error: 'Erro ao registrar visitante' });
   }
 });
 
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const deleted = await Visitor.findByIdAndDelete(req.params.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Visitante não encontrado' });
     }
     res.json({ message: 'Visitante removido' });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Erro ao remover visitante' });
   }
 });

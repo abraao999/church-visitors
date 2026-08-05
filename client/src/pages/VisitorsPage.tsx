@@ -1,44 +1,20 @@
-import { useCallback, useEffect, useState } from 'react';
-import { api } from '../api/client';
+import { Link } from 'react-router-dom';
 import { VisitorForm } from '../components/VisitorForm';
-import { VisitorList } from '../components/VisitorList';
-import type { Visitor } from '../types';
 
 export function VisitorsPage() {
-  const [visitors, setVisitors] = useState<Visitor[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadVisitors = useCallback(async () => {
-    try {
-      const data = await api.getVisitors();
-      setVisitors(data);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadVisitors();
-  }, [loadVisitors]);
-
-  async function handleDelete(id: string) {
-    if (!confirm('Remover este visitante?')) return;
-    await api.deleteVisitor(id);
-    loadVisitors();
-  }
-
   return (
-    <div>
-      <h1 style={{ marginBottom: '1.5rem' }}>Visitantes</h1>
-      <div className="grid-2">
-        <VisitorForm onSuccess={loadVisitors} />
-        {loading ? (
-          <div className="card">
-            <p className="empty-state">Carregando...</p>
-          </div>
-        ) : (
-          <VisitorList visitors={visitors} onDelete={handleDelete} />
-        )}
+    <div className="page-stack">
+      <div className="page-header">
+        <h1>Visitantes</h1>
+        <p>
+          Cadastre os visitantes pelo nome, parentesco e cidade.{' '}
+          <Link to="/painel/visitantes" className="page-header-link">
+            Ver painel →
+          </Link>
+        </p>
+      </div>
+      <div className="page-form">
+        <VisitorForm onSuccess={() => undefined} />
       </div>
     </div>
   );

@@ -1,0 +1,158 @@
+.services-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.services-page-header h1 {
+  margin-bottom: 0.35rem;
+}
+
+.services-page-header p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.services-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.services-day-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.day-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.day-panel-date {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-transform: capitalize;
+  margin-top: 0.2rem;
+}
+
+.service-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.service-item {
+  padding: 1rem;
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.service-item-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.service-time {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: #eff6ff;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.service-hymns {
+  margin-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.service-hymn-title {
+  font-weight: 500;
+}
+
+.service-singer {
+  color: var(--text-muted);
+}
+
+.service-performed-by {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.service-author {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.service-hymns-empty {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.service-item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .services-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .services-page-header p {
+    font-size: 0.9rem;
+  }
+
+  .day-panel-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .day-panel-header .btn {
+    width: 100%;
+  }
+
+  .service-item {
+    flex-direction: column;
+  }
+
+  .service-item-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .service-item-actions .btn {
+    width: 100%;
+  }
+
+  .service-hymns {
+    margin-left: 0.9rem;
+    font-size: 0.85rem;
+  }
+}

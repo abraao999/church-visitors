@@ -3,6 +3,20 @@
   padding: 2rem;
 }
 
+@media (max-width: 480px) {
+  .live-page {
+    padding: 1.25rem;
+  }
+
+  .live-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .live-page .btn {
+    width: 100%;
+  }
+}
+
 .live-header {
   text-align: center;
   margin-bottom: 1.5rem;

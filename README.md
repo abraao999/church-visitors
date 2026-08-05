@@ -4,9 +4,14 @@ Sistema web para registro de visitantes (famílias) e pedidos de oração em igr
 
 ## Funcionalidades
 
-- **Portaria**: cadastro de famílias visitantes (nomes e origem)
-- **Pedidos de oração**: registro pelo porteiro ou pelo link público da live
-- **Painel**: visualização em tempo real dos visitantes e pedidos do dia
+- **Autenticação**: conta com usuário/senha ou Google (Gmail)
+- **Portaria**: cadastro de visitantes (nome, parentesco e cidade)
+- **Pedidos de oração**: registro pelo porteiro (autenticado) ou pelo link público da live
+- **Calendário de cultos**: agenda mensal com louvores por culto
+- **Painéis**: visualização em tela cheia de louvores, visitantes e pedidos de oração
+- **Auditoria**: nome do usuário fica nos registros que ele adiciona
+
+> Apenas `/live/oracao` é público. O restante do app exige login.
 
 ## Requisitos
 
@@ -43,10 +48,24 @@ npm install
 npm install --prefix server
 npm install --prefix client
 
-# Configurar banco
+# Configurar banco e autenticação
 cp server/.env.example server/.env
-# Edite MONGODB_URI em server/.env com a connection string do Atlas
+# Edite em server/.env:
+# - MONGODB_URI
+# - JWT_SECRET
+# - GOOGLE_CLIENT_ID (opcional, para login com Google)
+
+# Frontend (Google Sign-In)
+echo 'VITE_GOOGLE_CLIENT_ID=seu-client-id.apps.googleusercontent.com' > client/.env
 ```
+
+### 3. Google Sign-In (opcional)
+
+1. Em [Google Cloud Console](https://console.cloud.google.com/apis/credentials), crie um **OAuth Client ID** do tipo **Aplicativo da Web**.
+2. Em **Origens JavaScript autorizadas**, adicione `http://localhost:5173`.
+3. Use o mesmo Client ID em `GOOGLE_CLIENT_ID` (server) e `VITE_GOOGLE_CLIENT_ID` (client).
+
+Sem Google configurado, ainda é possível criar conta com usuário e senha.
 
 ## Executar
 
@@ -56,6 +75,7 @@ npm run dev
 ```
 
 - Frontend: http://localhost:5173
+- Login: http://localhost:5173/login
 - API: http://localhost:3001
 - Link público da live: http://localhost:5173/live/oracao
 

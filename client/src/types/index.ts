@@ -20,17 +20,25 @@ export const RELATIONSHIP_LABELS: Record<Relationship, string> = Object.fromEntr
   RELATIONSHIPS.map((r) => [r.value, r.label])
 ) as Record<Relationship, string>;
 
-export interface FamilyMember {
+export interface Actor {
+  userId: string;
   name: string;
-  relationship: Relationship;
+}
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  username?: string;
 }
 
 export interface Visitor {
   _id: string;
-  familyName: string;
-  members: FamilyMember[];
-  origin: string;
+  name: string;
+  relationship: Relationship;
+  city: string;
   visitDate: string;
+  createdBy?: Actor;
   createdAt: string;
 }
 
@@ -40,13 +48,16 @@ export interface PrayerRequest {
   request: string;
   source: 'porteiro' | 'live';
   isAnonymous: boolean;
+  createdBy?: Actor;
   createdAt: string;
 }
 
 export interface CreateVisitorDto {
-  familyName: string;
-  members: FamilyMember[];
-  origin: string;
+  visitors: Array<{
+    name: string;
+    relationship: Relationship;
+    city: string;
+  }>;
 }
 
 export interface CreatePrayerDto {
@@ -56,8 +67,45 @@ export interface CreatePrayerDto {
   isAnonymous: boolean;
 }
 
-export function formatMember(member: FamilyMember | string): string {
-  if (typeof member === 'string') return member;
-  const label = RELATIONSHIP_LABELS[member.relationship] ?? member.relationship;
-  return `${member.name} (${label})`;
+export interface Hymn {
+  title: string;
+  artist: string;
+  performedBy: string;
+  addedBy?: Actor;
+}
+
+export interface Service {
+  _id: string;
+  title: string;
+  date: string;
+  time?: string;
+  hymns: Hymn[];
+  createdBy?: Actor;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateServiceDto {
+  title: string;
+  date: string;
+  time?: string;
+  hymns?: Hymn[];
+  recurring?: boolean;
+}
+
+export interface CreateServiceResponse {
+  service: Service;
+  createdCount: number;
+}
+
+export interface UpdateServiceDto {
+  title: string;
+  date: string;
+  time?: string;
+  hymns: Hymn[];
+}
+
+export function formatVisitor(visitor: Pick<Visitor, 'name' | 'relationship'>): string {
+  const label = RELATIONSHIP_LABELS[visitor.relationship] ?? visitor.relationship;
+  return `${visitor.name} (${label})`;
 }

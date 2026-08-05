@@ -1,5 +1,5 @@
 import type { Visitor } from '../types';
-import { formatMember } from '../types';
+import { RELATIONSHIP_LABELS } from '../types';
 
 interface Props {
   visitors: Visitor[];
@@ -41,16 +41,10 @@ export function VisitorList({ visitors, onDelete }: Props) {
             }}
           >
             <div>
-              <strong>{visitor.familyName}</strong>
-              <ul style={{ listStyle: 'none', marginTop: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                {visitor.members.map((member, index) => (
-                  <li key={index} style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                    {formatMember(member)}
-                  </li>
-                ))}
-              </ul>
-              <p style={{ fontSize: '0.875rem', marginTop: '0.35rem' }}>
-                📍 {visitor.origin}
+              <strong>{visitor.name}</strong>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                {RELATIONSHIP_LABELS[visitor.relationship] ?? visitor.relationship}
+                {visitor.city ? ` · ${visitor.city}` : ''}
               </p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.35rem' }}>
                 {formatTime(visitor.createdAt)}

@@ -1,32 +1,23 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { RELATIONSHIPS, type IFamilyMember, type Relationship } from '../constants/relationships.js';
+import { RELATIONSHIPS, type Relationship } from '../constants/relationships.js';
+import { actorSchema, type IActor } from './Actor.js';
 
 export interface IVisitor extends Document {
-  familyName: string;
-  members: IFamilyMember[];
-  origin: string;
+  name: string;
+  relationship: Relationship;
+  city: string;
   visitDate: Date;
+  createdBy?: IActor;
   createdAt: Date;
 }
 
-const memberSchema = new Schema<IFamilyMember>(
+const visitorSchema = new Schema<IVisitor>(
   {
     name: { type: String, required: true, trim: true },
     relationship: { type: String, enum: RELATIONSHIPS, required: true },
-  },
-  { _id: false }
-);
-
-const visitorSchema = new Schema<IVisitor>(
-  {
-    familyName: { type: String, required: true, trim: true },
-    members: {
-      type: [memberSchema],
-      required: true,
-      validate: [(v: IFamilyMember[]) => v.length > 0, 'Informe ao menos um membro'],
-    },
-    origin: { type: String, required: true, trim: true },
+    city: { type: String, required: true, trim: true },
     visitDate: { type: Date, default: Date.now },
+    createdBy: { type: actorSchema, required: false },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

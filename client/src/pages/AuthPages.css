@@ -1,0 +1,120 @@
+.auth-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at top left, rgba(254, 243, 199, 0.75), transparent 40%),
+    radial-gradient(circle at bottom right, rgba(219, 234, 254, 0.7), transparent 45%),
+    var(--bg);
+}
+
+.auth-card {
+  width: min(420px, 100%);
+}
+
+.auth-brand {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.auth-brand .logo-icon {
+  margin: 0 auto 0.75rem;
+}
+
+.auth-brand h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.auth-brand p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  background: var(--surface-muted);
+  padding: 0.3rem;
+  border-radius: var(--radius-sm);
+}
+
+.auth-tabs button {
+  border: none;
+  background: transparent;
+  padding: 0.65rem;
+  border-radius: 6px;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-height: 44px;
+}
+
+.auth-tabs button.active {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+.auth-form .btn {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.google-btn-wrap {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.auth-google-hint {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.auth-google-hint code {
+  font-size: 0.8rem;
+}
+
+.auth-live-note {
+  margin-top: 1.25rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.auth-live-note a {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.auth-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
