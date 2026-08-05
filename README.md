@@ -79,10 +79,54 @@ npm run dev
 - API: http://localhost:3001
 - Link público da live: http://localhost:5173/live/oracao
 
+## Deploy na Vercel
+
+O frontend (Vite) e a API (Express serverless) sobem no mesmo projeto.
+
+### 1. Preparar MongoDB Atlas
+
+Em **Network Access**, libere `0.0.0.0/0` (a Vercel usa IPs dinâmicos).
+
+### 2. Importar o repositório
+
+1. Acesse [vercel.com](https://vercel.com) → **Add New Project**
+2. Importe `church-visitors`
+3. Deixe o Root Directory como `.` (raiz)
+4. A Vercel usa o `vercel.json` do repositório
+
+### 3. Variáveis de ambiente (Project → Settings → Environment Variables)
+
+| Nome | Onde | Exemplo |
+|------|------|---------|
+| `MONGODB_URI` | Server | connection string do Atlas |
+| `JWT_SECRET` | Server | chave longa e aleatória |
+| `GOOGLE_CLIENT_ID` | Server | Client ID do Google |
+| `VITE_GOOGLE_CLIENT_ID` | Client (Build) | **mesmo** Client ID do Google |
+
+> `VITE_*` precisa estar disponível no **Build**. As demais, em Production/Preview.
+
+### 4. Google Sign-In em produção
+
+No Google Cloud Console, em **Origens JavaScript autorizadas**, adicione:
+
+- `https://SEU-PROJETO.vercel.app`
+- (opcional) domínio customizado
+
+### 5. Deploy
+
+Clique em **Deploy**. Depois:
+
+- App: `https://SEU-PROJETO.vercel.app`
+- Login: `https://SEU-PROJETO.vercel.app/login`
+- Live pública: `https://SEU-PROJETO.vercel.app/live/oracao`
+- Health: `https://SEU-PROJETO.vercel.app/api/health`
+
 ## Estrutura
 
 ```
 church-visitors/
+├── api/      # Entry point serverless (Vercel)
 ├── client/   # React + Vite + TypeScript
-└── server/   # Node + Express + MongoDB
+├── server/   # Express + MongoDB
+└── vercel.json
 ```

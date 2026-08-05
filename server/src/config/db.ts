@@ -35,10 +35,21 @@ function atlasHelpMessage(error: unknown): string {
 }
 
 export async function connectDB(uri: string): Promise<void> {
+  // Reaproveita conexão em ambientes serverless (Vercel)
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
+  if (mongoose.connection.readyState === 2) {
+    await mongoose.connection.asPromise();
+    return;
+  }
+
   configureDnsForAtlas(uri);
 
   const options: mongoose.ConnectOptions = {
     serverSelectionTimeoutMS: 15000,
+    bufferCommands: false,
   };
 
   if (uri.startsWith('mongodb+srv://') && !uri.includes(`/${ATLAS_DB_NAME}`)) {

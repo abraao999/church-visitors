@@ -3,14 +3,31 @@
   "private": true,
   "version": "1.0.0",
   "description": "Sistema de visitantes e pedidos de oração para igreja",
+  "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "build": "npm run build --prefix server && npm run build --prefix client",
+    "build:vercel": "npm run build --prefix client",
     "start": "npm run start --prefix server"
   },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "google-auth-library": "^11.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.9.5"
+  },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.10.5",
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3"
   }
 }
