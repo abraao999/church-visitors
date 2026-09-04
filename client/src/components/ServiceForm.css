@@ -1,123 +1,282 @@
-.service-form-hint {
+.service-form {
+  padding: 1.5rem;
+}
+
+.service-form-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 1.4rem;
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.service-form-heading > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  flex: 0 0 50px;
+  border-radius: 13px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.service-form-heading .app-icon {
+  width: 27px;
+  height: 27px;
+}
+
+.service-form-heading h2 {
+  font-size: 1.25rem;
+}
+
+.service-form-heading p {
+  margin-top: 0.2rem;
   color: var(--text-muted);
-  margin-bottom: 1.25rem;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+}
+
+.service-form > .error-message {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: 10px;
+  background: var(--danger-soft);
 }
 
 .service-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: 0.8rem;
 }
 
-.hymn-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.service-field {
+  margin-bottom: 1.1rem;
 }
 
-.hymn-row {
-  display: grid;
-  grid-template-columns: 2rem 1.2fr 1fr auto;
-  gap: 0.5rem;
-  align-items: center;
+.service-field label,
+.hymns-fieldset > label,
+.hymns-fieldset-heading label {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
-.hymn-row-3 {
-  grid-template-columns: 2rem 1.1fr 1fr 1fr auto;
+.service-field input,
+.hymn-field input {
+  min-height: 52px;
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  font-size: 16px;
 }
 
-.hymn-order {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  background: var(--surface-muted);
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.hymn-row input {
-  padding: 0.7rem 0.85rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-}
-
-.hymn-row input:focus {
-  outline: 2px solid #bfdbfe;
+.service-field input:focus,
+.hymn-field input:focus {
+  outline: none;
   border-color: var(--primary);
-}
-
-.hymn-remove {
-  padding: 0.55rem 0.75rem;
-  min-width: 2.5rem;
-}
-
-.add-hymn-btn {
-  margin-top: 0.5rem;
-  width: 100%;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
 .recurring-option {
-  margin-top: 0.25rem;
+  margin: 0.2rem 0 1.2rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
 }
 
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  font-weight: 500;
+  gap: 0.75rem;
   cursor: pointer;
 }
 
 .checkbox-label input {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
   accent-color: var(--primary);
 }
 
-.recurring-hint {
+.checkbox-label strong,
+.checkbox-label small {
+  display: block;
+}
+
+.checkbox-label strong {
+  font-size: 0.9rem;
+}
+
+.checkbox-label small {
+  margin-top: 0.1rem;
   color: var(--text-muted);
-  font-size: 0.85rem;
-  margin-top: 0.35rem;
-  line-height: 1.4;
+  font-size: 0.76rem;
+  font-weight: 400;
+}
+
+.recurring-hint {
+  margin: 0.75rem 0 0 2rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.hymns-fieldset {
+  margin-bottom: 0;
+}
+
+.hymns-fieldset-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.hymns-fieldset-heading > span {
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.hymn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.hymn-card {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.hymn-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.hymn-card-heading > span {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.hymn-card-heading i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-muted);
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-style: normal;
+}
+
+.hymn-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 38px;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.hymn-remove .app-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.hymn-fields {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.hymn-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.hymn-field label {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.hymn-field input {
+  width: 100%;
+  padding: 0.7rem 0.75rem;
+}
+
+.add-hymn-btn {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 0.8rem;
+  border: 1.5px dashed color-mix(in srgb, var(--primary) 45%, var(--border));
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.add-hymn-btn .app-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .service-form-actions {
   display: flex;
-  gap: 0.75rem;
   justify-content: flex-end;
+  gap: 0.75rem;
   flex-wrap: wrap;
+  margin-top: 1.4rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
 }
 
-.hymn-row input,
-.member-row input,
-.member-row select {
-  font-size: 16px;
-  min-height: 44px;
+.service-form-actions .btn {
+  min-height: 50px;
+  border-radius: 10px;
 }
 
-@media (max-width: 900px) {
-  .hymn-row-3 {
-    grid-template-columns: 2rem 1fr auto;
-    grid-template-rows: auto auto auto;
-  }
+.service-form-actions .app-icon {
+  width: 19px;
+  height: 19px;
+}
 
-  .hymn-row-3 input {
-    grid-column: 2;
-  }
-
-  .hymn-row-3 .hymn-remove {
-    grid-column: 3;
-    grid-row: 1 / span 3;
+@media (max-width: 840px) {
+  .hymn-fields {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 640px) {
+  .service-form {
+    padding: 1.15rem;
+  }
+
   .service-form-row {
     grid-template-columns: 1fr;
   }
@@ -130,19 +289,7 @@
     width: 100%;
   }
 
-  .hymn-row:not(.hymn-row-3) {
-    grid-template-columns: 2rem 1fr auto;
-    grid-template-rows: auto auto;
-  }
-
-  .hymn-row:not(.hymn-row-3) input:nth-of-type(1),
-  .hymn-row:not(.hymn-row-3) input:nth-of-type(2) {
-    grid-column: 2;
-  }
-
-  .hymn-row:not(.hymn-row-3) .hymn-remove {
-    grid-column: 3;
-    grid-row: 1 / span 2;
-    min-height: 44px;
+  .hymn-card-heading {
+    align-items: flex-start;
   }
 }

@@ -1,0 +1,337 @@
+/* Overrides for pages that still use hardcoded light colors */
+
+html[data-theme='dark'] .app-layout {
+  background: var(--bg);
+}
+
+html[data-theme='dark'] .user-avatar {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+html[data-theme='dark'] .user-chip-name,
+html[data-theme='dark'] .btn-logout,
+html[data-theme='dark'] .nav-desktop a,
+html[data-theme='dark'] .mobile-page-title,
+html[data-theme='dark'] .mobile-menu-button {
+  color: var(--text);
+}
+
+html[data-theme='dark'] .btn-logout:hover {
+  background: var(--surface-muted);
+}
+
+html[data-theme='dark'] .nav-desktop a.active,
+html[data-theme='dark'] .nav-mobile a.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+html[data-theme='dark'] .live-layout {
+  background: linear-gradient(160deg, #152033 0%, var(--bg) 50%, #2a2214 100%);
+}
+
+html[data-theme='dark'] .panel-layout {
+  background:
+    radial-gradient(circle at top left, rgba(245, 158, 11, 0.12), transparent 40%),
+    radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.14), transparent 45%),
+    var(--bg);
+}
+
+html[data-theme='dark'] .nav-mobile {
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 768px) {
+  html[data-theme='dark'] .visitors-layout {
+    background: var(--bg);
+  }
+
+  html[data-theme='dark'] .visitors-layout .app-header {
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    box-shadow: 0 3px 16px rgba(0, 0, 0, 0.28);
+  }
+
+  html[data-theme='dark'] .visitors-layout .logo-icon {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  html[data-theme='dark'] .visitors-bottom-nav a,
+  html[data-theme='dark'] .visitors-bottom-nav button {
+    color: var(--text-muted);
+  }
+
+  html[data-theme='dark'] .visitors-bottom-nav a.active {
+    color: var(--primary);
+    background: var(--primary-soft);
+  }
+
+  html[data-theme='dark'] .mobile-more-menu {
+    background: var(--surface);
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.45);
+  }
+
+  html[data-theme='dark'] .mobile-more-menu > a,
+  html[data-theme='dark'] .mobile-logout {
+    border-bottom-color: var(--border);
+    color: var(--text);
+  }
+
+  html[data-theme='dark'] .mobile-logout {
+    color: var(--danger);
+  }
+}
+
+html[data-theme='dark'] .dashboard-heading h1,
+html[data-theme='dark'] .access-overview-heading h2,
+html[data-theme='dark'] .guest-access-heading h1,
+html[data-theme='dark'] .visitors-hero-copy h1,
+html[data-theme='dark'] .prayer-page-hero-copy h1,
+html[data-theme='dark'] .prayer-page-hero h1,
+html[data-theme='dark'] .services-page-header h1,
+html[data-theme='dark'] .panels-hero h1,
+html[data-theme='dark'] .holyrics-hero h1,
+html[data-theme='dark'] .auth-card-heading h2,
+html[data-theme='dark'] .auth-welcome-copy h1,
+html[data-theme='dark'] .display-panel-header h1 {
+  color: var(--text);
+}
+
+html[data-theme='dark'] .dashboard-heading p,
+html[data-theme='dark'] .access-overview-heading p,
+html[data-theme='dark'] .guest-access-heading p,
+html[data-theme='dark'] .visitors-hero-copy p,
+html[data-theme='dark'] .prayer-page-hero p,
+html[data-theme='dark'] .services-page-header p,
+html[data-theme='dark'] .panels-hero p,
+html[data-theme='dark'] .holyrics-hero p,
+html[data-theme='dark'] .auth-welcome-copy p,
+html[data-theme='dark'] .auth-card-heading p {
+  color: var(--text-muted);
+}
+
+html[data-theme='dark'] .home-page .card,
+html[data-theme='dark'] .access-overview,
+html[data-theme='dark'] .access-overview-card,
+html[data-theme='dark'] .guest-access-card,
+html[data-theme='dark'] .guest-access-form,
+html[data-theme='dark'] .guest-access-empty,
+html[data-theme='dark'] .auth-card,
+html[data-theme='dark'] .auth-shell,
+html[data-theme='dark'] .private-record-list,
+html[data-theme='dark'] .public-person-card,
+html[data-theme='dark'] .public-prayer-card,
+html[data-theme='dark'] .public-state-card {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+html[data-theme='dark'] .access-overview {
+  background: var(--surface);
+}
+
+html[data-theme='dark'] .dashboard-stat-card,
+html[data-theme='dark'] .quick-action,
+html[data-theme='dark'] .online-link-card,
+html[data-theme='dark'] .holyrics-dashboard-card {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+html[data-theme='dark'] .dashboard-stat-number,
+html[data-theme='dark'] .quick-action strong,
+html[data-theme='dark'] .access-overview-info strong,
+html[data-theme='dark'] .guest-access-card-title h2,
+html[data-theme='dark'] .private-record-name-row strong {
+  color: var(--text);
+}
+
+html[data-theme='dark'] .dashboard-stat-card p,
+html[data-theme='dark'] .quick-action span,
+html[data-theme='dark'] .access-overview-info span,
+html[data-theme='dark'] .guest-access-meta,
+html[data-theme='dark'] .private-record-meta,
+html[data-theme='dark'] .private-record-origin {
+  color: var(--text-muted);
+}
+
+html[data-theme='dark'] .dashboard-stat-card a,
+html[data-theme='dark'] .access-overview-heading a,
+html[data-theme='dark'] .online-access-link,
+html[data-theme='dark'] .page-eyebrow,
+html[data-theme='dark'] .access-overview-eyebrow {
+  color: var(--primary);
+}
+
+html[data-theme='dark'] .dashboard-stat-icon-blue,
+html[data-theme='dark'] .access-overview-card-header > span:first-child:not(.prayer),
+html[data-theme='dark'] .guest-access-type-icon:not(.prayer) {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+html[data-theme='dark'] .dashboard-stat-icon-yellow,
+html[data-theme='dark'] .access-overview-card-header > span.prayer,
+html[data-theme='dark'] .guest-access-type-icon.prayer {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+html[data-theme='dark'] .guest-action-button,
+html[data-theme='dark'] .access-overview-info button,
+html[data-theme='dark'] .access-overview-empty button {
+  background: var(--surface);
+  color: var(--primary);
+  border-color: var(--border);
+}
+
+html[data-theme='dark'] .guest-action-button.primary {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+html[data-theme='dark'] .guest-action-button.danger {
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  color: var(--danger);
+}
+
+html[data-theme='dark'] .guest-action-button.success {
+  border-color: color-mix(in srgb, var(--success) 40%, transparent);
+  color: var(--success);
+}
+
+html[data-theme='dark'] .guest-access-status.active,
+html[data-theme='dark'] .access-overview-card-header strong.active {
+  color: var(--success);
+}
+
+html[data-theme='dark'] .guest-access-status.inactive,
+html[data-theme='dark'] .guest-access-status.expired,
+html[data-theme='dark'] .access-overview-card-header strong.inactive {
+  color: var(--text-muted);
+}
+
+html[data-theme='dark'] .guest-access-details input,
+html[data-theme='dark'] .access-overview-info input,
+html[data-theme='dark'] .visitor-form input,
+html[data-theme='dark'] .visitor-form select,
+html[data-theme='dark'] .prayer-form input,
+html[data-theme='dark'] .prayer-form textarea,
+html[data-theme='dark'] .auth-card input,
+html[data-theme='dark'] .public-field input,
+html[data-theme='dark'] .public-field select,
+html[data-theme='dark'] .public-field textarea {
+  background: var(--surface-muted);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+html[data-theme='dark'] .private-origin-badge.guest {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+html[data-theme='dark'] .private-origin-badge.owner {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+html[data-theme='dark'] .private-record-remove {
+  background: var(--surface);
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+html[data-theme='dark'] .private-record-remove:hover {
+  background: var(--danger-soft);
+}
+
+html[data-theme='dark'] .visitors-hero,
+html[data-theme='dark'] .prayer-page-hero,
+html[data-theme='dark'] .services-page-header,
+html[data-theme='dark'] .panels-hero,
+html[data-theme='dark'] .holyrics-hero,
+html[data-theme='dark'] .auth-welcome {
+  background: linear-gradient(115deg, #1a2233 0%, var(--surface) 78%);
+  border-color: var(--border);
+}
+
+html[data-theme='dark'] .auth-page {
+  background: var(--bg);
+}
+
+html[data-theme='dark'] .auth-tabs button {
+  color: var(--text-muted);
+}
+
+html[data-theme='dark'] .auth-tabs button.active {
+  background: var(--surface);
+  color: var(--primary);
+}
+
+html[data-theme='dark'] .public-access-page {
+  background: var(--bg);
+  color: var(--text);
+}
+
+html[data-theme='dark'] .public-access-badge {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+html[data-theme='dark'] .public-access-permission,
+html[data-theme='dark'] .public-privacy-box {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+html[data-theme='dark'] .public-primary-button {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+html[data-theme='dark'] .public-secondary-button,
+html[data-theme='dark'] .public-add-button {
+  background: var(--surface);
+  color: var(--primary);
+  border-color: var(--border);
+}
+
+html[data-theme='dark'] .month-calendar,
+html[data-theme='dark'] .calendar-cell:not(.empty):not(.selected),
+html[data-theme='dark'] .day-panel-header,
+html[data-theme='dark'] .service-item,
+html[data-theme='dark'] .sync-result {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+html[data-theme='dark'] .calendar-cell:not(.empty):not(.selected):hover {
+  background: var(--surface-muted);
+}
+
+html[data-theme='dark'] .calendar-cell.has-services:not(.selected) {
+  color: var(--text);
+}
+
+html[data-theme='dark'] .calendar-cell.selected {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+
+html[data-theme='dark'] .sync-result-error {
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+html[data-theme='dark'] .display-panel,
+html[data-theme='dark'] .display-card {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}

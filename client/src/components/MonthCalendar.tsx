@@ -105,6 +105,11 @@ export function MonthCalendar({
           );
         })}
       </div>
+
+      <div className="calendar-legend">
+        <span><i className="calendar-legend-today" /> Hoje</span>
+        <span><i className="calendar-legend-service" /> Possui culto</span>
+      </div>
     </div>
   );
 }

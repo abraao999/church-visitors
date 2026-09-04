@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { Hymn, Service } from '../types';
+import { AppIcon } from './AppIcon';
 import './ServiceForm.css';
 
 interface Props {
@@ -84,53 +85,51 @@ export function HymnsForm({ service, onSuccess, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="card service-form">
-      <h2>Louvores do culto</h2>
-      <p className="service-form-hint">
-        {service.title}
-        {service.time ? ` · ${service.time}` : ''} — informe o louvor, o cantor (dono da música) e
-        quem vai cantar no culto.
-      </p>
+      <div className="service-form-heading">
+        <span><AppIcon name="music" /></span>
+        <div>
+          <h2>Louvores do culto</h2>
+          <p>{service.title}{service.time ? ` · ${service.time}` : ''}</p>
+        </div>
+      </div>
 
       {error && <p className="error-message">{error}</p>}
 
-      <div className="form-group">
-        <label>Louvores</label>
+      <div className="form-group hymns-fieldset">
+        <div className="hymns-fieldset-heading">
+          <label>Lista de louvores</label>
+          <span>{hymns.length} {hymns.length === 1 ? 'item' : 'itens'}</span>
+        </div>
         <div className="hymn-list">
           {hymns.map((hymn, index) => (
-            <div key={index} className="hymn-row hymn-row-3">
-              <span className="hymn-order">{index + 1}</span>
-              <input
-                value={hymn.title}
-                onChange={(e) => updateHymn(index, 'title', e.target.value)}
-                placeholder="Nome do louvor"
-                aria-label={`Nome do louvor ${index + 1}`}
-              />
-              <input
-                value={hymn.artist}
-                onChange={(e) => updateHymn(index, 'artist', e.target.value)}
-                placeholder="Cantor (dono da música)"
-                aria-label={`Cantor dono da música ${index + 1}`}
-              />
-              <input
-                value={hymn.performedBy}
-                onChange={(e) => updateHymn(index, 'performedBy', e.target.value)}
-                placeholder="Quem canta no culto (ex: jovens, irmãos)"
-                aria-label={`Quem canta no culto ${index + 1}`}
-              />
-              <button
-                type="button"
-                className="btn btn-secondary hymn-remove"
-                onClick={() => removeHymn(index)}
-                disabled={hymns.length === 1}
-                aria-label="Remover louvor"
-              >
-                ✕
-              </button>
-            </div>
+            <section key={index} className="hymn-card">
+              <div className="hymn-card-heading">
+                <span><i>{index + 1}</i> Louvor {index + 1}</span>
+                {hymns.length > 1 && (
+                  <button type="button" className="hymn-remove" onClick={() => removeHymn(index)}>
+                    <AppIcon name="trash" /> Remover
+                  </button>
+                )}
+              </div>
+              <div className="hymn-fields">
+                <div className="hymn-field">
+                  <label htmlFor={`hymn-title-${index}`}>Nome do louvor</label>
+                  <input id={`hymn-title-${index}`} value={hymn.title} onChange={(e) => updateHymn(index, 'title', e.target.value)} placeholder="Ex: Grandioso és Tu" />
+                </div>
+                <div className="hymn-field">
+                  <label htmlFor={`hymn-artist-${index}`}>Artista original</label>
+                  <input id={`hymn-artist-${index}`} value={hymn.artist} onChange={(e) => updateHymn(index, 'artist', e.target.value)} placeholder="Cantor ou grupo" />
+                </div>
+                <div className="hymn-field">
+                  <label htmlFor={`hymn-performer-${index}`}>Quem cantará no culto</label>
+                  <input id={`hymn-performer-${index}`} value={hymn.performedBy} onChange={(e) => updateHymn(index, 'performedBy', e.target.value)} placeholder="Ex: Ministério de louvor" />
+                </div>
+              </div>
+            </section>
           ))}
         </div>
         <button type="button" className="btn btn-secondary add-hymn-btn" onClick={addHymn}>
-          + Adicionar louvor
+          <AppIcon name="plus" /> Adicionar outro louvor
         </button>
       </div>
 
@@ -139,6 +138,7 @@ export function HymnsForm({ service, onSuccess, onCancel }: Props) {
           Cancelar
         </button>
         <button type="submit" className="btn btn-primary" disabled={loading}>
+          {!loading && <AppIcon name="check" />}
           {loading ? 'Salvando...' : 'Salvar louvores'}
         </button>
       </div>

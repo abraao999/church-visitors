@@ -5,18 +5,21 @@ import authRouter from './routes/auth.js';
 import visitorsRouter from './routes/visitors.js';
 import prayerRequestsRouter from './routes/prayerRequests.js';
 import servicesRouter from './routes/services.js';
+import holyricsRouter from './routes/holyrics.js';
+import publicAccessRouter from './routes/publicAccess.js';
+import guestAccessesRouter from './routes/guestAccesses.js';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/church-visitors';
+const DEFAULT_MONGODB_URI = 'mongodb://localhost:27017/church-visitors';
 
 export async function ensureDb(): Promise<void> {
-  await connectDB(MONGODB_URI);
+  await connectDB(process.env.MONGODB_URI || DEFAULT_MONGODB_URI);
 }
 
 export function createApp() {
   const app = express();
 
   app.use(cors());
-  app.use(express.json());
+  app.use(express.json({ limit: '32kb' }));
 
   app.use(async (_req, res, next) => {
     try {
@@ -38,6 +41,9 @@ export function createApp() {
   app.use('/api/visitors', visitorsRouter);
   app.use('/api/prayer-requests', prayerRequestsRouter);
   app.use('/api/services', servicesRouter);
+  app.use('/api/holyrics', holyricsRouter);
+  app.use('/api/public-access', publicAccessRouter);
+  app.use('/api/guest-accesses', guestAccessesRouter);
 
   return app;
 }

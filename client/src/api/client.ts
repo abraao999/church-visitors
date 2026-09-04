@@ -4,7 +4,12 @@ import type {
   CreateServiceDto,
   CreateServiceResponse,
   CreateVisitorDto,
+  GuestAccess,
+  GuestAccessType,
+  HolyricsSettings,
+  HolyricsSyncResponse,
   PrayerRequest,
+  PublicAccessMetadata,
   Service,
   UpdateServiceDto,
   Visitor,
@@ -50,6 +55,7 @@ export interface AuthResponse {
 
 export const api = {
   async register(data: {
+    churchName: string;
     name: string;
     email: string;
     username: string;
@@ -68,15 +74,6 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    });
-    return handleResponse<AuthResponse>(response);
-  },
-
-  async loginWithGoogle(credential: string): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE}/auth/google`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential }),
     });
     return handleResponse<AuthResponse>(response);
   },
@@ -175,5 +172,137 @@ export const api = {
       headers: authHeaders(),
     });
     await handleResponse(response);
+  },
+
+  async getHolyricsSettings(): Promise<HolyricsSettings> {
+    const response = await fetch(`${API_BASE}/holyrics/settings`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<HolyricsSettings>(response);
+  },
+
+  async saveHolyricsSettings(
+    data: Pick<HolyricsSettings, 'mode' | 'host' | 'port' | 'token' | 'apiKey'>
+  ): Promise<HolyricsSettings> {
+    const response = await fetch(`${API_BASE}/holyrics/settings`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<HolyricsSettings>(response);
+  },
+
+  async testHolyrics(): Promise<{ ok: boolean; message: string; songsCount?: number }> {
+    const response = await fetch(`${API_BASE}/holyrics/test`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    return handleResponse(response);
+  },
+
+  async syncHolyrics(serviceId: string): Promise<HolyricsSyncResponse> {
+    const response = await fetch(`${API_BASE}/holyrics/sync`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ serviceId }),
+    });
+    return handleResponse<HolyricsSyncResponse>(response);
+  },
+
+  async getGuestAccesses(): Promise<GuestAccess[]> {
+    const response = await fetch(`${API_BASE}/guest-accesses`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<GuestAccess[]>(response);
+  },
+
+  async createGuestAccess(data: {
+    name: string;
+    type: GuestAccessType;
+    expiresAt?: string;
+  }): Promise<GuestAccess> {
+    const response = await fetch(`${API_BASE}/guest-accesses`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<GuestAccess>(response);
+  },
+
+  async updateGuestAccess(
+    id: string,
+    data: { name: string; expiresAt?: string }
+  ): Promise<GuestAccess> {
+    const response = await fetch(`${API_BASE}/guest-accesses/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<GuestAccess>(response);
+  },
+
+  async deactivateGuestAccess(id: string): Promise<GuestAccess> {
+    const response = await fetch(`${API_BASE}/guest-accesses/${id}/deactivate`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    return handleResponse<GuestAccess>(response);
+  },
+
+  async reactivateGuestAccess(id: string): Promise<GuestAccess> {
+    const response = await fetch(`${API_BASE}/guest-accesses/${id}/reactivate`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    return handleResponse<GuestAccess>(response);
+  },
+
+  async renewGuestAccess(id: string): Promise<GuestAccess> {
+    const response = await fetch(`${API_BASE}/guest-accesses/${id}/renew`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    return handleResponse<GuestAccess>(response);
+  },
+
+  async getPublicAccess(token: string): Promise<PublicAccessMetadata> {
+    const response = await fetch(`${API_BASE}/public-access/${encodeURIComponent(token)}`, {
+      headers: { Accept: 'application/json' },
+    });
+    return handleResponse<PublicAccessMetadata>(response);
+  },
+
+  async submitPublicVisitors(
+    token: string,
+    visitors: CreateVisitorDto['visitors']
+  ): Promise<{ success: true; message: string }> {
+    const response = await fetch(
+      `${API_BASE}/public-access/${encodeURIComponent(token)}/visitors`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visitors }),
+      }
+    );
+    return handleResponse(response);
+  },
+
+  async submitPublicPrayer(
+    token: string,
+    data: Pick<CreatePrayerDto, 'name' | 'request' | 'isAnonymous'>
+  ): Promise<{ success: true; message: string }> {
+    const response = await fetch(
+      `${API_BASE}/public-access/${encodeURIComponent(token)}/prayer-requests`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }
+    );
+    return handleResponse(response);
   },
 };

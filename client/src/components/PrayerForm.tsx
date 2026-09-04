@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { api } from '../api/client';
+import { AppIcon } from './AppIcon';
+import './PrayerForm.css';
 
 interface Props {
-  source: 'porteiro' | 'live';
   onSuccess?: () => void;
   compact?: boolean;
 }
 
-export function PrayerForm({ source, onSuccess, compact = false }: Props) {
+export function PrayerForm({ onSuccess, compact = false }: Props) {
   const [name, setName] = useState('');
   const [request, setRequest] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -25,17 +26,12 @@ export function PrayerForm({ source, onSuccess, compact = false }: Props) {
       await api.createPrayerRequest({
         name: isAnonymous ? '' : name,
         request,
-        source,
         isAnonymous,
       });
       setName('');
       setRequest('');
       setIsAnonymous(false);
-      setSuccess(
-        source === 'live'
-          ? 'Seu pedido foi enviado. Oremos juntos!'
-          : 'Pedido de oração registrado.'
-      );
+      setSuccess('Pedido de oração registrado.');
       onSuccess?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao enviar');
@@ -45,58 +41,75 @@ export function PrayerForm({ source, onSuccess, compact = false }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className={compact ? '' : 'card'}>
+    <form onSubmit={handleSubmit} className={`prayer-form${compact ? ' prayer-form-compact' : ' card'}`}>
       {!compact && (
-        <>
-          <h2>Registrar pedido de oração</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '1.25rem', fontSize: '0.9rem' }}>
-            Registre pedidos feitos presencialmente ou pela portaria.
-          </p>
-        </>
+        <div className="prayer-form-heading">
+          <span className="prayer-form-icon"><AppIcon name="prayer" /></span>
+          <div>
+            <h2>Registrar pedido</h2>
+            <p>Preencha as informações compartilhadas pela pessoa.</p>
+          </div>
+        </div>
       )}
 
-      {error && <p className="error-message">{error}</p>}
-      {success && <p className="success-message">{success}</p>}
+      <div className="prayer-feedback" aria-live="polite">
+        {error && <p className="error-message" role="alert">{error}</p>}
+        {success && <p className="success-message"><AppIcon name="check" />{success}</p>}
+      </div>
 
-      <div className="form-group">
-        <label>
+      <div className="anonymous-option">
+        <label className="anonymous-switch">
           <input
             type="checkbox"
             checked={isAnonymous}
             onChange={(e) => setIsAnonymous(e.target.checked)}
-            style={{ marginRight: '0.5rem' }}
           />
-          Pedido anônimo
+          <span className="anonymous-switch-control" aria-hidden="true" />
+          <span>
+            <strong>Manter nome em sigilo</strong>
+            <small>O pedido aparecerá como “Anônimo”.</small>
+          </span>
         </label>
       </div>
 
       {!isAnonymous && (
-        <div className="form-group">
+        <div className="form-group prayer-field">
           <label htmlFor="prayerName">Nome</label>
           <input
             id="prayerName"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Seu nome"
+            placeholder="Digite o nome da pessoa"
             required={!isAnonymous}
+            autoComplete="name"
           />
         </div>
       )}
 
-      <div className="form-group">
-        <label htmlFor="prayerRequest">Pedido de oração</label>
+      <div className="form-group prayer-field">
+        <div className="prayer-field-label">
+          <label htmlFor="prayerRequest">Pedido de oração</label>
+          <span>{request.length} caracteres</span>
+        </div>
         <textarea
           id="prayerRequest"
           value={request}
           onChange={(e) => setRequest(e.target.value)}
-          placeholder="Descreva o pedido de oração..."
+          placeholder="Escreva aqui o pedido de oração"
           required
+          rows={5}
         />
       </div>
 
-      <button type="submit" className="btn btn-primary" disabled={loading}>
-        {loading ? 'Enviando...' : source === 'live' ? 'Enviar pedido' : 'Registrar pedido'}
+      <button type="submit" className="btn btn-primary prayer-submit" disabled={loading}>
+        {!loading && <AppIcon name="check" />}
+        {loading ? 'Enviando...' : 'Registrar pedido'}
       </button>
+
+      <p className="prayer-privacy-note">
+        <AppIcon name="lock" />
+        Revise as informações antes de registrar.
+      </p>
     </form>
   );
 }

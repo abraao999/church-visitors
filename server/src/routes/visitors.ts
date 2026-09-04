@@ -6,6 +6,7 @@ import {
   toActor,
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
+import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 
 const router = Router();
 
@@ -37,27 +38,45 @@ type VisitorInput = {
   city: string;
 };
 
-function normalizeVisitors(body: Record<string, unknown>): VisitorInput[] {
+const MAX_VISITORS_PER_REQUEST = 10;
+
+function normalizeVisitors(body: Record<string, unknown>): { data: VisitorInput[]; error?: string } {
   const rawList = Array.isArray(body.visitors)
     ? body.visitors
     : body.name != null
       ? [{ name: body.name, relationship: body.relationship, city: body.city }]
       : [];
 
-  return rawList
-    .map((item) => {
-      if (!item || typeof item !== 'object') return null;
-      const name = String((item as { name?: unknown }).name ?? '').trim();
-      const relationship = String((item as { relationship?: unknown }).relationship ?? '');
-      const city = String((item as { city?: unknown }).city ?? '').trim();
+  if (rawList.length === 0 || rawList.length > MAX_VISITORS_PER_REQUEST) {
+    return { data: [], error: `Informe de 1 a ${MAX_VISITORS_PER_REQUEST} visitantes por cadastro` };
+  }
 
-      if (!name || !city || !isRelationship(relationship)) return null;
-      return { name, relationship, city };
-    })
-    .filter((item): item is VisitorInput => item !== null);
+  const data: VisitorInput[] = [];
+  for (const item of rawList) {
+    if (!item || typeof item !== 'object') {
+      return { data: [], error: 'Revise os dados de cada visitante' };
+    }
+
+    const raw = item as Record<string, unknown>;
+    if (typeof raw.name !== 'string' || typeof raw.city !== 'string') {
+      return { data: [], error: 'Informe o nome e a cidade de cada visitante' };
+    }
+
+    const name = raw.name.trim().replace(/\s+/g, ' ');
+    const city = raw.city.trim().replace(/\s+/g, ' ');
+    const relationshipRaw = typeof raw.relationship === 'string' ? raw.relationship : 'outro';
+    const relationship = isRelationship(relationshipRaw) ? relationshipRaw : null;
+
+    if (!name || name.length > 120 || !city || city.length > 100 || !relationship) {
+      return { data: [], error: 'Informe o nome e a cidade de cada visitante' };
+    }
+    data.push({ name, relationship, city });
+  }
+
+  return { data };
 }
 
-router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+export async function listVisitors(req: AuthenticatedRequest, res: Response) {
   try {
     const dateParam = req.query.date as string | undefined;
     const date = dateParam ? parseDateOnly(dateParam) : new Date();
@@ -66,34 +85,34 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =>
       return res.status(400).json({ error: 'Parâmetro date inválido. Use YYYY-MM-DD' });
     }
 
-    const visitors = await Visitor.find({
+    const visitors = await Visitor.find(withChurch(req.auth!.churchId, {
       visitDate: { $gte: startOfDay(date), $lte: endOfDay(date) },
-    }).sort({ createdAt: -1 });
+    })).sort({ createdAt: -1 });
 
     res.json(visitors);
   } catch {
     res.status(500).json({ error: 'Erro ao buscar visitantes' });
   }
-});
+}
 
-router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+export async function createVisitors(req: AuthenticatedRequest, res: Response) {
   try {
-    const people = normalizeVisitors(req.body);
+    const normalized = normalizeVisitors(req.body);
 
-    if (people.length === 0) {
-      return res.status(400).json({
-        error: 'Informe ao menos um visitante com nome, parentesco e cidade',
-      });
+    if (normalized.error) {
+      return res.status(400).json({ error: normalized.error });
     }
 
-    const createdBy = toActor(req.user!);
-    const visitDate = req.body.visitDate ? new Date(req.body.visitDate) : new Date();
+    const createdBy = toActor(req.auth!);
+    const visitDate = new Date();
     const created = await Visitor.insertMany(
-      people.map((person) => ({
+      normalized.data.map((person) => ({
+        churchId: req.auth!.churchId,
         name: person.name,
         relationship: person.relationship,
         city: person.city,
         visitDate,
+        source: 'owner',
         createdBy,
       }))
     );
@@ -102,11 +121,16 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
   } catch {
     res.status(500).json({ error: 'Erro ao registrar visitante' });
   }
-});
+}
 
-router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+export async function deleteVisitor(req: AuthenticatedRequest, res: Response) {
   try {
-    const deleted = await Visitor.findByIdAndDelete(req.params.id);
+    const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
+    if (!filter) {
+      return res.status(404).json({ error: 'Visitante não encontrado' });
+    }
+
+    const deleted = await Visitor.findOneAndDelete(filter);
     if (!deleted) {
       return res.status(404).json({ error: 'Visitante não encontrado' });
     }
@@ -114,6 +138,10 @@ router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Respon
   } catch {
     res.status(500).json({ error: 'Erro ao remover visitante' });
   }
-});
+}
+
+router.get('/', requireAuth, listVisitors);
+router.post('/', requireAuth, createVisitors);
+router.delete('/:id', requireAuth, deleteVisitor);
 
 export default router;

@@ -1,148 +1,255 @@
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { api } from '../api/client';
-import { RELATIONSHIPS, type Relationship } from '../types';
+import { AppIcon } from './AppIcon';
 import './VisitorForm.css';
 
 interface Props {
   onSuccess: () => void;
 }
 
-interface VisitorDraft {
+interface PersonDraft {
+  id: number;
   name: string;
-  relationship: Relationship;
-  city: string;
 }
 
-const emptyVisitor = (): VisitorDraft => ({ name: '', relationship: 'outro', city: '' });
+const MAX_VISITORS = 10;
+
+function cleanLine(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLocaleUpperCase('pt-BR');
+}
+
+function asUpperCase(value: string): string {
+  return value.toLocaleUpperCase('pt-BR');
+}
 
 export function VisitorForm({ onSuccess }: Props) {
-  const [visitors, setVisitors] = useState<VisitorDraft[]>([emptyVisitor()]);
+  const nextId = useRef(2);
+  const cityFieldId = useId();
+  const [city, setCity] = useState('');
+  const [people, setPeople] = useState<PersonDraft[]>([{ id: 1, name: '' }]);
+  const [cityError, setCityError] = useState('');
+  const [nameErrors, setNameErrors] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  function updateVisitor(index: number, field: keyof VisitorDraft, value: string) {
-    setVisitors((prev) =>
-      prev.map((visitor, i) => (i === index ? { ...visitor, [field]: value } : visitor))
+  function updatePerson(id: number, name: string) {
+    setPeople((prev) =>
+      prev.map((person) => (person.id === id ? { ...person, name: asUpperCase(name) } : person))
     );
+    setNameErrors((prev) => {
+      if (!prev[id]) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   }
 
-  function addVisitor() {
-    setVisitors((prev) => [...prev, emptyVisitor()]);
+  function addPerson() {
+    if (people.length >= MAX_VISITORS) return;
+    setPeople((prev) => [...prev, { id: nextId.current++, name: '' }]);
   }
 
-  function removeVisitor(index: number) {
-    setVisitors((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+  function removePerson(id: number) {
+    setPeople((prev) => (prev.length > 1 ? prev.filter((person) => person.id !== id) : prev));
+    setNameErrors((prev) => {
+      if (!prev[id]) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }
+
+  function validate(): boolean {
+    const nextCityError = cleanLine(city) ? '' : 'Informe a cidade.';
+    const nextNameErrors: Record<number, string> = {};
+
+    for (const person of people) {
+      if (!cleanLine(person.name)) {
+        nextNameErrors[person.id] = 'Informe o nome do visitante.';
+      }
+    }
+
+    setCityError(nextCityError);
+    setNameErrors(nextNameErrors);
+    return !nextCityError && Object.keys(nextNameErrors).length === 0;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    if (!validate()) {
+      setError('Confira os campos destacados antes de cadastrar.');
+      return;
+    }
+
     setLoading(true);
-
-    const incomplete = visitors.some((v) => {
-      const filled = [v.name, v.city].filter((value) => value.trim()).length;
-      return filled === 1;
-    });
-
-    if (incomplete) {
-      setError('Preencha nome e cidade de cada visitante');
-      setLoading(false);
-      return;
-    }
-
-    const validVisitors = visitors
-      .map((v) => ({
-        name: v.name.trim(),
-        relationship: v.relationship,
-        city: v.city.trim(),
-      }))
-      .filter((v) => v.name && v.city);
-
-    if (validVisitors.length === 0) {
-      setError('Informe ao menos um visitante com nome e cidade');
-      setLoading(false);
-      return;
-    }
+    const sharedCity = cleanLine(city);
+    const validVisitors = people.map((person) => ({
+      name: cleanLine(person.name),
+      city: sharedCity,
+      relationship: 'outro' as const,
+    }));
 
     try {
       await api.createVisitor({ visitors: validVisitors });
-      setVisitors([emptyVisitor()]);
+      setCity('');
+      setPeople([{ id: nextId.current++, name: '' }]);
+      setCityError('');
+      setNameErrors({});
       setSuccess(
         validVisitors.length === 1
-          ? 'Visitante registrado'
-          : `${validVisitors.length} visitantes registrados`
+          ? 'Visitante cadastrado'
+          : `${validVisitors.length} visitantes cadastrados`
       );
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao salvar');
+      setError(err instanceof Error ? err.message : 'Não foi possível cadastrar os visitantes.');
     } finally {
       setLoading(false);
     }
   }
 
+  const submitLabel =
+    people.length === 1
+      ? 'Cadastrar visitante'
+      : `Cadastrar ${people.length} visitantes`;
+
   return (
-    <form onSubmit={handleSubmit} className="card">
-      <h2>Registrar visitantes</h2>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '1.25rem', fontSize: '0.9rem' }}>
-        Informe o nome, parentesco e cidade de cada visitante.
-      </p>
-
-      {error && <p className="error-message">{error}</p>}
-      {success && <p className="success-message">{success}</p>}
-
-      <div className="form-group">
-        <label>Visitantes</label>
-        <div className="member-list">
-          {visitors.map((visitor, index) => (
-            <div key={index} className="member-row member-row-city">
-              <select
-                value={visitor.relationship}
-                onChange={(e) =>
-                  updateVisitor(index, 'relationship', e.target.value as Relationship)
-                }
-                aria-label={`Parentesco do visitante ${index + 1}`}
-              >
-                {RELATIONSHIPS.map((rel) => (
-                  <option key={rel.value} value={rel.value}>
-                    {rel.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                value={visitor.name}
-                onChange={(e) => updateVisitor(index, 'name', e.target.value)}
-                placeholder="Nome do visitante"
-                required={index === 0}
-              />
-              <input
-                value={visitor.city}
-                onChange={(e) => updateVisitor(index, 'city', e.target.value)}
-                placeholder="Cidade"
-                required={index === 0}
-                aria-label={`Cidade do visitante ${index + 1}`}
-              />
-              <button
-                type="button"
-                className="btn btn-secondary member-remove"
-                onClick={() => removeVisitor(index)}
-                disabled={visitors.length === 1}
-                aria-label="Remover visitante"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
-        <button type="button" className="btn btn-secondary add-member-btn" onClick={addVisitor}>
-          + Adicionar nome
-        </button>
+    <form onSubmit={handleSubmit} className="visitor-form" noValidate>
+      <div className="visitor-feedback" aria-live="polite">
+        {error && <p className="error-message" role="alert">{error}</p>}
+        {success && <p className="success-message">{success}</p>}
       </div>
 
-      <button type="submit" className="btn btn-primary" disabled={loading}>
-        {loading ? 'Salvando...' : 'Registrar'}
-      </button>
+      <section className="visitor-section card" aria-labelledby="visitor-visit-title">
+        <div className="visitor-section-heading">
+          <span className="visitor-section-icon" aria-hidden="true">
+            <AppIcon name="pin" />
+          </span>
+          <div>
+            <h2 id="visitor-visit-title">Informações da visita</h2>
+          </div>
+        </div>
+
+        <div className={`visitor-field${cityError ? ' has-error' : ''}`}>
+          <label htmlFor={cityFieldId}>Cidade da visita *</label>
+          <div className="visitor-input-with-icon">
+            <AppIcon name="pin" />
+            <input
+              id={cityFieldId}
+              value={city}
+              onChange={(e) => {
+                setCity(asUpperCase(e.target.value));
+                if (cityError) setCityError('');
+              }}
+              placeholder="Ex.: UMUARAMA"
+              autoComplete="address-level2"
+              autoCapitalize="characters"
+              className="visitor-input-uppercase"
+              maxLength={100}
+              aria-invalid={Boolean(cityError)}
+              aria-describedby={cityError ? `${cityFieldId}-error` : `${cityFieldId}-hint`}
+            />
+          </div>
+          {cityError ? (
+            <p id={`${cityFieldId}-error`} className="visitor-field-error" role="alert">
+              {cityError}
+            </p>
+          ) : (
+            <p id={`${cityFieldId}-hint`} className="visitor-field-hint">
+              Esta cidade será aplicada a todos os visitantes cadastrados.
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className="visitor-section card" aria-labelledby="visitor-people-title">
+        <div className="visitor-section-heading">
+          <span className="visitor-section-icon" aria-hidden="true">
+            <AppIcon name="users" />
+          </span>
+          <div>
+            <h2 id="visitor-people-title">Pessoas</h2>
+            <p>Digite o nome completo de cada pessoa que está visitando.</p>
+          </div>
+        </div>
+
+        <div className="visitor-people-list">
+          {people.map((person, index) => {
+            const nameId = `visitor-name-${person.id}`;
+            const fieldError = nameErrors[person.id];
+
+            return (
+              <div key={person.id} className="visitor-person-row">
+                <div className="visitor-person-row-top">
+                  <span className="visitor-person-badge" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  <h3 id={`visitor-title-${person.id}`}>Visitante {index + 1}</h3>
+                  {people.length > 1 && (
+                    <button
+                      type="button"
+                      className="visitor-remove-icon"
+                      onClick={() => removePerson(person.id)}
+                      aria-label={`Remover visitante ${index + 1}`}
+                    >
+                      <AppIcon name="trash" />
+                    </button>
+                  )}
+                </div>
+
+                <div className={`visitor-field${fieldError ? ' has-error' : ''}`}>
+                  <label htmlFor={nameId}>Nome completo *</label>
+                  <input
+                    id={nameId}
+                    value={person.name}
+                    onChange={(e) => updatePerson(person.id, e.target.value)}
+                    placeholder="DIGITE O NOME COMPLETO"
+                    autoComplete="name"
+                    autoCapitalize="characters"
+                    className="visitor-input-uppercase"
+                    maxLength={120}
+                    aria-invalid={Boolean(fieldError)}
+                    aria-describedby={fieldError ? `${nameId}-error` : undefined}
+                  />
+                  {fieldError && (
+                    <p id={`${nameId}-error`} className="visitor-field-error" role="alert">
+                      {fieldError}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          className="visitor-add"
+          onClick={addPerson}
+          disabled={people.length >= MAX_VISITORS || loading}
+        >
+          <AppIcon name="plus" />
+          {people.length >= MAX_VISITORS
+            ? 'Limite de 10 pessoas atingido'
+            : 'Adicionar outra pessoa'}
+        </button>
+        <p className="visitor-add-hint">Para famílias ou grupos que chegaram juntos.</p>
+      </section>
+
+      <div className="visitor-submit-area">
+        <button type="submit" className="visitor-submit" disabled={loading}>
+          {!loading && <AppIcon name="check" />}
+          {loading ? 'Cadastrando...' : submitLabel}
+        </button>
+        <p className="visitor-submit-hint">
+          <AppIcon name="lock" />
+          Os dados poderão ser alterados depois.
+        </p>
+      </div>
     </form>
   );
 }

@@ -1,44 +1,144 @@
 .live-page {
-  width: min(480px, 100%);
-  padding: 2rem;
-}
-
-@media (max-width: 480px) {
-  .live-page {
-    padding: 1.25rem;
-  }
-
-  .live-header h1 {
-    font-size: 1.3rem;
-  }
-
-  .live-page .btn {
-    width: 100%;
-  }
+  width: min(560px, 100%);
+  margin: auto;
 }
 
 .live-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.25rem;
   text-align: center;
+}
+
+.live-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   margin-bottom: 1.5rem;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.live-brand .theme-toggle {
+  margin-left: 0.35rem;
+}
+
+.live-brand-cross {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .live-badge {
-  display: inline-block;
-  background: #fef2f2;
-  color: #dc2626;
-  padding: 0.3rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+  padding: 0.4rem 0.75rem;
   border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.live-badge > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
+}
+
+.live-badge-paused {
+  background: var(--warning-soft);
+  color: var(--accent);
+}
+
+.live-prayer-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 0.85rem;
+  border-radius: 18px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.live-prayer-icon .app-icon {
+  width: 36px;
+  height: 36px;
 }
 
 .live-header h1 {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
+  color: var(--text);
+  font-size: clamp(1.8rem, 6vw, 2.35rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
 }
 
 .live-header p {
+  max-width: 460px;
+  margin-top: 0.65rem;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 1rem;
+}
+
+.live-form-card {
+  padding: 1.5rem;
+  border-radius: 18px;
+  box-shadow: 0 12px 36px rgba(41, 37, 36, 0.08);
+}
+
+.live-unavailable-card {
+  padding: 1.75rem;
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0 12px 36px rgba(41, 37, 36, 0.08);
+}
+
+.live-unavailable-card h2 {
+  color: var(--text);
+  font-size: 1.25rem;
+}
+
+.live-unavailable-card p {
+  margin-top: 0.65rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.live-footer-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.live-footer-note .app-icon {
+  width: 15px;
+  height: 15px;
+}
+
+@media (max-width: 480px) {
+  .live-brand {
+    margin-bottom: 1rem;
+  }
+
+  .live-form-card {
+    padding: 1.1rem;
+  }
 }

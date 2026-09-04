@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { HymnsForm } from '../components/HymnsForm';
+import { AppIcon } from '../components/AppIcon';
 import { MonthCalendar } from '../components/MonthCalendar';
 import { ServiceForm } from '../components/ServiceForm';
-import type { Service } from '../types';
+import type { HolyricsSyncResponse, Service } from '../types';
+import { syncServiceToHolyricsBrowser } from '../utils/holyricsBrowserSync';
 import './ServicesPage.css';
 
 type Panel =
@@ -49,6 +52,9 @@ export function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [panel, setPanel] = useState<Panel>({ type: 'none' });
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [syncResult, setSyncResult] = useState<HolyricsSyncResponse | null>(null);
+  const [syncError, setSyncError] = useState('');
 
   const loadServices = useCallback(async () => {
     const { from, to } = monthRange(year, month);
@@ -119,15 +125,50 @@ export function ServicesPage() {
     loadServices();
   }
 
+  async function handleSyncHolyrics(service: Service) {
+    setSyncingId(service._id);
+    setSyncError('');
+    setSyncResult(null);
+
+    try {
+      try {
+        const result = await api.syncHolyrics(service._id);
+        setSyncResult(result);
+        return;
+      } catch (serverError) {
+        const settings = await api.getHolyricsSettings();
+        if (settings.mode === 'local' && settings.token) {
+          const result = await syncServiceToHolyricsBrowser(service, settings);
+          setSyncResult(result);
+          return;
+        }
+        throw serverError;
+      }
+    } catch (error) {
+      setSyncError(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao enviar ao Holyrics. Configure em Holyrics e tente de novo.'
+      );
+    } finally {
+      setSyncingId(null);
+    }
+  }
+
   return (
     <div className="services-page">
-      <div className="services-page-header">
-        <h1>Calendário de cultos</h1>
-        <p>
-          Crie o culto (título, data e horário). Se for recorrente, ele se repete no mesmo dia da
-          semana até o fim do ano. Depois adicione os louvores em cada ocorrência.
-        </p>
-      </div>
+      <section className="services-page-header">
+        <div>
+          <span className="services-eyebrow"><AppIcon name="calendar" /> Planejamento da igreja</span>
+          <h1>Calendário de cultos</h1>
+          <p>Selecione uma data para organizar o culto e os louvores daquele dia.</p>
+        </div>
+        <Link to="/configuracoes" className="services-holyrics-link">
+          <AppIcon name="music" />
+          <span><strong>Holyrics</strong><small>Configurar integração</small></span>
+          <AppIcon name="arrow" />
+        </Link>
+      </section>
 
       <div className="services-layout">
         <MonthCalendar
@@ -140,9 +181,10 @@ export function ServicesPage() {
         />
 
         <div className="services-day-panel">
-          <div className="card">
+          <div className="card services-day-card">
             <div className="day-panel-header">
               <div>
+                <span className="day-panel-label">Data selecionada</span>
                 <h2>Cultos do dia</h2>
                 <p className="day-panel-date">{formatDayLabel(selectedDate)}</p>
               </div>
@@ -151,7 +193,7 @@ export function ServicesPage() {
                 className="btn btn-primary"
                 onClick={() => setPanel({ type: 'create' })}
               >
-                + Novo culto
+                <AppIcon name="plus" /> Novo culto
               </button>
             </div>
 
@@ -165,8 +207,9 @@ export function ServicesPage() {
                   <li key={service._id} className="service-item">
                     <div className="service-item-main">
                       <div className="service-item-title-row">
+                        <span className="service-item-icon"><AppIcon name="calendar" /></span>
                         <strong>{service.title}</strong>
-                        {service.time && <span className="service-time">{service.time}</span>}
+                        {service.time && <span className="service-time"><AppIcon name="clock" />{service.time}</span>}
                       </div>
 
                       {service.hymns.length === 0 ? (
@@ -203,26 +246,82 @@ export function ServicesPage() {
                         className="btn btn-primary"
                         onClick={() => setPanel({ type: 'hymns', service })}
                       >
+                        <AppIcon name="music" />
                         {service.hymns.length === 0 ? 'Adicionar louvores' : 'Editar louvores'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        disabled={service.hymns.length === 0 || syncingId === service._id}
+                        onClick={() => handleSyncHolyrics(service)}
+                      >
+                        <AppIcon name="external" />
+                        {syncingId === service._id ? 'Enviando...' : 'Enviar ao Holyrics'}
                       </button>
                       <button
                         type="button"
                         className="btn btn-secondary"
                         onClick={() => setPanel({ type: 'edit', service })}
                       >
-                        Editar culto
+                        <AppIcon name="edit" /> Editar culto
                       </button>
                       <button
                         type="button"
                         className="btn btn-danger"
                         onClick={() => handleDelete(service._id)}
                       >
-                        Remover
+                        <AppIcon name="trash" /> Remover
                       </button>
                     </div>
                   </li>
                 ))}
               </ul>
+            )}
+
+            {syncError && (
+              <div className="sync-result sync-result-error" role="alert">
+                <div className="sync-result-header">
+                  <strong>Holyrics</strong>
+                  <button type="button" className="btn-text" onClick={() => setSyncError('')}>
+                    Fechar
+                  </button>
+                </div>
+                <p>{syncError}</p>
+                <p className="sync-result-hint">
+                  Confira IP, porta e token em{' '}
+                  <Link to="/configuracoes">Configurações Holyrics</Link>.
+                </p>
+              </div>
+            )}
+
+            {syncResult && (
+              <div className="sync-result" role="status">
+                <div className="sync-result-header">
+                  <strong>Holyrics — {syncResult.serviceTitle}</strong>
+                  <button type="button" className="btn-text" onClick={() => setSyncResult(null)}>
+                    Fechar
+                  </button>
+                </div>
+                <p>{syncResult.message}</p>
+                <ul className="sync-result-list">
+                  {syncResult.results.map((item, index) => (
+                    <li key={`${item.title}-${index}`} className={`sync-status-${item.status}`}>
+                      <span>
+                        {item.title}
+                        {item.artist ? ` · ${item.artist}` : ''}
+                      </span>
+                      <span className="sync-status-label">
+                        {item.status === 'added' &&
+                          (item.holyricsTitle
+                            ? `Enviada (${item.holyricsTitle})`
+                            : 'Enviada')}
+                        {item.status === 'not_found' && 'Não encontrada'}
+                        {item.status === 'error' && (item.message || 'Erro')}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
 

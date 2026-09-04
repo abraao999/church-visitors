@@ -9,7 +9,24 @@ export function todayLocalISO(): string {
 export function formatTodayLabel(): string {
   return new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
-    day: '2-digit',
+    day: 'numeric',
     month: 'long',
+  });
+}
+
+export function formatPanelWeekday(date = new Date()): string {
+  return date.toLocaleDateString('pt-BR', { weekday: 'long' }).toUpperCase();
+}
+
+export function formatPanelDayMonth(date = new Date()): string {
+  return date
+    .toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })
+    .toUpperCase();
+}
+
+export function formatClockTime(date = new Date()): string {
+  return date.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }

@@ -1,0 +1,377 @@
+.holyrics-settings-page {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.holyrics-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  padding: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: linear-gradient(115deg, var(--surface-muted) 0%, var(--surface) 78%);
+}
+
+.holyrics-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.55rem;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.holyrics-eyebrow .app-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.holyrics-hero h1 {
+  color: var(--text);
+  font-size: clamp(2rem, 4vw, 2.55rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.holyrics-hero p {
+  max-width: 650px;
+  margin-top: 0.55rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.holyrics-cultos-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 50px;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--primary);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.holyrics-cultos-link .app-icon {
+  width: 19px;
+  height: 19px;
+}
+
+.holyrics-settings-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.72fr) minmax(460px, 1.35fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.holyrics-guide,
+.holyrics-form {
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(41, 37, 36, 0.05);
+}
+
+.holyrics-guide h2 {
+  color: var(--text);
+  font-size: 1.2rem;
+}
+
+.holyrics-guide ol {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  margin-top: 1.25rem;
+  list-style: none;
+}
+
+.holyrics-guide li {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 0.75rem;
+}
+
+.holyrics-guide li > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.holyrics-guide strong,
+.holyrics-guide small {
+  display: block;
+}
+
+.holyrics-guide strong {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.holyrics-guide small {
+  margin-top: 0.18rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.holyrics-guide-note {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.4rem;
+  padding: 0.8rem;
+  border-radius: 10px;
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.holyrics-guide-note .app-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.holyrics-form {
+  max-width: none;
+  padding: 1.75rem;
+}
+
+.holyrics-form-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.holyrics-form-heading > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 13px;
+  background: var(--surface-muted);
+  color: var(--primary);
+}
+
+.holyrics-form-heading .app-icon {
+  width: 27px;
+  height: 27px;
+}
+
+.holyrics-form-heading h2 {
+  color: var(--text);
+  font-size: 1.25rem;
+}
+
+.holyrics-form-heading p {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.holyrics-feedback:empty {
+  display: none;
+}
+
+.holyrics-feedback .error-message,
+.holyrics-feedback .success-message {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid;
+  border-radius: 10px;
+}
+
+.holyrics-feedback .error-message {
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  background: var(--danger-soft);
+}
+
+.holyrics-feedback .success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-color: color-mix(in srgb, var(--success) 35%, transparent);
+  background: var(--success-soft);
+}
+
+.holyrics-feedback .app-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.holyrics-field {
+  margin-bottom: 1.15rem;
+}
+
+.holyrics-field > label {
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.holyrics-field input {
+  min-height: 52px;
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+}
+
+.holyrics-field input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.holyrics-field > small {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.holyrics-field > small .app-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.holyrics-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.65fr;
+  gap: 0.8rem;
+}
+
+.mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.mode-toggle button {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 68px;
+  padding: 0.7rem 0.8rem;
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text-muted);
+  text-align: left;
+}
+
+.mode-toggle button.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.06);
+}
+
+.mode-toggle .app-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.mode-toggle strong,
+.mode-toggle small {
+  display: block;
+}
+
+.mode-toggle strong {
+  color: inherit;
+  font-size: 0.86rem;
+}
+
+.mode-toggle small {
+  margin-top: 0.1rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.holyrics-settings-page .hint {
+  margin: -0.45rem 0 1.1rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.holyrics-settings-page .hint code {
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.holyrics-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.holyrics-actions .btn {
+  min-height: 50px;
+  border-radius: 10px;
+}
+
+.holyrics-actions .app-icon {
+  width: 19px;
+  height: 19px;
+}
+
+@media (max-width: 900px) {
+  .holyrics-settings-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .holyrics-hero {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.25rem;
+  }
+
+  .holyrics-cultos-link {
+    width: 100%;
+  }
+
+  .holyrics-form {
+    padding: 1.15rem;
+  }
+
+  .holyrics-row,
+  .mode-toggle {
+    grid-template-columns: 1fr;
+  }
+
+  .holyrics-actions {
+    flex-direction: column-reverse;
+  }
+
+  .holyrics-actions .btn {
+    width: 100%;
+  }
+}

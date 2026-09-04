@@ -1,0 +1,36 @@
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.theme-toggle:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.theme-toggle .app-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.theme-toggle-compact {
+  width: 42px;
+  min-height: 42px;
+  padding: 0;
+}
+
+.theme-toggle-compact span {
+  display: none;
+}

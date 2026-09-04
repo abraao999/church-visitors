@@ -1,0 +1,445 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { api } from '../api/client';
+import { AppIcon } from '../components/AppIcon';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { type PublicAccessMetadata } from '../types';
+import './PublicAccessPage.css';
+
+interface PersonDraft {
+  id: number;
+  name: string;
+}
+
+const MAX_VISITORS = 10;
+
+function cleanLine(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLocaleUpperCase('pt-BR');
+}
+
+function asUpperCase(value: string): string {
+  return value.toLocaleUpperCase('pt-BR');
+}
+
+function ChurchIllustration() {
+  return (
+    <svg className="public-church-illustration" viewBox="0 0 180 130" aria-hidden="true">
+      <path fill="#FFF2C7" d="M20 116h140v8H20z" />
+      <path fill="#FFD66B" d="m44 75 46-40 46 40v43H44z" />
+      <path fill="#FFF8E4" d="m52 78 38-33 38 33v40H52z" />
+      <path fill="#D8921E" d="M79 118V92c0-7 5-12 11-12s11 5 11 12v26z" />
+      <path fill="none" stroke="#D8921E" strokeLinecap="round" strokeWidth="6" d="M90 36V12M79 22h22" />
+      <circle cx="35" cy="112" r="13" fill="#A6B938" />
+      <circle cx="146" cy="113" r="12" fill="#A6B938" />
+    </svg>
+  );
+}
+
+function PublicBrand({ churchName }: { churchName?: string }) {
+  return (
+    <header className="public-access-brand">
+      <span className="public-access-cross">✝</span>
+      <div>
+        <strong>{churchName || 'Church Visitors'}</strong>
+        {churchName && <span>Church Visitors</span>}
+      </div>
+      <ThemeToggle compact />
+    </header>
+  );
+}
+
+function PublicLoading() {
+  return (
+    <main className="public-access-page public-access-centered">
+      <PublicBrand />
+      <div className="public-state-card card" role="status">
+        <span className="public-loading-spinner" aria-hidden="true" />
+        <h1>Verificando acesso</h1>
+        <p>Aguarde um instante.</p>
+      </div>
+    </main>
+  );
+}
+
+function PublicInvalid({ message, retry }: { message: string; retry: () => void }) {
+  return (
+    <main className="public-access-page public-access-centered">
+      <PublicBrand />
+      <div className="public-state-card card" role="alert">
+        <span className="public-state-icon invalid"><AppIcon name="lock" /></span>
+        <h1>Este acesso não é mais válido</h1>
+        <p>{message}</p>
+        <p className="public-state-help">Solicite um novo QR Code à sua igreja.</p>
+        <button type="button" className="public-secondary-button" onClick={retry}>
+          Tentar novamente
+        </button>
+      </div>
+    </main>
+  );
+}
+
+function PublicSuccess({
+  type,
+  churchName,
+  onAgain,
+}: {
+  type: PublicAccessMetadata['type'];
+  churchName: string;
+  onAgain: () => void;
+}) {
+  const visitors = type === 'visitors:create';
+  return (
+    <main className="public-access-page public-access-centered">
+      <PublicBrand churchName={churchName} />
+      <div className="public-state-card public-success-card card" role="status">
+        <span className="public-state-icon success"><AppIcon name="check" /></span>
+        <span className="public-success-label">Envio concluído</span>
+        <h1>{visitors ? 'Visitantes registrados' : 'Pedido enviado'}</h1>
+        <p>
+          {visitors
+            ? <>As informações foram enviadas com sucesso para <strong>{churchName}</strong>.</>
+            : <>Seu pedido foi recebido pela <strong>{churchName}</strong>.</>}
+        </p>
+        <div className="public-privacy-box">
+          <AppIcon name="lock" />
+          <span>
+            {visitors
+              ? 'Por segurança, os registros enviados não são exibidos neste acesso.'
+              : 'Por segurança, os pedidos enviados não são exibidos neste acesso.'}
+          </span>
+        </div>
+        <button type="button" className="public-primary-button" onClick={onAgain}>
+          <AppIcon name={visitors ? 'users' : 'prayer'} />
+          {visitors ? 'Registrar outras pessoas' : 'Enviar outro pedido'}
+        </button>
+      </div>
+    </main>
+  );
+}
+
+function PublicVisitorsForm({
+  metadata,
+  token,
+  onSuccess,
+}: {
+  metadata: PublicAccessMetadata;
+  token: string;
+  onSuccess: () => void;
+}) {
+  const nextId = useRef(2);
+  const [city, setCity] = useState('');
+  const [people, setPeople] = useState<PersonDraft[]>([{ id: 1, name: '' }]);
+  const [cityError, setCityError] = useState('');
+  const [nameErrors, setNameErrors] = useState<Record<number, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  function updatePerson(id: number, name: string) {
+    setPeople((current) =>
+      current.map((person) => (person.id === id ? { ...person, name: asUpperCase(name) } : person))
+    );
+    setNameErrors((prev) => {
+      if (!prev[id]) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }
+
+  function addPerson() {
+    if (people.length >= MAX_VISITORS) return;
+    setPeople((current) => [...current, { id: nextId.current++, name: '' }]);
+  }
+
+  function removePerson(id: number) {
+    setPeople((current) => (current.length > 1 ? current.filter((person) => person.id !== id) : current));
+    setNameErrors((prev) => {
+      if (!prev[id]) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }
+
+  function validate(): boolean {
+    const nextCityError = cleanLine(city) ? '' : 'Informe a cidade.';
+    const nextNameErrors: Record<number, string> = {};
+    for (const person of people) {
+      if (!cleanLine(person.name)) {
+        nextNameErrors[person.id] = 'Informe o nome do visitante.';
+      }
+    }
+    setCityError(nextCityError);
+    setNameErrors(nextNameErrors);
+    return !nextCityError && Object.keys(nextNameErrors).length === 0;
+  }
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (submitting) return;
+    setError('');
+
+    if (!validate()) {
+      setError('Confira os campos destacados antes de cadastrar.');
+      return;
+    }
+
+    setSubmitting(true);
+    const sharedCity = cleanLine(city);
+    try {
+      await api.submitPublicVisitors(
+        token,
+        people.map((person) => ({
+          name: cleanLine(person.name),
+          city: sharedCity,
+          relationship: 'outro',
+        }))
+      );
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível enviar as informações.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const submitLabel =
+    people.length === 1
+      ? 'Cadastrar visitante'
+      : `Cadastrar ${people.length} visitantes`;
+
+  return (
+    <main className="public-access-page">
+      <PublicBrand churchName={metadata.churchName} />
+      <section className="public-access-hero visitors">
+        <div>
+          <span className="public-access-badge"><AppIcon name="users" /> Acesso da equipe da portaria</span>
+          <h1>Registrar visitantes</h1>
+          <p>Preencha os dados das pessoas que estão nos visitando.</p>
+        </div>
+        <ChurchIllustration />
+      </section>
+
+      <div className="public-access-permission">
+        <AppIcon name="lock" />
+        <p>Você pode cadastrar visitantes, mas não pode visualizar os registros.</p>
+      </div>
+
+      <form className="public-access-form" onSubmit={submit} noValidate>
+        <div className="public-form-feedback" aria-live="polite">
+          {error && <p role="alert">{error}</p>}
+        </div>
+
+        <section className="public-person-card card">
+          <div className="public-section-heading">
+            <AppIcon name="pin" />
+            <h2>Informações da visita</h2>
+          </div>
+          <div className={`public-field${cityError ? ' has-error' : ''}`}>
+            <label htmlFor="public-visit-city">Cidade da visita *</label>
+            <input
+              id="public-visit-city"
+              value={city}
+              onChange={(event) => {
+                setCity(asUpperCase(event.target.value));
+                if (cityError) setCityError('');
+              }}
+              placeholder="Ex.: UMUARAMA"
+              maxLength={100}
+              autoComplete="address-level2"
+              autoCapitalize="characters"
+              className="public-input-uppercase"
+              aria-invalid={Boolean(cityError)}
+            />
+            {cityError ? (
+              <p className="public-field-error" role="alert">{cityError}</p>
+            ) : (
+              <p className="public-field-hint">Esta cidade será aplicada a todos os visitantes cadastrados.</p>
+            )}
+          </div>
+        </section>
+
+        <section className="public-person-card card">
+          <div className="public-section-heading">
+            <AppIcon name="users" />
+            <div>
+              <h2>Pessoas</h2>
+              <p>Digite o nome completo de cada pessoa que está visitando.</p>
+            </div>
+          </div>
+
+          {people.map((person, index) => {
+            const fieldError = nameErrors[person.id];
+            return (
+              <div className="public-person-row" key={person.id}>
+                <div className="public-person-row-top">
+                  <span className="public-person-badge">{index + 1}</span>
+                  <strong>Visitante {index + 1}</strong>
+                  {people.length > 1 && (
+                    <button
+                      type="button"
+                      className="public-remove-icon"
+                      onClick={() => removePerson(person.id)}
+                      aria-label={`Remover visitante ${index + 1}`}
+                    >
+                      <AppIcon name="trash" />
+                    </button>
+                  )}
+                </div>
+                <div className={`public-field${fieldError ? ' has-error' : ''}`}>
+                  <label htmlFor={`visitor-name-${person.id}`}>Nome completo *</label>
+                  <input
+                    id={`visitor-name-${person.id}`}
+                    value={person.name}
+                    onChange={(event) => updatePerson(person.id, event.target.value)}
+                    placeholder="DIGITE O NOME COMPLETO"
+                    maxLength={120}
+                    autoComplete="name"
+                    autoCapitalize="characters"
+                    className="public-input-uppercase"
+                    aria-invalid={Boolean(fieldError)}
+                  />
+                  {fieldError && <p className="public-field-error" role="alert">{fieldError}</p>}
+                </div>
+              </div>
+            );
+          })}
+
+          <button
+            type="button"
+            className="public-add-button dashed"
+            onClick={addPerson}
+            disabled={people.length >= MAX_VISITORS || submitting}
+          >
+            <AppIcon name="plus" />
+            {people.length >= MAX_VISITORS ? 'Limite de 10 pessoas atingido' : 'Adicionar outra pessoa'}
+          </button>
+          <p className="public-field-hint centered">Para famílias ou grupos que chegaram juntos.</p>
+        </section>
+
+        <button type="submit" className="public-primary-button" disabled={submitting}>
+          {!submitting && <AppIcon name="check" />}
+          {submitting ? 'Cadastrando...' : submitLabel}
+        </button>
+        <p className="public-submit-note"><AppIcon name="lock" /> Os dados poderão ser alterados depois.</p>
+      </form>
+    </main>
+  );
+}
+
+function PublicPrayerForm({
+  metadata,
+  token,
+  onSuccess,
+}: {
+  metadata: PublicAccessMetadata;
+  token: string;
+  onSuccess: () => void;
+}) {
+  const [anonymous, setAnonymous] = useState(false);
+  const [name, setName] = useState('');
+  const [request, setRequest] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      await api.submitPublicPrayer(token, {
+        name: anonymous ? '' : name,
+        request,
+        isAnonymous: anonymous,
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível enviar o pedido.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <main className="public-access-page">
+      <PublicBrand churchName={metadata.churchName} />
+      <section className="public-access-hero prayer">
+        <span className="public-prayer-icon"><AppIcon name="prayer" /></span>
+        <span className="public-access-badge"><AppIcon name="check" /> Canal oficial de oração</span>
+        <h1>Pedido de oração</h1>
+        <p>Compartilhe seu pedido com a equipe da igreja.</p>
+      </section>
+
+      <div className="public-access-permission">
+        <AppIcon name="lock" />
+        <p>Seu pedido ficará visível somente para o responsável da igreja.</p>
+      </div>
+
+      <form className="public-prayer-card card" onSubmit={submit}>
+        <div className="public-form-feedback" aria-live="polite">
+          {error && <p role="alert">{error}</p>}
+        </div>
+        <label className="public-anonymous-control">
+          <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} />
+          <span className="public-switch" aria-hidden="true" />
+          <span><strong>Manter meu nome em sigilo</strong><small>Seu pedido aparecerá como “Anônimo”.</small></span>
+        </label>
+
+        {!anonymous && (
+          <div className="public-field">
+            <label htmlFor="public-prayer-name">Nome</label>
+            <input id="public-prayer-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Digite seu nome" maxLength={120} autoComplete="name" required />
+          </div>
+        )}
+        <div className="public-field">
+          <div className="public-field-heading">
+            <label htmlFor="public-prayer-request">Pedido de oração</label>
+            <span>{request.length}/2000</span>
+          </div>
+          <textarea id="public-prayer-request" value={request} onChange={(event) => setRequest(event.target.value)} placeholder="Escreva aqui seu pedido de oração" maxLength={2000} rows={6} required />
+        </div>
+        <button type="submit" className="public-primary-button" disabled={submitting}>
+          {!submitting && <AppIcon name="prayer" />}
+          {submitting ? 'Enviando...' : 'Enviar pedido'}
+        </button>
+      </form>
+      <p className="public-submit-note"><AppIcon name="lock" /> Ambiente seguro da sua igreja</p>
+    </main>
+  );
+}
+
+export function PublicAccessPage() {
+  const { token = '' } = useParams();
+  const [metadata, setMetadata] = useState<PublicAccessMetadata | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      setMetadata(await api.getPublicAccess(token));
+    } catch (err) {
+      setMetadata(null);
+      setError(err instanceof Error ? err.message : 'Não foi possível validar este acesso.');
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading) return <PublicLoading />;
+  if (!metadata) return <PublicInvalid message={error} retry={load} />;
+  if (success) {
+    return <PublicSuccess type={metadata.type} churchName={metadata.churchName} onAgain={() => setSuccess(false)} />;
+  }
+  if (metadata.type === 'visitors:create') {
+    return <PublicVisitorsForm metadata={metadata} token={token} onSuccess={() => setSuccess(true)} />;
+  }
+  return <PublicPrayerForm metadata={metadata} token={token} onSuccess={() => setSuccess(true)} />;
+}

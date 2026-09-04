@@ -38,18 +38,30 @@ export function PrayersPanelPage() {
         <ul className="display-list">
           {prayers.map((item) => (
             <li key={item._id} className="display-item">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                <h2 className="display-item-title" style={{ marginBottom: 0 }}>
+              <div className="display-item-heading-row">
+                <h2 className="display-item-title">
                   {item.isAnonymous ? 'Anônimo' : item.name}
                 </h2>
                 <span className={`badge badge-${item.source}`}>
-                  {item.source === 'live' ? 'Live' : 'Portaria'}
+                  {item.source === 'guest_access'
+                    ? 'Acesso de oração'
+                    : item.source === 'owner'
+                      ? 'Responsável'
+                      : item.source === 'live'
+                        ? 'Live (legado)'
+                        : 'Portaria (legado)'}
                 </span>
               </div>
               <p className="display-item-body">{item.request}</p>
-              {item.createdBy?.name && (
-                <p className="display-item-author">Registrado por {item.createdBy.name}</p>
-              )}
+              <p className="display-item-author">
+                {item.source === 'guest_access'
+                  ? `Enviado pelo acesso ${item.guestAccess?.name ?? 'de oração'}`
+                  : item.createdBy?.name
+                    ? `Registrado por ${item.createdBy.name}`
+                    : item.source === 'live'
+                      ? 'Enviado pelo link público antigo'
+                      : 'Registro anterior da portaria'}
+              </p>
             </li>
           ))}
         </ul>

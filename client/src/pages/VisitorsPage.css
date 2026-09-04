@@ -1,0 +1,194 @@
+.visitors-page {
+  width: 100%;
+  max-width: 960px;
+}
+
+.visitors-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 185px;
+  margin-bottom: 1.25rem;
+  padding: 1.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--accent-soft);
+}
+
+.visitors-hero-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 60%;
+}
+
+.visitors-hero h1 {
+  max-width: 350px;
+  color: var(--text);
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.visitors-hero p {
+  margin-top: 0.75rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.church-illustration {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.65rem;
+  width: 42%;
+  max-width: 190px;
+}
+
+.church-heart {
+  fill: var(--accent-soft);
+  opacity: 0.75;
+}
+
+.church-cross,
+.church-roof,
+.church-ground {
+  fill: none;
+  stroke: #eeb742;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.church-building {
+  fill: #ffedb5;
+  stroke: #eeb742;
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.church-door {
+  fill: #d79322;
+}
+
+.church-window {
+  fill: #f1bd4e;
+}
+
+.visitors-form-wrap {
+  width: 100%;
+  max-width: 720px;
+}
+
+.private-records-section {
+  width: 100%;
+  margin-top: 2rem;
+}
+
+.private-records-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.private-records-heading h2 {
+  color: var(--text);
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.private-records-heading p {
+  margin-top: 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.private-records-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.45rem;
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.private-records-eyebrow .app-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.private-date-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 190px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.private-date-filter input {
+  min-height: 48px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  color-scheme: inherit;
+}
+
+@media (max-width: 768px) {
+  .visitors-page {
+    max-width: none;
+  }
+
+  .visitors-form-wrap {
+    max-width: none;
+  }
+
+  .visitors-hero {
+    min-height: 160px;
+    padding: 1.25rem;
+  }
+
+  .visitors-hero h1 {
+    font-size: clamp(1.8rem, 8vw, 2.35rem);
+  }
+}
+
+@media (max-width: 560px) {
+  .private-records-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .private-date-filter {
+    width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .visitors-hero {
+    min-height: 148px;
+    padding: 1rem;
+  }
+
+  .visitors-hero-copy {
+    max-width: 64%;
+  }
+
+  .visitors-hero h1 {
+    font-size: 1.75rem;
+  }
+
+  .church-illustration {
+    right: 0;
+    width: 43%;
+  }
+}

@@ -1,14 +1,15 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
-export type AuthProvider = 'local' | 'google';
+export type UserRole = 'owner';
 
 export interface IUser extends Document {
   name: string;
   email: string;
   username?: string;
   passwordHash?: string;
-  googleId?: string;
-  provider: AuthProvider;
+  /** Transitório: será obrigatório depois da migração segura dos dados existentes. */
+  churchId?: Types.ObjectId;
+  role: UserRole;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,8 +20,8 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, trim: true, lowercase: true, unique: true },
     username: { type: String, trim: true, lowercase: true, sparse: true, unique: true },
     passwordHash: { type: String },
-    googleId: { type: String, sparse: true, unique: true },
-    provider: { type: String, enum: ['local', 'google'], required: true },
+    churchId: { type: Schema.Types.ObjectId, ref: 'Church', index: true },
+    role: { type: String, enum: ['owner'], default: 'owner' },
   },
   { timestamps: true }
 );

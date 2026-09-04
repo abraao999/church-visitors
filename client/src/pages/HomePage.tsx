@@ -1,8 +1,45 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { AppIcon, type AppIconName } from '../components/AppIcon';
+import { GuestAccessOverview } from '../components/GuestAccessOverview';
+import { formatTodayLabel } from '../utils/date';
 import type { PrayerRequest, Visitor } from '../types';
 import './HomePage.css';
+
+const QUICK_ACTIONS: Array<{
+  to: string;
+  icon: AppIconName;
+  title: string;
+  description: string;
+  primary?: boolean;
+}> = [
+  {
+    to: '/visitantes',
+    icon: 'users',
+    title: 'Registrar visitantes',
+    description: 'Cadastre quem chegou hoje',
+    primary: true,
+  },
+  {
+    to: '/oracao',
+    icon: 'prayer',
+    title: 'Pedido de oração',
+    description: 'Registre um novo pedido',
+  },
+  {
+    to: '/cultos',
+    icon: 'calendar',
+    title: 'Calendário de cultos',
+    description: 'Organize cultos e louvores',
+  },
+  {
+    to: '/paineis',
+    icon: 'panels',
+    title: 'Abrir painéis',
+    description: 'Visualize as informações da igreja',
+  },
+];
 
 export function HomePage() {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
@@ -15,7 +52,7 @@ export function HomePage() {
       setVisitors(v);
       setPrayers(p);
     } catch {
-      // silently fail on dashboard
+      // Mantém o dashboard disponível mesmo se os indicadores falharem.
     } finally {
       setLoading(false);
     }
@@ -27,64 +64,86 @@ export function HomePage() {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const liveLink = `${window.location.origin}/live/oracao`;
-
-  function copyLiveLink() {
-    navigator.clipboard.writeText(liveLink);
-  }
+  const todayLabel = formatTodayLabel();
+  const formattedDate = todayLabel.charAt(0).toUpperCase() + todayLabel.slice(1);
 
   return (
     <div className="home-page">
-      <section className="hero card">
-        <h1>Painel da Portaria</h1>
-        <p>Bem-vindo! Gerencie visitantes, pedidos de oração e o calendário de cultos.</p>
+      <header className="dashboard-heading">
+        <div>
+          <h1>Painel da Portaria</h1>
+          <p>Acompanhe e organize as atividades de hoje.</p>
+        </div>
+        <div className="dashboard-date">
+          <AppIcon name="calendar" />
+          <span>{formattedDate}</span>
+        </div>
+      </header>
+
+      <section className="dashboard-stats" aria-label="Resumo de hoje">
+        <article className="dashboard-stat-card card">
+          <span className="dashboard-stat-icon dashboard-stat-icon-blue"><AppIcon name="users" /></span>
+          <div>
+            <strong className="dashboard-stat-number">{loading ? '—' : visitors.length}</strong>
+            <p>Visitantes hoje</p>
+            <Link to="/visitantes">Ver visitantes <AppIcon name="arrow" /></Link>
+          </div>
+        </article>
+
+        <article className="dashboard-stat-card card">
+          <span className="dashboard-stat-icon dashboard-stat-icon-yellow"><AppIcon name="prayer" /></span>
+          <div>
+            <strong className="dashboard-stat-number">{loading ? '—' : prayers.length}</strong>
+            <p>Pedidos de oração</p>
+            <Link to="/oracao">Ver pedidos <AppIcon name="arrow" /></Link>
+          </div>
+        </article>
       </section>
 
-      <section className="stats-grid">
-        <div className="stat-card card">
-          <span className="stat-number">{loading ? '—' : visitors.length}</span>
-          <span className="stat-label">Visitantes</span>
-          <Link to="/visitantes" className="stat-link">Gerenciar →</Link>
-        </div>
-        <div className="stat-card card">
-          <span className="stat-number">{loading ? '—' : prayers.length}</span>
-          <span className="stat-label">Pedidos de oração</span>
-          <Link to="/oracao" className="stat-link">Gerenciar →</Link>
-        </div>
-      </section>
+      <div className="dashboard-main-grid">
+        <section className="quick-actions-panel card">
+          <h2>Ações rápidas</h2>
+          <div className="quick-actions-grid">
+            {QUICK_ACTIONS.map((action) => (
+              <Link
+                key={action.to}
+                to={action.to}
+                className={`quick-action${action.primary ? ' quick-action-primary' : ''}`}
+              >
+                <AppIcon name={action.icon} className="quick-action-icon" />
+                <span className="quick-action-copy">
+                  <strong>{action.title}</strong>
+                  <span>{action.description}</span>
+                </span>
+                <AppIcon name="arrow" className="quick-action-arrow" />
+              </Link>
+            ))}
+          </div>
+        </section>
 
-      <section className="live-link-card card">
-        <h2>Link da Live</h2>
-        <p>Compartilhe este link para que quem assiste online possa enviar pedidos de oração:</p>
-        <div className="live-link-box">
-          <code>{liveLink}</code>
-          <button type="button" className="btn btn-secondary" onClick={copyLiveLink}>
-            Copiar link
-          </button>
-        </div>
-      </section>
+        <aside className="online-link-card card">
+          <h2>Acessos para convidados</h2>
+          <p>Crie, renove e desative links seguros para sua equipe.</p>
+          <Link to="/acessos" className="online-access-link">
+            <AppIcon name="settings" />
+            Gerenciar acessos
+          </Link>
+          <p className="online-link-status">
+            <AppIcon name="check" />
+            Isolados por igreja e permissão
+          </p>
+        </aside>
+      </div>
 
-      <section className="quick-actions">
-        <Link to="/visitantes" className="action-card card">
-          <span className="action-icon">👨‍👩‍👧‍👦</span>
-          <h3>Registrar visitantes</h3>
-          <p>Cadastre os visitantes que chegaram hoje.</p>
-        </Link>
-        <Link to="/oracao" className="action-card card">
-          <span className="action-icon">🙏</span>
-          <h3>Pedidos de oração</h3>
-          <p>Registre e visualize pedidos do culto.</p>
-        </Link>
-        <Link to="/cultos" className="action-card card">
-          <span className="action-icon">📅</span>
-          <h3>Calendário de cultos</h3>
-          <p>Organize cultos e os hinos que serão louvados.</p>
-        </Link>
-        <Link to="/paineis" className="action-card card">
-          <span className="action-icon">🖥️</span>
-          <h3>Painéis</h3>
-          <p>Visualize louvores, visitantes e pedidos de oração.</p>
-        </Link>
+      <GuestAccessOverview />
+
+      <section className="holyrics-dashboard-card card">
+        <span className="holyrics-dashboard-icon"><AppIcon name="music" /></span>
+        <div>
+          <h2>Holyric</h2>
+          <p>Conecte o Holyric para enviar letras aos painéis</p>
+        </div>
+        <Link to="/configuracoes">Configurar</Link>
       </section>
     </div>
   );

@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { GoogleSignInButton } from '../components/GoogleSignInButton';
+import { AppIcon } from '../components/AppIcon';
+import { ThemeToggle } from '../components/ThemeToggle';
 import './AuthPages.css';
 
 type Mode = 'login' | 'register';
 
 export function LoginPage() {
-  const { user, loading, login, register, loginWithGoogle } = useAuth();
+  const { user, loading, login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from || '/';
 
   const [mode, setMode] = useState<Mode>('login');
+  const [churchName, setChurchName] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -34,7 +36,7 @@ export function LoginPage() {
       if (mode === 'login') {
         await login(loginValue, password);
       } else {
-        await register({ name, email, username, password });
+        await register({ churchName, name, email, username, password });
       }
       navigate(from, { replace: true });
     } catch (err) {
@@ -44,134 +46,165 @@ export function LoginPage() {
     }
   }
 
-  async function handleGoogle(credential: string) {
-    setError('');
-    setSubmitting(true);
-    try {
-      await loginWithGoogle(credential);
-      navigate(from, { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro no login com Google');
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   return (
     <div className="auth-page">
-      <div className="auth-card card">
-        <div className="auth-brand">
-          <span className="logo-icon">✝</span>
-          <h1>Church Visitors</h1>
-          <p>Entre para registrar visitantes, orações e louvores.</p>
-        </div>
+      <div className="auth-shell">
+        <aside className="auth-welcome">
+          <div className="auth-welcome-brand">
+            <span className="auth-logo-icon">✝</span>
+            <span>Church Visitors</span>
+            <ThemeToggle compact />
+          </div>
+          <div className="auth-welcome-copy">
+            <span className="auth-eyebrow">Organização com propósito</span>
+            <h1>Mais cuidado para receber e servir pessoas.</h1>
+            <p>Visitantes, pedidos de oração e cultos organizados em um só lugar.</p>
+          </div>
+          <ul className="auth-feature-list">
+            <li><AppIcon name="users" /><span><strong>Receba visitantes</strong><small>Cadastre com rapidez na portaria</small></span></li>
+            <li><AppIcon name="prayer" /><span><strong>Acolha pedidos</strong><small>Centralize os pedidos de oração</small></span></li>
+            <li><AppIcon name="calendar" /><span><strong>Organize os cultos</strong><small>Planeje datas e louvores</small></span></li>
+          </ul>
+        </aside>
 
-        <div className="auth-tabs">
-          <button
-            type="button"
-            className={mode === 'login' ? 'active' : ''}
-            onClick={() => {
-              setMode('login');
-              setError('');
-            }}
-          >
-            Entrar
-          </button>
-          <button
-            type="button"
-            className={mode === 'register' ? 'active' : ''}
-            onClick={() => {
-              setMode('register');
-              setError('');
-            }}
-          >
-            Criar conta
-          </button>
-        </div>
+        <section className="auth-card card">
+          <div className="auth-mobile-brand">
+            <span className="auth-logo-icon">✝</span>
+            <strong>Church Visitors</strong>
+            <ThemeToggle compact />
+          </div>
 
-        {error && <p className="error-message">{error}</p>}
+          <div className="auth-card-heading">
+            <span className="auth-card-eyebrow">Área da equipe</span>
+            <h2>{mode === 'login' ? 'Que bom ter você de volta' : 'Crie sua conta'}</h2>
+            <p>
+              {mode === 'login'
+                ? 'Entre com seus dados para continuar.'
+                : 'Cadastre sua igreja e o primeiro responsável pelo sistema.'}
+            </p>
+          </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          {mode === 'register' && (
-            <>
-              <div className="form-group">
-                <label htmlFor="name">Nome</label>
+          <div className="auth-tabs" role="tablist" aria-label="Acesso à conta">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'login'}
+              className={mode === 'login' ? 'active' : ''}
+              onClick={() => {
+                setMode('login');
+                setError('');
+              }}
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'register'}
+              className={mode === 'register' ? 'active' : ''}
+              onClick={() => {
+                setMode('register');
+                setError('');
+              }}
+            >
+              Criar conta
+            </button>
+          </div>
+
+          {error && <p className="error-message auth-error" role="alert">{error}</p>}
+
+          <form onSubmit={handleSubmit} className="auth-form">
+            {mode === 'register' && (
+              <>
+                <div className="form-group auth-field">
+                  <label htmlFor="churchName">Nome da igreja</label>
+                  <input
+                    id="churchName"
+                    value={churchName}
+                    onChange={(e) => setChurchName(e.target.value)}
+                    placeholder="Ex.: Igreja da Comunidade"
+                    required
+                    maxLength={120}
+                    autoComplete="organization"
+                  />
+                </div>
+                <div className="form-group auth-field">
+                  <label htmlFor="name">Nome do responsável</label>
+                  <input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Digite seu nome"
+                    required
+                    autoComplete="name"
+                  />
+                </div>
+                <div className="form-group auth-field">
+                  <label htmlFor="email">E-mail</label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="form-group auth-field">
+                  <label htmlFor="username">Nome de usuário</label>
+                  <input
+                    id="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Escolha um usuário"
+                    required
+                    autoComplete="username"
+                  />
+                </div>
+              </>
+            )}
+
+            {mode === 'login' && (
+              <div className="form-group auth-field">
+                <label htmlFor="login">Usuário ou e-mail</label>
                 <input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Seu nome"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="email">E-mail</label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="username">Usuário</label>
-                <input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="usuario"
+                  id="login"
+                  value={loginValue}
+                  onChange={(e) => setLoginValue(e.target.value)}
+                  placeholder="Digite seu usuário ou e-mail"
                   required
                   autoComplete="username"
                 />
               </div>
-            </>
-          )}
+            )}
 
-          {mode === 'login' && (
-            <div className="form-group">
-              <label htmlFor="login">Usuário ou e-mail</label>
+            <div className="form-group auth-field">
+              <label htmlFor="password">Senha</label>
               <input
-                id="login"
-                value={loginValue}
-                onChange={(e) => setLoginValue(e.target.value)}
-                placeholder="usuario ou email"
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Digite sua senha"
                 required
-                autoComplete="username"
+                minLength={6}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               />
+              {mode === 'register' && <small>Use pelo menos 6 caracteres.</small>}
             </div>
-          )}
 
-          <div className="form-group">
-            <label htmlFor="password">Senha</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              minLength={6}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            />
-          </div>
+            <button type="submit" className="btn btn-primary auth-submit" disabled={submitting}>
+              {submitting ? 'Aguarde...' : mode === 'login' ? 'Entrar no sistema' : 'Criar minha conta'}
+              {!submitting && <AppIcon name="arrow" />}
+            </button>
+          </form>
 
-          <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? 'Aguarde...' : mode === 'login' ? 'Entrar' : 'Criar conta'}
-          </button>
-        </form>
-
-        <div className="auth-divider">
-          <span>ou</span>
-        </div>
-
-        <GoogleSignInButton onCredential={handleGoogle} onError={setError} />
-
-        <p className="auth-live-note">
-          Pedidos de oração da live continuam públicos em{' '}
-          <a href="/live/oracao">/live/oracao</a>.
-        </p>
+          <p className="auth-live-note">
+            <AppIcon name="prayer" />
+            Para enviar um pedido, use o link seguro fornecido pela sua igreja.
+          </p>
+        </section>
       </div>
     </div>
   );

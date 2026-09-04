@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --bg: #f8f6f2;
   --surface: #ffffff;
   --surface-muted: #f1ede6;
@@ -6,14 +7,49 @@
   --text-muted: #78716c;
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
+  --primary-soft: #eff6ff;
   --accent: #b45309;
   --accent-soft: #fef3c7;
   --border: #e7e5e4;
   --danger: #dc2626;
+  --danger-soft: #fef2f2;
   --success: #16a34a;
+  --success-soft: #f0fdf4;
+  --warning: #b45309;
+  --warning-soft: #fff7d6;
+  --focus-ring: #bfdbfe;
+  --overlay: rgba(28, 25, 23, 0.4);
+  --on-primary: #ffffff;
+  --placeholder: #a8a29e;
   --shadow: 0 4px 24px rgba(28, 25, 23, 0.08);
   --radius: 12px;
   --radius-sm: 8px;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #12151c;
+  --surface: #1e2430;
+  --surface-muted: #252b38;
+  --text: #f3f4f6;
+  --text-muted: #b4bcc8;
+  --placeholder: #8b93a1;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-soft: #1a2740;
+  --accent: #f59e0b;
+  --accent-soft: #3d2e14;
+  --border: #2a3140;
+  --danger: #f87171;
+  --danger-soft: #3f1d22;
+  --success: #4ade80;
+  --success-soft: #163527;
+  --warning: #fbbf24;
+  --warning-soft: #3d2e14;
+  --focus-ring: #1d4ed8;
+  --overlay: rgba(2, 6, 23, 0.65);
+  --on-primary: #ffffff;
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
 }
 
 * {
@@ -36,6 +72,7 @@ body {
   min-height: 100dvh;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 a {
@@ -111,7 +148,7 @@ button {
 
 .btn-primary {
   background: var(--primary);
-  color: white;
+  color: var(--on-primary);
 }
 
 .btn-primary:hover {
@@ -127,13 +164,13 @@ button {
 .btn-danger {
   background: transparent;
   color: var(--danger);
-  border: 1px solid #fecaca;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
   padding: 0.4rem 0.75rem;
   font-size: 0.875rem;
 }
 
 .btn-danger:hover {
-  background: #fef2f2;
+  background: var(--danger-soft);
 }
 
 .form-group {
@@ -155,16 +192,25 @@ button {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
+  color: var(--text);
   /* Evita zoom automático no iOS */
   font-size: 16px;
   min-height: 44px;
   width: 100%;
 }
 
+.form-group input::placeholder,
+.form-group textarea::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
-  outline: 2px solid #bfdbfe;
+  outline: 2px solid var(--focus-ring);
   border-color: var(--primary);
 }
 
@@ -200,13 +246,23 @@ button {
 }
 
 .badge-live {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--primary-soft);
+  color: var(--primary);
 }
 
 .badge-porteiro {
   background: var(--accent-soft);
   color: var(--accent);
+}
+
+.badge-owner {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.badge-guest_access {
+  background: var(--primary-soft);
+  color: var(--primary);
 }
 
 .grid-2 {

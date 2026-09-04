@@ -1,0 +1,245 @@
+.prayer-form {
+  width: 100%;
+}
+
+.prayer-form.card {
+  padding: 1.75rem;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.prayer-form-heading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.prayer-form-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  border-radius: 14px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.prayer-form-icon .app-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.prayer-form-heading h2 {
+  color: var(--text);
+  font-size: 1.3rem;
+}
+
+.prayer-form-heading p {
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.prayer-feedback:empty {
+  display: none;
+}
+
+.prayer-feedback .error-message,
+.prayer-feedback .success-message {
+  padding: 0.85rem 1rem;
+  border: 1px solid;
+  border-radius: 11px;
+  font-weight: 600;
+}
+
+.prayer-feedback .error-message {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+.prayer-feedback .success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 35%, transparent);
+}
+
+.prayer-feedback .app-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.anonymous-option {
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface-muted);
+}
+
+.anonymous-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  cursor: pointer;
+}
+
+.anonymous-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.anonymous-switch-control {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  flex: 0 0 48px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 45%, var(--surface-muted));
+  transition: background 0.18s;
+}
+
+.anonymous-switch-control::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 4px rgba(28, 25, 23, 0.22);
+  transition: transform 0.18s;
+}
+
+.anonymous-switch input:checked + .anonymous-switch-control {
+  background: var(--primary);
+}
+
+.anonymous-switch input:checked + .anonymous-switch-control::after {
+  transform: translateX(20px);
+}
+
+.anonymous-switch input:focus-visible + .anonymous-switch-control {
+  outline: 3px solid color-mix(in srgb, var(--primary) 25%, transparent);
+  outline-offset: 2px;
+}
+
+.anonymous-switch strong,
+.anonymous-switch small {
+  display: block;
+}
+
+.anonymous-switch strong {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.anonymous-switch small {
+  margin-top: 0.15rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.prayer-field {
+  margin-bottom: 1.15rem;
+}
+
+.prayer-field > label,
+.prayer-field-label label {
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.prayer-field-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.prayer-field-label span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.prayer-field input,
+.prayer-field textarea {
+  min-height: 54px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.prayer-field input::placeholder,
+.prayer-field textarea::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+
+.prayer-field textarea {
+  min-height: 150px;
+}
+
+.prayer-field input:focus,
+.prayer-field textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.prayer-submit {
+  width: 100%;
+  min-height: 56px;
+  margin-top: 0.25rem;
+  border-radius: 12px;
+  font-size: 1rem;
+}
+
+.prayer-submit .app-icon {
+  width: 23px;
+  height: 23px;
+}
+
+.prayer-privacy-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+  color: var(--text-muted);
+  font-size: 0.83rem;
+}
+
+.prayer-privacy-note .app-icon {
+  width: 15px;
+  height: 15px;
+}
+
+@media (max-width: 600px) {
+  .prayer-form.card {
+    padding: 1.15rem;
+  }
+
+  .prayer-form-heading {
+    align-items: flex-start;
+  }
+
+  .prayer-form-icon {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+  }
+}

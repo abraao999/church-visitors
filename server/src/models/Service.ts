@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 import { actorSchema, type IActor } from './Actor.js';
 
 export interface IHymn {
@@ -9,6 +9,8 @@ export interface IHymn {
 }
 
 export interface IService extends Document {
+  /** Transitório: será obrigatório somente depois da migração controlada. */
+  churchId?: Types.ObjectId;
   title: string;
   date: Date;
   time?: string;
@@ -30,6 +32,7 @@ const hymnSchema = new Schema<IHymn>(
 
 const serviceSchema = new Schema<IService>(
   {
+    churchId: { type: Schema.Types.ObjectId, ref: 'Church' },
     title: { type: String, required: true, trim: true },
     date: { type: Date, required: true },
     time: { type: String, trim: true, default: '' },
@@ -42,6 +45,6 @@ const serviceSchema = new Schema<IService>(
   { timestamps: true }
 );
 
-serviceSchema.index({ date: 1 });
+serviceSchema.index({ churchId: 1, date: 1 });
 
 export const Service = mongoose.model<IService>('Service', serviceSchema);

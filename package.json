@@ -9,15 +9,17 @@
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "build": "npm run build --prefix server && npm run build --prefix client",
+    "test": "npm test --prefix server",
     "build:vercel": "npm run build --prefix client",
-    "start": "npm run start --prefix server"
+    "start": "npm run start --prefix server",
+    "tenancy:check": "npm run tenancy:check --prefix server",
+    "tenancy:migrate": "npm run tenancy:migrate --prefix server --"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "google-auth-library": "^11.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.9.5"
   },

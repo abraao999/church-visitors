@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
+import { AppIcon } from './AppIcon';
 import type { Service } from '../types';
 import './ServiceForm.css';
 
@@ -119,14 +120,17 @@ export function ServiceForm({ selectedDate, editing, onSuccess, onCancel }: Prop
 
   return (
     <form onSubmit={handleSubmit} className="card service-form">
-      <h2>{isEditing ? 'Editar culto' : 'Novo culto'}</h2>
-      <p className="service-form-hint">
-        Informe título, data e horário. Depois você poderá adicionar os louvores.
-      </p>
+      <div className="service-form-heading">
+        <span><AppIcon name={isEditing ? 'edit' : 'plus'} /></span>
+        <div>
+          <h2>{isEditing ? 'Editar culto' : 'Novo culto'}</h2>
+          <p>Informe os dados básicos. Os louvores serão adicionados em seguida.</p>
+        </div>
+      </div>
 
       {error && <p className="error-message">{error}</p>}
 
-      <div className="form-group">
+      <div className="form-group service-field">
         <label htmlFor="serviceTitle">Título do culto</label>
         <input
           id="serviceTitle"
@@ -138,7 +142,7 @@ export function ServiceForm({ selectedDate, editing, onSuccess, onCancel }: Prop
       </div>
 
       <div className="service-form-row">
-        <div className="form-group">
+        <div className="form-group service-field">
           <label htmlFor="serviceDate">Data</label>
           <input
             id="serviceDate"
@@ -148,7 +152,7 @@ export function ServiceForm({ selectedDate, editing, onSuccess, onCancel }: Prop
             required
           />
         </div>
-        <div className="form-group">
+        <div className="form-group service-field">
           <label htmlFor="serviceTime">Horário{recurring ? '' : ' (opcional)'}</label>
           <input
             id="serviceTime"
@@ -168,7 +172,7 @@ export function ServiceForm({ selectedDate, editing, onSuccess, onCancel }: Prop
               checked={recurring}
               onChange={(e) => setRecurring(e.target.checked)}
             />
-            <span>Culto recorrente</span>
+            <span><strong>Culto recorrente</strong><small>Repete semanalmente até o fim do ano.</small></span>
           </label>
           {recurrencePreview ? (
             <p className="recurring-hint">
@@ -176,11 +180,7 @@ export function ServiceForm({ selectedDate, editing, onSuccess, onCancel }: Prop
               {time ? ` às ${time}` : ''} até o fim de {recurrencePreview.year}
               {' '}({recurrencePreview.count} cultos).
             </p>
-          ) : (
-            <p className="recurring-hint">
-              Repete no mesmo dia da semana e horário até o final do ano.
-            </p>
-          )}
+          ) : null}
         </div>
       )}
 
@@ -191,6 +191,7 @@ export function ServiceForm({ selectedDate, editing, onSuccess, onCancel }: Prop
           </button>
         )}
         <button type="submit" className="btn btn-primary" disabled={loading}>
+          {!loading && <AppIcon name="check" />}
           {loading
             ? 'Salvando...'
             : isEditing

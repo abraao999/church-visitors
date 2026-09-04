@@ -22,6 +22,7 @@ export const RELATIONSHIP_LABELS: Record<Relationship, string> = Object.fromEntr
 
 export interface Actor {
   userId: string;
+  churchId?: string;
   name: string;
 }
 
@@ -30,6 +31,34 @@ export interface AuthUser {
   name: string;
   email: string;
   username?: string;
+  churchName: string;
+}
+
+export type GuestAccessType = 'visitors:create' | 'prayers:create';
+
+export interface GuestOrigin {
+  guestAccessId: string;
+  name: string;
+  type: GuestAccessType;
+}
+
+export interface GuestAccess {
+  id: string;
+  name: string;
+  type: GuestAccessType;
+  active: boolean;
+  expiresAt?: string;
+  lastUsedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  token: string;
+}
+
+export interface PublicAccessMetadata {
+  valid: true;
+  churchName: string;
+  accessName: string;
+  type: GuestAccessType;
 }
 
 export interface Visitor {
@@ -38,7 +67,9 @@ export interface Visitor {
   relationship: Relationship;
   city: string;
   visitDate: string;
+  source?: 'owner' | 'guest_access';
   createdBy?: Actor;
+  guestAccess?: GuestOrigin;
   createdAt: string;
 }
 
@@ -46,24 +77,25 @@ export interface PrayerRequest {
   _id: string;
   name: string;
   request: string;
-  source: 'porteiro' | 'live';
+  source: 'owner' | 'guest_access' | 'porteiro' | 'live';
   isAnonymous: boolean;
   createdBy?: Actor;
+  guestAccess?: GuestOrigin;
   createdAt: string;
 }
 
 export interface CreateVisitorDto {
   visitors: Array<{
     name: string;
-    relationship: Relationship;
     city: string;
+    relationship?: Relationship;
   }>;
 }
 
 export interface CreatePrayerDto {
   name: string;
   request: string;
-  source: 'porteiro' | 'live';
+  source?: 'owner';
   isAnonymous: boolean;
 }
 
@@ -105,7 +137,43 @@ export interface UpdateServiceDto {
   hymns: Hymn[];
 }
 
-export function formatVisitor(visitor: Pick<Visitor, 'name' | 'relationship'>): string {
-  const label = RELATIONSHIP_LABELS[visitor.relationship] ?? visitor.relationship;
-  return `${visitor.name} (${label})`;
+export type HolyricsMode = 'local' | 'internet';
+
+export interface HolyricsSettings {
+  mode: HolyricsMode;
+  host: string;
+  port: number;
+  token: string;
+  apiKey: string;
+  hasToken: boolean;
+  hasApiKey: boolean;
+  updatedAt?: string;
+}
+
+export interface HolyricsSyncResultItem {
+  title: string;
+  artist: string;
+  status: 'added' | 'not_found' | 'error';
+  holyricsId?: string;
+  holyricsTitle?: string;
+  message?: string;
+}
+
+export interface HolyricsSyncResponse {
+  serviceId: string;
+  serviceTitle: string;
+  added: number;
+  notFound: number;
+  errors: number;
+  results: HolyricsSyncResultItem[];
+  message: string;
+}
+
+export function formatVisitor(visitor: Pick<Visitor, 'name' | 'relationship' | 'city'>): string {
+  const parts = [visitor.name];
+  if (visitor.city) parts.push(visitor.city);
+  if (visitor.relationship && visitor.relationship !== 'outro') {
+    parts.push(RELATIONSHIP_LABELS[visitor.relationship] ?? visitor.relationship);
+  }
+  return parts.join(' · ');
 }

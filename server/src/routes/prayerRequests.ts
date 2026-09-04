@@ -2,10 +2,10 @@ import { Router, Response } from 'express';
 import { PrayerRequest } from '../models/PrayerRequest.js';
 import {
   requireAuth,
-  requireAuthUnlessLive,
   toActor,
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
+import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 
 const router = Router();
 
@@ -27,7 +27,7 @@ function parseDateOnly(value: string): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+export async function listPrayerRequests(req: AuthenticatedRequest, res: Response) {
   try {
     const dateParam = req.query.date as string | undefined;
     const date = dateParam ? parseDateOnly(dateParam) : new Date();
@@ -36,51 +36,56 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =>
       return res.status(400).json({ error: 'Parâmetro date inválido. Use YYYY-MM-DD' });
     }
 
-    const requests = await PrayerRequest.find({
+    const requests = await PrayerRequest.find(withChurch(req.auth!.churchId, {
       createdAt: { $gte: startOfDay(date), $lte: endOfDay(date) },
-    }).sort({ createdAt: -1 });
+    })).sort({ createdAt: -1 });
 
     res.json(requests);
   } catch {
     res.status(500).json({ error: 'Erro ao buscar pedidos de oração' });
   }
-});
+}
 
-router.post('/', requireAuthUnlessLive, async (req: AuthenticatedRequest, res: Response) => {
+export async function createPrayerRequest(req: AuthenticatedRequest, res: Response) {
   try {
-    const { name, request, source, isAnonymous } = req.body;
+    const body = req.body && typeof req.body === 'object'
+      ? (req.body as Record<string, unknown>)
+      : {};
+    const request = typeof body.request === 'string' ? body.request.trim() : '';
+    const name = typeof body.name === 'string' ? body.name.trim().replace(/\s+/g, ' ') : '';
 
-    if (!request?.trim()) {
+    if (!request || request.length > 2000) {
       return res.status(400).json({ error: 'O pedido de oração é obrigatório' });
     }
 
-    const validSources = ['porteiro', 'live'];
-    if (!validSources.includes(source)) {
-      return res.status(400).json({ error: 'Origem inválida' });
-    }
-
-    const anonymous = Boolean(isAnonymous);
-    if (!anonymous && !name?.trim()) {
+    const anonymous = body.isAnonymous === true;
+    if (!anonymous && (!name || name.length > 120)) {
       return res.status(400).json({ error: 'Informe o nome ou marque como anônimo' });
     }
 
     const prayerRequest = await PrayerRequest.create({
-      name: anonymous ? '' : name.trim(),
-      request: request.trim(),
-      source,
+      churchId: req.auth!.churchId,
+      name: anonymous ? '' : name,
+      request,
+      source: 'owner',
       isAnonymous: anonymous,
-      ...(source !== 'live' && req.user ? { createdBy: toActor(req.user) } : {}),
+      createdBy: toActor(req.auth!),
     });
 
     res.status(201).json(prayerRequest);
   } catch {
     res.status(500).json({ error: 'Erro ao registrar pedido de oração' });
   }
-});
+}
 
-router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+export async function deletePrayerRequest(req: AuthenticatedRequest, res: Response) {
   try {
-    const deleted = await PrayerRequest.findByIdAndDelete(req.params.id);
+    const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
+    if (!filter) {
+      return res.status(404).json({ error: 'Pedido não encontrado' });
+    }
+
+    const deleted = await PrayerRequest.findOneAndDelete(filter);
     if (!deleted) {
       return res.status(404).json({ error: 'Pedido não encontrado' });
     }
@@ -88,6 +93,10 @@ router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Respon
   } catch {
     res.status(500).json({ error: 'Erro ao remover pedido' });
   }
-});
+}
+
+router.get('/', requireAuth, listPrayerRequests);
+router.post('/', requireAuth, createPrayerRequest);
+router.delete('/:id', requireAuth, deletePrayerRequest);
 
 export default router;

@@ -4,14 +4,15 @@ Sistema web para registro de visitantes (famílias) e pedidos de oração em igr
 
 ## Funcionalidades
 
-- **Autenticação**: conta com usuário/senha ou Google (Gmail)
+- **Autenticação**: conta com usuário/e-mail e senha
 - **Portaria**: cadastro de visitantes (nome, parentesco e cidade)
-- **Pedidos de oração**: registro pelo porteiro (autenticado) ou pelo link público da live
+- **Pedidos de oração**: registro privado pela equipe da igreja
 - **Calendário de cultos**: agenda mensal com louvores por culto
 - **Painéis**: visualização em tela cheia de louvores, visitantes e pedidos de oração
 - **Auditoria**: nome do usuário fica nos registros que ele adiciona
 
-> Apenas `/live/oracao` é público. O restante do app exige login.
+> As rotas de dados atuais exigem login e são isoladas pela igreja da sessão. O endereço legado
+> `/live/oracao` exibe apenas um aviso e não aceita mais envios globais.
 
 ## Requisitos
 
@@ -53,19 +54,75 @@ cp server/.env.example server/.env
 # Edite em server/.env:
 # - MONGODB_URI
 # - JWT_SECRET
-# - GOOGLE_CLIENT_ID (opcional, para login com Google)
-
-# Frontend (Google Sign-In)
-echo 'VITE_GOOGLE_CLIENT_ID=seu-client-id.apps.googleusercontent.com' > client/.env
+# - GUEST_ACCESS_SECRET (use uma chave diferente do JWT_SECRET)
 ```
 
-### 3. Google Sign-In (opcional)
+## Preparação para múltiplas igrejas
 
-1. Em [Google Cloud Console](https://console.cloud.google.com/apis/credentials), crie um **OAuth Client ID** do tipo **Aplicativo da Web**.
-2. Em **Origens JavaScript autorizadas**, adicione `http://localhost:5173`.
-3. Use o mesmo Client ID em `GOOGLE_CLIENT_ID` (server) e `VITE_GOOGLE_CLIENT_ID` (client).
+Os modelos estão sendo preparados para isolar todos os dados por igreja. Documentos antigos podem
+ainda não possuir `churchId`; por isso, o campo só deverá se tornar obrigatório depois de uma
+migração controlada.
 
-Sem Google configurado, ainda é possível criar conta com usuário e senha.
+Antes de qualquer migração:
+
+1. Faça um backup completo do banco.
+2. Execute apenas o diagnóstico e revise as quantidades apresentadas:
+
+```bash
+npm run tenancy:check
+```
+
+3. Simule a migração. A simulação não altera documentos:
+
+```bash
+npm run tenancy:migrate -- --dry-run --church-name "Igreja Esperança"
+```
+
+O script só permite associação automática quando existe exatamente um proprietário e, no máximo,
+uma igreja identificável. Em cenários ambíguos ele interrompe sem alterar dados. Para aplicar após
+backup e revisão manual, substitua `--dry-run` por `--apply`. Também é possível informar uma igreja
+existente com `--church-id`, mas o identificador nunca é usado como autorização em requisições do
+aplicativo.
+
+Não execute a migração automaticamente durante deploys. Em caso de rollback, restaure o backup
+feito imediatamente antes da aplicação e volte à versão anterior do código.
+
+## Núcleo dos acessos convidados
+
+O backend possui acessos restritos a uma única permissão: `visitors:create` ou `prayers:create`.
+O token público contém somente um `publicId` aleatório e uma assinatura HMAC; o identificador da
+igreja permanece no banco. A assinatura também considera a versão do acesso, permitindo invalidar
+um link antigo sem armazenar o token completo.
+
+Endpoints públicos disponíveis para a futura interface por QR Code:
+
+- `GET /api/public-access/:token`: retorna somente nome da igreja, nome e tipo do acesso.
+- `POST /api/public-access/:token/visitors`: cadastra até 10 visitantes quando autorizado.
+- `POST /api/public-access/:token/prayer-requests`: envia oração quando autorizado.
+
+Esses endpoints não listam registros, rejeitam a identidade da igreja enviada pelo navegador e
+possuem limite persistido de requisições por IP e por acesso. A criação e administração dos links
+serão disponibilizadas na tela autenticada de acessos.
+
+### Gerenciamento pelo proprietário
+
+A rota autenticada `/acessos` permite criar, copiar, baixar o QR Code, alterar validade, desativar,
+reativar e renovar acessos. A renovação incrementa a versão e invalida o endereço anterior. Todos
+os comandos administrativos pesquisam simultaneamente o identificador do acesso e a igreja da
+sessão.
+
+Os QR Codes são gerados no navegador com a origem atual do aplicativo, sem domínio ou `localhost`
+fixado no código. Nenhum acesso é criado automaticamente: o proprietário precisa usar uma ação
+explícita na página inicial ou na página de gerenciamento.
+
+### Formulários públicos
+
+O endereço `/acesso/:token` valida o token antes de mostrar qualquer formulário. Um acesso de
+portaria exibe somente o cadastro de visitantes; um acesso de oração exibe somente o envio de
+oração. Essas páginas não possuem menu administrativo, login, indicadores ou listagens.
+
+Depois do envio, a página confirma o recebimento sem devolver os registros privados. A URL antiga
+`/live/oracao` permanece apenas como uma orientação amigável para solicitar um novo QR Code.
 
 ## Executar
 
@@ -77,7 +134,7 @@ npm run dev
 - Frontend: http://localhost:5173
 - Login: http://localhost:5173/login
 - API: http://localhost:3001
-- Link público da live: http://localhost:5173/live/oracao
+- Aviso do link público legado: http://localhost:5173/live/oracao
 
 ## Deploy na Vercel
 
@@ -100,26 +157,40 @@ Em **Network Access**, libere `0.0.0.0/0` (a Vercel usa IPs dinâmicos).
 |------|------|---------|
 | `MONGODB_URI` | Server | connection string do Atlas |
 | `JWT_SECRET` | Server | chave longa e aleatória |
-| `GOOGLE_CLIENT_ID` | Server | Client ID do Google |
-| `VITE_GOOGLE_CLIENT_ID` | Client (Build) | **mesmo** Client ID do Google |
+| `GUEST_ACCESS_SECRET` | Server | outra chave longa e aleatória |
 
-> `VITE_*` precisa estar disponível no **Build**. As demais, em Production/Preview.
-
-### 4. Google Sign-In em produção
-
-No Google Cloud Console, em **Origens JavaScript autorizadas**, adicione:
-
-- `https://SEU-PROJETO.vercel.app`
-- (opcional) domínio customizado
-
-### 5. Deploy
+### 4. Deploy
 
 Clique em **Deploy**. Depois:
 
 - App: `https://SEU-PROJETO.vercel.app`
 - Login: `https://SEU-PROJETO.vercel.app/login`
-- Live pública: `https://SEU-PROJETO.vercel.app/live/oracao`
+- Link público legado (somente aviso): `https://SEU-PROJETO.vercel.app/live/oracao`
 - Health: `https://SEU-PROJETO.vercel.app/api/health`
+
+## Integração com Holyrics
+
+No início do culto, o operador pode enviar os louvores cadastrados para a playlist do Holyrics.
+
+### Configurar no Holyrics (PC da igreja)
+
+1. Abra o Holyrics → **Arquivo → Configurações → API Server**
+2. Ative o servidor da API e anote **IP** e **porta**
+3. Em **Gerenciar permissões**, crie um token com acesso a busca de músicas e playlist
+4. As músicas precisam **já existir** na biblioteca do Holyrics (o app só busca e adiciona à playlist)
+
+### Configurar neste app
+
+1. Faça login → link **Holyrics** no canto superior (ou `/configuracoes`)
+2. Modo **Local**: IP (`127.0.0.1` no mesmo PC), porta e token
+3. Clique em **Testar conexão** e salve
+4. Em **Cultos**, abra o culto do dia → **Enviar ao Holyrics**
+
+### Observações
+
+- No modo local, o Holyrics precisa estar aberto no PC da igreja
+- Se o app estiver na Vercel, o sync pelo servidor não alcança a rede local; o app tenta enviar **pelo navegador** do PC que tem o Holyrics
+- Modo **Internet** usa a API pública do Holyrics (`api.holyrics.com.br`) com API Key + token
 
 ## Estrutura
 

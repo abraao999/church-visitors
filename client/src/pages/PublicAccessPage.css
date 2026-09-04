@@ -1,0 +1,676 @@
+.public-access-page {
+  width: min(620px, 100%);
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 2rem;
+  color: var(--text);
+}
+
+body:has(.public-access-page) {
+  background: var(--bg);
+}
+
+.public-access-centered {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.public-access-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 54px;
+  margin-bottom: 1.1rem;
+}
+
+.public-access-brand .theme-toggle {
+  margin-left: auto;
+}
+
+.public-access-cross {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.public-access-brand > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.public-access-brand strong {
+  overflow: hidden;
+  font-size: 1.05rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.public-access-brand span:not(.public-access-cross) {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.public-access-hero {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--accent-soft);
+}
+
+.public-access-hero.visitors {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  align-items: center;
+  min-height: 210px;
+  padding: 1.5rem 0 1.5rem 1.5rem;
+}
+
+.public-access-hero.prayer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.public-access-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.7rem;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.public-access-badge .app-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.public-access-hero h1 {
+  color: var(--text);
+  font-size: clamp(2rem, 9vw, 2.65rem);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+}
+
+.public-access-hero p {
+  margin-top: 0.65rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.public-church-illustration {
+  width: 180px;
+  max-width: 100%;
+}
+
+.public-prayer-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 66px;
+  margin-bottom: 0.8rem;
+  border-radius: 18px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.public-prayer-icon .app-icon {
+  width: 38px;
+  height: 38px;
+}
+
+.public-access-permission {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border-radius: 13px;
+  background: var(--primary-soft);
+  color: var(--text-muted);
+}
+
+.public-access-permission .app-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  color: var(--primary);
+}
+
+.public-access-permission p {
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.public-access-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.public-form-feedback:empty {
+  display: none;
+}
+
+.public-form-feedback p {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: 11px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 1rem;
+}
+
+.public-person-card {
+  min-width: 0;
+  padding: 1.25rem;
+  border-radius: 16px;
+  box-shadow: 0 6px 22px rgba(41, 37, 36, 0.055);
+}
+
+.public-person-card legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0 0 0.9rem;
+}
+
+.public-person-card legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.public-person-card legend .app-icon {
+  width: 25px;
+  height: 25px;
+  color: var(--primary);
+}
+
+.public-person-card legend button {
+  min-height: 44px;
+  padding: 0.45rem 0.65rem;
+  border: 0;
+  border-radius: 9px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+.public-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.public-field:last-child {
+  margin-bottom: 0;
+}
+
+.public-field label {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+.public-field input,
+.public-field select,
+.public-field textarea {
+  width: 100%;
+  min-height: 56px;
+  padding: 0.85rem 0.95rem;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 16px;
+}
+
+.public-input-uppercase {
+  text-transform: uppercase;
+}
+
+.public-field textarea {
+  min-height: 150px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.public-field input::placeholder,
+.public-field textarea::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+
+.public-field input:focus,
+.public-field select:focus,
+.public-field textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.public-field.has-error input {
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
+}
+
+.public-field-hint,
+.public-field-error {
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.public-field-hint {
+  color: var(--text-muted);
+}
+
+.public-field-hint.centered {
+  text-align: center;
+}
+
+.public-field-error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.public-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  color: var(--primary);
+}
+
+.public-section-heading .app-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  margin-top: 0.1rem;
+}
+
+.public-section-heading h2 {
+  color: var(--text);
+  font-size: 1.15rem;
+}
+
+.public-section-heading p {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.public-person-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+  padding: 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.public-person-row-top {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.public-person-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.public-person-row-top strong {
+  flex: 1;
+  color: var(--text);
+}
+
+.public-remove-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--danger);
+}
+
+.public-remove-icon:hover {
+  background: var(--danger-soft);
+}
+
+.public-remove-icon .app-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.public-field-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.public-field-heading span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.public-add-button,
+.public-primary-button,
+.public-secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 56px;
+  padding: 0.8rem 1rem;
+  border-radius: 13px;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.public-add-button {
+  border: 2px solid var(--primary);
+  background: var(--surface);
+  color: var(--primary);
+}
+
+.public-add-button.dashed {
+  border-style: dashed;
+  background: transparent;
+}
+
+.public-primary-button {
+  border: 2px solid var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
+}
+
+.public-secondary-button {
+  margin-top: 1rem;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+}
+
+.public-add-button:disabled,
+.public-primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.public-add-button .app-icon,
+.public-primary-button .app-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.public-submit-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.public-submit-note .app-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.public-prayer-card {
+  padding: 1.25rem;
+  border-radius: 16px;
+  box-shadow: 0 6px 22px rgba(41, 37, 36, 0.055);
+}
+
+.public-anonymous-control {
+  display: grid;
+  grid-template-columns: auto 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 72px;
+  margin-bottom: 1.1rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: var(--surface-muted);
+  cursor: pointer;
+}
+
+.public-anonymous-control > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.public-switch {
+  position: relative;
+  grid-column: 2;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 0.15s;
+}
+
+.public-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 2px 5px rgba(41, 37, 36, 0.2);
+  transition: transform 0.15s;
+}
+
+.public-anonymous-control > input:checked + .public-switch {
+  background: var(--primary);
+}
+
+.public-anonymous-control > input:checked + .public-switch::after {
+  transform: translateX(20px);
+}
+
+.public-anonymous-control > input:focus-visible + .public-switch {
+  outline: 3px solid rgba(37, 99, 235, 0.28);
+  outline-offset: 2px;
+}
+
+.public-anonymous-control > span:last-child {
+  grid-column: 3;
+}
+
+.public-anonymous-control strong,
+.public-anonymous-control small {
+  display: block;
+}
+
+.public-anonymous-control strong {
+  font-size: 0.95rem;
+}
+
+.public-anonymous-control small {
+  margin-top: 0.15rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.public-state-card {
+  padding: 2rem 1.5rem;
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0 12px 36px rgba(41, 37, 36, 0.08);
+}
+
+.public-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+}
+
+.public-state-icon .app-icon {
+  width: 39px;
+  height: 39px;
+}
+
+.public-state-icon.invalid {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.public-state-icon.success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.public-state-card h1 {
+  font-size: 1.75rem;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.public-state-card > p {
+  margin-top: 0.75rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.public-state-help {
+  font-weight: 750;
+}
+
+.public-success-label {
+  display: inline-block;
+  margin-bottom: 0.6rem;
+  color: var(--success);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.public-privacy-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin: 1.25rem 0;
+  padding: 0.9rem;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--text-muted);
+  text-align: left;
+}
+
+.public-privacy-box .app-icon {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+}
+
+.public-loading-spinner {
+  display: block;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 1rem;
+  border: 4px solid var(--primary-soft);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: public-spin 0.8s linear infinite;
+}
+
+@keyframes public-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 480px) {
+  .public-access-page {
+    padding: max(0.85rem, env(safe-area-inset-top)) 0.75rem max(1.5rem, env(safe-area-inset-bottom));
+  }
+
+  .public-access-hero.visitors {
+    grid-template-columns: minmax(0, 1fr) 118px;
+    min-height: 190px;
+    padding: 1.2rem 0 1.2rem 1.2rem;
+  }
+
+  .public-access-hero h1 {
+    font-size: 2rem;
+  }
+
+  .public-access-badge {
+    font-size: 0.7rem;
+  }
+
+  .public-person-card,
+  .public-prayer-card {
+    padding: 1rem;
+  }
+
+  .public-person-card legend {
+    align-items: flex-start;
+  }
+
+  .public-person-card legend > span {
+    font-size: 1.08rem;
+  }
+
+  .public-person-card legend button {
+    max-width: 120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-loading-spinner {
+    animation-duration: 1.8s;
+  }
+}

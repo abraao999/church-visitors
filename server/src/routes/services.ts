@@ -6,6 +6,7 @@ import {
   toActor,
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
+import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 
 const router = Router();
 
@@ -49,7 +50,6 @@ function normalizeHymns(
       artist?: unknown;
       singer?: unknown;
       performedBy?: unknown;
-      addedBy?: IActor;
     };
 
     const title = String(raw.title ?? '').trim();
@@ -74,7 +74,7 @@ function normalizeHymns(
       title,
       artist,
       performedBy,
-      addedBy: previousMatch?.addedBy ?? raw.addedBy ?? actor,
+      addedBy: previousMatch?.addedBy ?? actor,
     });
   }
 
@@ -133,11 +133,11 @@ function buildPayload(
   };
 }
 
-router.get('/', requireAuth, async (_req: AuthenticatedRequest, res: Response) => {
+router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const fromParam = _req.query.from as string | undefined;
-    const toParam = _req.query.to as string | undefined;
-    const dateParam = _req.query.date as string | undefined;
+    const fromParam = req.query.from as string | undefined;
+    const toParam = req.query.to as string | undefined;
+    const dateParam = req.query.date as string | undefined;
 
     let filter: Record<string, unknown> = {};
 
@@ -166,7 +166,11 @@ router.get('/', requireAuth, async (_req: AuthenticatedRequest, res: Response) =
       };
     }
 
-    const services = await Service.find(filter).sort({ date: 1, time: 1, createdAt: 1 });
+    const services = await Service.find(withChurch(req.auth!.churchId, filter)).sort({
+      date: 1,
+      time: 1,
+      createdAt: 1,
+    });
     res.json(services);
   } catch {
     res.status(500).json({ error: 'Erro ao buscar cultos' });
@@ -175,7 +179,12 @@ router.get('/', requireAuth, async (_req: AuthenticatedRequest, res: Response) =
 
 router.get('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const service = await Service.findById(req.params.id);
+    const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
+    if (!filter) {
+      return res.status(404).json({ error: 'Culto não encontrado' });
+    }
+
+    const service = await Service.findOne(filter);
     if (!service) {
       return res.status(404).json({ error: 'Culto não encontrado' });
     }
@@ -187,7 +196,7 @@ router.get('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response)
 
 router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const actor = toActor(req.user!);
+    const actor = toActor(req.auth!);
     const payload = buildPayload(req.body, actor);
     if ('error' in payload) {
       return res.status(400).json({ error: payload.error });
@@ -199,6 +208,7 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
       const dates = weeklyDatesUntilYearEnd(date);
       const created = await Service.insertMany(
         dates.map((occurrenceDate) => ({
+          churchId: req.auth!.churchId,
           title,
           date: occurrenceDate,
           time,
@@ -213,7 +223,14 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
       });
     }
 
-    const service = await Service.create({ title, date, time, hymns, createdBy: actor });
+    const service = await Service.create({
+      churchId: req.auth!.churchId,
+      title,
+      date,
+      time,
+      hymns,
+      createdBy: actor,
+    });
     res.status(201).json({
       service,
       createdCount: 1,
@@ -225,12 +242,17 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
 
 router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const existing = await Service.findById(req.params.id);
+    const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
+    if (!filter) {
+      return res.status(404).json({ error: 'Culto não encontrado' });
+    }
+
+    const existing = await Service.findOne(filter);
     if (!existing) {
       return res.status(404).json({ error: 'Culto não encontrado' });
     }
 
-    const actor = toActor(req.user!);
+    const actor = toActor(req.auth!);
     const payload = buildPayload(req.body, actor, existing.hymns);
     if ('error' in payload) {
       return res.status(400).json({ error: payload.error });
@@ -250,7 +272,12 @@ router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response)
 
 router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const deleted = await Service.findByIdAndDelete(req.params.id);
+    const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
+    if (!filter) {
+      return res.status(404).json({ error: 'Culto não encontrado' });
+    }
+
+    const deleted = await Service.findOneAndDelete(filter);
     if (!deleted) {
       return res.status(404).json({ error: 'Culto não encontrado' });
     }

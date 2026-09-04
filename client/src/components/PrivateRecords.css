@@ -1,0 +1,122 @@
+.private-record-list {
+  padding: 1rem;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.private-record-list > ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  list-style: none;
+}
+
+.private-record-list li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.private-record-copy {
+  min-width: 0;
+}
+
+.private-record-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.private-record-name-row > strong {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.private-origin-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.private-origin-badge.guest {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.private-origin-badge.owner {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.private-record-meta,
+.private-record-origin {
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.private-record-body {
+  margin-top: 0.65rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.private-record-origin {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+}
+
+.private-record-origin .app-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.private-record-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--danger);
+  font-size: 0.82rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.private-record-remove:hover {
+  background: var(--danger-soft);
+}
+
+.private-record-remove .app-icon {
+  width: 17px;
+  height: 17px;
+}
+
+@media (max-width: 560px) {
+  .private-record-list li {
+    flex-direction: column;
+  }
+
+  .private-record-remove {
+    width: 100%;
+  }
+}

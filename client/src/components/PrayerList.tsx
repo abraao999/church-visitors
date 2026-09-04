@@ -1,4 +1,6 @@
 import type { PrayerRequest } from '../types';
+import { AppIcon } from './AppIcon';
+import './PrivateRecords.css';
 
 interface Props {
   requests: PrayerRequest[];
@@ -12,51 +14,49 @@ function formatTime(dateStr: string) {
   });
 }
 
+function originLabel(item: PrayerRequest): string {
+  if (item.source === 'guest_access') {
+    return item.guestAccess?.name
+      ? `Enviado pelo acesso ${item.guestAccess.name}`
+      : 'Enviado pelo acesso de oração';
+  }
+  if (item.createdBy?.name) return `Registrado por ${item.createdBy.name}`;
+  if (item.source === 'live') return 'Enviado pelo link público antigo';
+  return 'Registro anterior da portaria';
+}
+
 export function PrayerList({ requests, onDelete }: Props) {
   if (requests.length === 0) {
     return (
-      <div className="card">
-        <h2>Pedidos de hoje</h2>
-        <p className="empty-state">Nenhum pedido de oração registrado.</p>
+      <div className="private-record-list card">
+        <p className="empty-state">Nenhum pedido de oração nesta data.</p>
       </div>
     );
   }
 
   return (
-    <div className="card">
-      <h2>Pedidos de hoje ({requests.length})</h2>
-      <ul style={{ listStyle: 'none', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+    <div className="private-record-list card">
+      <ul>
         {requests.map((item) => (
-          <li
-            key={item._id}
-            style={{
-              padding: '1rem',
-              background: 'var(--surface-muted)',
-              borderRadius: 'var(--radius-sm)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: '1rem',
-            }}
-          >
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <li key={item._id}>
+            <div className="private-record-copy">
+              <div className="private-record-name-row">
                 <strong>{item.isAnonymous ? 'Anônimo' : item.name}</strong>
-                <span className={`badge badge-${item.source}`}>
-                  {item.source === 'live' ? 'Live' : 'Portaria'}
+                <span className={`private-origin-badge ${item.source === 'guest_access' ? 'guest' : 'owner'}`}>
+                  {item.source === 'guest_access' ? 'Acesso de oração' : 'Responsável'}
                 </span>
               </div>
-              <p style={{ marginTop: '0.5rem' }}>{item.request}</p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.35rem' }}>
-                {formatTime(item.createdAt)}
+              <p className="private-record-body">{item.request}</p>
+              <p className="private-record-origin">
+                <AppIcon name="clock" /> {formatTime(item.createdAt)} · {originLabel(item)}
               </p>
             </div>
             <button
               type="button"
-              className="btn btn-danger"
+              className="private-record-remove"
               onClick={() => onDelete(item._id)}
             >
-              Remover
+              <AppIcon name="trash" /> Remover pedido
             </button>
           </li>
         ))}

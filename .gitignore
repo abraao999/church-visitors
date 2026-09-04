@@ -3,5 +3,6 @@ dist/
 .env
 client/.env
 server/.env
+.cache/
 *.log
 *.tsbuildinfo
