@@ -1,0 +1,340 @@
+.vehicle-public-page {
+  width: min(420px, 100%);
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.vehicle-public-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 54px;
+  margin-bottom: 1.25rem;
+}
+
+.vehicle-public-brand .theme-toggle {
+  margin-left: auto;
+}
+
+.vehicle-public-cross {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.vehicle-public-brand > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.vehicle-public-brand strong {
+  overflow: hidden;
+  font-size: 1.05rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vehicle-public-brand span:not(.vehicle-public-cross) {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.vehicle-public-hero {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.vehicle-public-hero-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 0.85rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--primary);
+}
+
+.vehicle-public-hero-icon .app-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.vehicle-public-hero h1 {
+  font-size: clamp(1.55rem, 6vw, 1.9rem);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.vehicle-public-hero p {
+  margin-top: 0.4rem;
+  color: var(--text-muted);
+}
+
+.vehicle-privacy-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.vehicle-privacy-banner .app-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+  margin-top: 0.1rem;
+}
+
+.vehicle-public-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.vehicle-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 52px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.vehicle-input-wrap .app-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.vehicle-input-wrap input,
+.vehicle-input-wrap textarea {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  outline: none;
+  box-shadow: none;
+  padding: 0.85rem 0;
+}
+
+.vehicle-textarea-wrap {
+  align-items: flex-start;
+  padding-top: 0.85rem;
+}
+
+.vehicle-textarea-wrap textarea {
+  font-weight: 500;
+  resize: vertical;
+  min-height: 72px;
+}
+
+.field-error {
+  margin-top: 0.35rem;
+  color: var(--danger);
+  font-size: 0.88rem;
+}
+
+.vehicle-action-fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.vehicle-action-fieldset legend {
+  margin-bottom: 0.55rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.vehicle-action-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.vehicle-action-card {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 52px;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+
+.vehicle-action-card.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.vehicle-action-card .app-icon {
+  color: inherit;
+}
+
+.vehicle-action-check {
+  display: inline-flex;
+  justify-content: flex-end;
+}
+
+.vehicle-action-check .app-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.vehicle-summary {
+  padding: 0.95rem 1rem;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  display: grid;
+  gap: 0.25rem;
+}
+
+.vehicle-summary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vehicle-summary strong {
+  font-size: 1.05rem;
+}
+
+.vehicle-summary span {
+  color: var(--text-muted);
+}
+
+.vehicle-success-card {
+  padding: 1.5rem 1.15rem;
+  text-align: center;
+}
+
+.vehicle-success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 0.85rem;
+  border-radius: 999px;
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.vehicle-success-icon .app-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.vehicle-success-card h1 {
+  font-size: 1.7rem;
+  margin-bottom: 0.45rem;
+}
+
+.vehicle-success-card > p {
+  color: var(--text-muted);
+  margin-bottom: 1.1rem;
+}
+
+.vehicle-success-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  text-align: left;
+  padding: 1rem;
+  margin-bottom: 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.vehicle-success-summary > .app-icon {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.vehicle-success-summary div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.vehicle-success-summary span {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.vehicle-success-privacy {
+  display: grid;
+  gap: 0.55rem;
+  justify-items: center;
+  margin: 0.5rem 0 1.15rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.vehicle-success-privacy > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.vehicle-success-footnote {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.95rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.vehicle-success-footnote .app-icon {
+  color: var(--accent);
+}
+
+@media (max-width: 390px) {
+  .vehicle-public-page {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+}

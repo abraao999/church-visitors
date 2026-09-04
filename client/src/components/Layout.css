@@ -115,6 +115,12 @@
   padding: 0 0.5rem;
   font-size: 1.05rem;
   min-height: 48px;
+  min-width: 0;
+}
+
+.logo-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

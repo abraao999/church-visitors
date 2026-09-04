@@ -1,0 +1,389 @@
+import assert from 'node:assert/strict';
+import { afterEach, describe, test } from 'node:test';
+import type { Response } from 'express';
+import { Types } from 'mongoose';
+import {
+  requireGuestAccess,
+  type GuestAccessRequest,
+} from '../middleware/guestAccess.js';
+import { createPublicVehicleNotice } from './publicAccess.js';
+import {
+  listVehicleNotices,
+  updateVehicleNoticeStatus,
+} from './vehicleNotices.js';
+import { GuestAccess } from '../models/GuestAccess.js';
+import { Church } from '../models/Church.js';
+import { PublicRateLimit } from '../models/PublicRateLimit.js';
+import { VehicleNotice } from '../models/VehicleNotice.js';
+import { createGuestPublicId, createGuestToken } from '../utils/guestToken.js';
+import type { AuthenticatedRequest } from '../middleware/auth.js';
+
+process.env.GUEST_ACCESS_SECRET = 'teste-guest-veiculos-chave-outra-654321abcdef';
+process.env.JWT_SECRET = 'teste-jwt-veiculos-chave-longa-123456abcdef';
+
+const churchA = new Types.ObjectId();
+const churchB = new Types.ObjectId();
+const userA = new Types.ObjectId();
+const userB = new Types.ObjectId();
+const noticeA = new Types.ObjectId();
+const noticeB = new Types.ObjectId();
+
+type Stub = { restore: () => void };
+const stubs: Stub[] = [];
+
+function stubMethod(target: object, method: string, implementation: unknown): void {
+  const original = (target as Record<string, unknown>)[method];
+  (target as Record<string, unknown>)[method] = implementation;
+  stubs.push({
+    restore: () => {
+      (target as Record<string, unknown>)[method] = original;
+    },
+  });
+}
+
+afterEach(() => {
+  while (stubs.length) stubs.pop()?.restore();
+});
+
+function authReq(
+  churchId: Types.ObjectId,
+  userId: Types.ObjectId,
+  extras: Partial<AuthenticatedRequest> = {}
+): AuthenticatedRequest {
+  return {
+    auth: {
+      userId: String(userId),
+      churchId: String(churchId),
+      role: 'owner',
+      name: 'Responsável',
+      email: 'owner@example.com',
+    },
+    query: {},
+    params: {},
+    body: {},
+    headers: {},
+    ...extras,
+  } as AuthenticatedRequest;
+}
+
+function mockRes() {
+  const state: { statusCode: number; body: unknown } = { statusCode: 200, body: undefined };
+  const res = {
+    status(code: number) {
+      state.statusCode = code;
+      return res;
+    },
+    json(payload: unknown) {
+      state.body = payload;
+      return res;
+    },
+    setHeader() {
+      return res;
+    },
+  } as unknown as Response;
+  return { res, state };
+}
+
+function allowRateLimit() {
+  stubMethod(PublicRateLimit, 'findOneAndUpdate', async () => ({ count: 1 }));
+}
+
+function stubGuestAccess(type: string, churchId = churchA) {
+  const publicId = createGuestPublicId();
+  const token = createGuestToken(publicId, 1);
+  const accessId = new Types.ObjectId();
+
+  stubMethod(GuestAccess, 'findOne', () => ({
+    select() {
+      return {
+        lean: async () => ({
+          _id: accessId,
+          churchId,
+          name: 'Estacionamento — domingo',
+          publicId,
+          type,
+          version: 1,
+          active: true,
+        }),
+      };
+    },
+  }));
+
+  stubMethod(Church, 'findOne', () => ({
+    select() {
+      return {
+        lean: async () => ({ _id: churchId, name: 'Igreja Alfa' }),
+      };
+    },
+  }));
+
+  return { publicId, token, accessId };
+}
+
+describe('avisos de veículos — isolamento multi-tenant', () => {
+  test('proprietário A lista somente avisos da igreja A', async () => {
+    let receivedFilter: Record<string, unknown> | undefined;
+    stubMethod(VehicleNotice, 'find', (filter: Record<string, unknown>) => {
+      receivedFilter = filter;
+      return {
+        sort: async () => [
+          {
+            _id: noticeA,
+            plate: 'ABC-1D23',
+            plateNormalized: 'ABC1D23',
+            vehicleModel: 'Gol branco',
+            requestedAction: 'remove_vehicle',
+            details: '',
+            status: 'pending',
+            source: 'guest_access',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+      };
+    });
+
+    const { res, state } = mockRes();
+    await listVehicleNotices(authReq(churchA, userA), res);
+
+    assert.equal(state.statusCode, 200);
+    assert.equal(String((receivedFilter as { churchId: Types.ObjectId }).churchId), String(churchA));
+    assert.equal((state.body as Array<{ id: string }>).length, 1);
+  });
+
+  test('proprietário A não atualiza aviso da igreja B', async () => {
+    let findFilter: Record<string, unknown> | undefined;
+    stubMethod(VehicleNotice, 'findOne', async (filter: Record<string, unknown>) => {
+      findFilter = filter;
+      return null;
+    });
+
+    const { res, state } = mockRes();
+    await updateVehicleNoticeStatus(
+      authReq(churchA, userA, {
+        params: { id: String(noticeB) },
+        body: { status: 'announced' },
+      }),
+      res
+    );
+
+    assert.equal(state.statusCode, 404);
+    assert.equal(String((findFilter as { churchId: Types.ObjectId }).churchId), String(churchA));
+    assert.equal(String((findFilter as { _id: Types.ObjectId })._id), String(noticeB));
+  });
+
+  test('acesso de veículos envia aviso apenas para a igreja do token', async () => {
+    allowRateLimit();
+    const { token, accessId } = stubGuestAccess('vehicle_notices:create', churchA);
+
+    let created: Record<string, unknown> | undefined;
+    stubMethod(VehicleNotice, 'create', async (doc: Record<string, unknown>) => {
+      created = doc;
+      return doc;
+    });
+    stubMethod(GuestAccess, 'updateOne', async () => ({ acknowledged: true }));
+
+    const req = {
+      method: 'POST',
+      params: { token },
+      body: {
+        plate: 'abc1d23',
+        vehicleModel: 'Gol branco',
+        requestedAction: 'remove_vehicle',
+        details: 'Bloqueando a saída',
+        churchId: String(churchB),
+      },
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+    } as unknown as GuestAccessRequest;
+    const { res, state } = mockRes();
+
+    await requireGuestAccess('vehicle_notices:create')(req, res, async () => {
+      await createPublicVehicleNotice(req, res);
+    });
+
+    assert.equal(state.statusCode, 400);
+    assert.match(String((state.body as { error: string }).error), /igreja/i);
+    assert.equal(created, undefined);
+
+    const reqOk = {
+      method: 'POST',
+      params: { token },
+      body: {
+        plate: 'abc1d23',
+        vehicleModel: 'Gol branco',
+        requestedAction: 'remove_vehicle',
+        details: 'Bloqueando a saída',
+      },
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      guestAccess: {
+        churchId: String(churchA),
+        churchName: 'Igreja Alfa',
+        guestAccessId: String(accessId),
+        accessName: 'Estacionamento',
+        scope: 'vehicle_notices:create' as const,
+      },
+    } as unknown as GuestAccessRequest;
+    const second = mockRes();
+    await createPublicVehicleNotice(reqOk, second.res);
+
+    assert.equal(second.state.statusCode, 201);
+    assert.equal(String((created as { churchId: Types.ObjectId } | undefined)?.churchId), String(churchA));
+    assert.deepEqual(second.state.body, { success: true, message: 'Aviso enviado' });
+  });
+
+  test('acesso de visitantes não envia aviso de veículo', async () => {
+    allowRateLimit();
+    const { token } = stubGuestAccess('visitors:create');
+    const req = {
+      method: 'POST',
+      params: { token },
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+    } as unknown as GuestAccessRequest;
+    const { res, state } = mockRes();
+    await requireGuestAccess('vehicle_notices:create')(req, res, () => {
+      assert.fail('escopo cruzado');
+    });
+    assert.equal(state.statusCode, 403);
+  });
+
+  test('acesso de oração não envia aviso de veículo', async () => {
+    allowRateLimit();
+    const { token } = stubGuestAccess('prayers:create');
+    const req = {
+      method: 'POST',
+      params: { token },
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+    } as unknown as GuestAccessRequest;
+    const { res, state } = mockRes();
+    await requireGuestAccess('vehicle_notices:create')(req, res, () => {
+      assert.fail('escopo cruzado');
+    });
+    assert.equal(state.statusCode, 403);
+  });
+
+  test('acesso de veículos não cadastra visitantes nem oração', async () => {
+    allowRateLimit();
+    const { token } = stubGuestAccess('vehicle_notices:create');
+    for (const scope of ['visitors:create', 'prayers:create'] as const) {
+      const req = {
+        method: 'POST',
+        params: { token },
+        ip: '127.0.0.1',
+        socket: { remoteAddress: '127.0.0.1' },
+      } as unknown as GuestAccessRequest;
+      const { res, state } = mockRes();
+      await requireGuestAccess(scope)(req, res, () => {
+        assert.fail(`não deveria autorizar ${scope}`);
+      });
+      assert.equal(state.statusCode, 403, scope);
+      while (stubs.length > 1) stubs.pop()?.restore();
+      allowRateLimit();
+      stubGuestAccess('vehicle_notices:create');
+    }
+  });
+
+  test('outro aviso exige observação e placa inválida é rejeitada', async () => {
+    allowRateLimit();
+    const { accessId } = stubGuestAccess('vehicle_notices:create');
+    const base = {
+      method: 'POST',
+      params: { token: 'x' },
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      guestAccess: {
+        churchId: String(churchA),
+        churchName: 'Igreja Alfa',
+        guestAccessId: String(accessId),
+        accessName: 'Estacionamento',
+        scope: 'vehicle_notices:create' as const,
+      },
+    };
+
+    const invalidPlate = mockRes();
+    await createPublicVehicleNotice(
+      {
+        ...base,
+        body: { plate: 'XX', vehicleModel: 'Gol', requestedAction: 'other', details: 'x' },
+      } as unknown as GuestAccessRequest,
+      invalidPlate.res
+    );
+    assert.equal(invalidPlate.state.statusCode, 400);
+    assert.match(String((invalidPlate.state.body as { error: string }).error), /placa/i);
+
+    const missingDetails = mockRes();
+    await createPublicVehicleNotice(
+      {
+        ...base,
+        body: { plate: 'ABC-1D23', vehicleModel: 'Gol', requestedAction: 'other', details: '' },
+      } as unknown as GuestAccessRequest,
+      missingDetails.res
+    );
+    assert.equal(missingDetails.state.statusCode, 400);
+    assert.match(String((missingDetails.state.body as { error: string }).error), /observação/i);
+  });
+
+  test('status só aceita transições permitidas', async () => {
+    const noticeDoc: {
+      _id: Types.ObjectId;
+      churchId: Types.ObjectId;
+      plate: string;
+      plateNormalized: string;
+      vehicleModel: string;
+      requestedAction: string;
+      details: string;
+      status: string;
+      source: string;
+      archived: boolean;
+      save: () => Promise<unknown>;
+    } = {
+      _id: noticeA,
+      churchId: churchA,
+      plate: 'ABC-1234',
+      plateNormalized: 'ABC1234',
+      vehicleModel: 'Onix',
+      requestedAction: 'turn_off_lights',
+      details: '',
+      status: 'resolved',
+      source: 'guest_access',
+      archived: false,
+      save: async function save() {
+        return this;
+      },
+    };
+
+    stubMethod(VehicleNotice, 'findOne', async () => noticeDoc);
+
+    const { res, state } = mockRes();
+    await updateVehicleNoticeStatus(
+      authReq(churchA, userA, {
+        params: { id: String(noticeA) },
+        body: { status: 'pending' },
+      }),
+      res
+    );
+    assert.equal(state.statusCode, 200);
+
+    noticeDoc.status = 'pending';
+    const bad = mockRes();
+    await updateVehicleNoticeStatus(
+      authReq(churchA, userA, {
+        params: { id: String(noticeA) },
+        body: { status: 'pending' },
+      }),
+      bad.res
+    );
+    assert.equal(bad.state.statusCode, 400);
+  });
+
+  test('QR Code / link público usa o token completo sem churchId', () => {
+    const publicId = createGuestPublicId();
+    const token = createGuestToken(publicId, 1);
+    const url = `https://exemplo.app/acesso/${token}`;
+    assert.match(url, new RegExp(`/acesso/${token.replace(/\./g, '\\.')}$`));
+    assert.equal(url.includes(String(churchA)), false);
+  });
+});

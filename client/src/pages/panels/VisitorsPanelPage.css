@@ -1,15 +1,15 @@
 .visitors-tv {
-  --tv-bg: #0b121f;
-  --tv-surface: #141c2b;
-  --tv-surface-elevated: #182235;
-  --tv-border: #243148;
-  --tv-text: #f3f4f6;
-  --tv-muted: #9aa6b8;
-  --tv-primary: #3b82f6;
-  --tv-primary-soft: rgba(59, 130, 246, 0.16);
-  --tv-accent: #f59e0b;
-  --tv-accent-soft: rgba(245, 158, 11, 0.16);
-  --tv-success: #4ade80;
+  --tv-bg: #f4f1ea;
+  --tv-surface: #ffffff;
+  --tv-surface-elevated: #f8f6f2;
+  --tv-border: #e4dfd6;
+  --tv-text: #1c1917;
+  --tv-muted: #78716c;
+  --tv-primary: #2563eb;
+  --tv-primary-soft: #eff6ff;
+  --tv-accent: #b45309;
+  --tv-accent-soft: #fef3c7;
+  --tv-success: #16a34a;
   --tv-pad-x: clamp(1.5rem, 3.4vw, 3.5rem);
   --tv-pad-y: clamp(1.1rem, 2.4vh, 2rem);
 
@@ -23,10 +23,11 @@
   padding: var(--tv-pad-y) var(--tv-pad-x);
   overflow: hidden;
   background:
-    radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 34%),
-    radial-gradient(circle at bottom left, rgba(245, 158, 11, 0.08), transparent 30%),
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 34%),
+    radial-gradient(circle at bottom left, rgba(180, 83, 9, 0.08), transparent 30%),
     var(--tv-bg);
   color: var(--tv-text);
+  color-scheme: light;
   user-select: none;
 }
 
@@ -79,7 +80,7 @@
   height: 0.65rem;
   border-radius: 50%;
   background: var(--tv-success);
-  box-shadow: 0 0 0 0.28rem rgba(74, 222, 128, 0.16);
+  box-shadow: 0 0 0 0.28rem rgba(22, 163, 74, 0.16);
 }
 
 .visitors-tv-heading {
@@ -167,6 +168,7 @@
   border: 1px solid var(--tv-border);
   border-radius: clamp(14px, 1.2vw, 18px);
   background: var(--tv-surface);
+  box-shadow: 0 8px 24px rgba(28, 25, 23, 0.06);
 }
 
 .visitors-tv.is-single .visitors-tv-card {
@@ -179,9 +181,11 @@
 }
 
 .visitors-tv-card.is-new {
-  border-color: color-mix(in srgb, var(--tv-primary) 55%, var(--tv-border));
-  background: linear-gradient(90deg, rgba(59, 130, 246, 0.12), var(--tv-surface) 28%);
-  box-shadow: inset 4px 0 0 var(--tv-primary);
+  border-color: color-mix(in srgb, var(--tv-primary) 45%, var(--tv-border));
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.1), var(--tv-surface) 28%);
+  box-shadow:
+    inset 4px 0 0 var(--tv-primary),
+    0 8px 24px rgba(28, 25, 23, 0.06);
   animation: visitors-tv-card-in 0.55s ease;
 }
 
@@ -273,7 +277,7 @@
   padding: 0.15rem 0.55rem;
   border-radius: 0.4rem;
   background: var(--tv-primary);
-  color: #fff;
+  color: #ffffff;
   font-size: 0.72em;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -318,7 +322,8 @@
   gap: 0.85rem;
   border: 1px dashed var(--tv-border);
   border-radius: 1.2rem;
-  background: color-mix(in srgb, var(--tv-surface) 80%, transparent);
+  background: color-mix(in srgb, var(--tv-surface) 88%, transparent);
+  box-shadow: 0 8px 24px rgba(28, 25, 23, 0.04);
   text-align: center;
 }
 

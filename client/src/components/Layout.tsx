@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon, type AppIconName } from './AppIcon';
@@ -11,7 +11,9 @@ const NAV_ITEMS = [
   { to: '/oracao', label: 'Oração', short: 'Oração', icon: 'prayer' },
   { to: '/acessos', label: 'Acessos', short: 'Acessos', icon: 'link' },
   { to: '/cultos', label: 'Cultos', short: 'Cultos', icon: 'calendar' },
+  { to: '/avisos-veiculos', label: 'Veículos', short: 'Veíc.', icon: 'car' },
   { to: '/paineis', label: 'Painéis', short: 'Painéis', icon: 'panels' },
+  { to: '/igreja', label: 'Igreja', short: 'Igreja', icon: 'pin' },
   { to: '/configuracoes', label: 'Holyric', short: 'Holyric', icon: 'music' },
 ] as const;
 
@@ -45,6 +47,11 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isVisitorsPage = pathname === '/visitantes';
+  const brandName = user?.churchName?.trim() || 'Church Visitors';
+
+  useEffect(() => {
+    document.title = brandName;
+  }, [brandName]);
 
   function closeMobileMenu() {
     setMobileMenuOpen(false);
@@ -56,7 +63,7 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
         <div className="container header-inner">
           <Link to="/" className="logo">
             <span className="logo-icon">✝</span>
-            <span className="logo-text">Church Visitors</span>
+            <span className="logo-text">{brandName}</span>
           </Link>
 
           {isVisitorsPage && <span className="mobile-page-title">Visitantes</span>}

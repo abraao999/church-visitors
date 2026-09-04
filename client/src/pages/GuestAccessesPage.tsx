@@ -6,14 +6,27 @@ import { GuestAccessQr, guestAccessUrl } from '../components/GuestAccessQr';
 import type { GuestAccess, GuestAccessType } from '../types';
 import './GuestAccessesPage.css';
 
-const ACCESS_COPY: Record<GuestAccessType, { title: string; permission: string }> = {
+const ACCESS_COPY: Record<
+  GuestAccessType,
+  { title: string; permission: string; icon: 'users' | 'prayer' | 'car'; defaultName: string }
+> = {
   'visitors:create': {
     title: 'Equipe da portaria',
     permission: 'Cadastrar visitantes',
+    icon: 'users',
+    defaultName: 'Portaria — culto',
   },
   'prayers:create': {
     title: 'Pedidos de oração',
     permission: 'Enviar pedidos de oração',
+    icon: 'prayer',
+    defaultName: 'Oração — transmissão',
+  },
+  'vehicle_notices:create': {
+    title: 'Avisos de veículos',
+    permission: 'Enviar avisos de veículos',
+    icon: 'car',
+    defaultName: 'Estacionamento — culto de domingo',
   },
 };
 
@@ -76,7 +89,7 @@ export function GuestAccessesPage() {
   function openCreate(defaultType: GuestAccessType = 'visitors:create') {
     setEditing(null);
     setType(defaultType);
-    setName(defaultType === 'visitors:create' ? 'Portaria — culto' : 'Oração — transmissão');
+    setName(ACCESS_COPY[defaultType].defaultName);
     setExpiresAt('');
     setError('');
     setFeedback('');
@@ -211,6 +224,7 @@ export function GuestAccessesPage() {
               <select id="accessType" value={type} onChange={(event) => setType(event.target.value as GuestAccessType)} disabled={Boolean(editing)}>
                 <option value="visitors:create">Cadastrar visitantes</option>
                 <option value="prayers:create">Enviar pedidos de oração</option>
+                <option value="vehicle_notices:create">Enviar avisos de veículos</option>
               </select>
             </div>
             <div className="form-group">
@@ -235,6 +249,7 @@ export function GuestAccessesPage() {
           <div>
             <button type="button" className="btn btn-primary" onClick={() => openCreate('visitors:create')}>Gerar acesso da portaria</button>
             <button type="button" className="btn btn-secondary" onClick={() => openCreate('prayers:create')}>Gerar acesso de oração</button>
+            <button type="button" className="btn btn-secondary" onClick={() => openCreate('vehicle_notices:create')}>Gerar acesso de veículos</button>
           </div>
         </section>
       ) : (
@@ -247,7 +262,7 @@ export function GuestAccessesPage() {
               <article className="guest-access-card card" key={access.id}>
                 <div className="guest-access-card-main">
                   <div className={`guest-access-type-icon ${access.type === 'prayers:create' ? 'prayer' : ''}`}>
-                    <AppIcon name={access.type === 'visitors:create' ? 'users' : 'prayer'} />
+                    <AppIcon name={copy.icon} />
                   </div>
                   <div className="guest-access-card-title">
                     <span>{copy.title}</span>

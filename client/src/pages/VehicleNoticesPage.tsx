@@ -1,0 +1,282 @@
+import { useCallback, useEffect, useState } from 'react';
+import { api } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
+import { AppIcon } from '../components/AppIcon';
+import {
+  VEHICLE_NOTICE_ACTION_LABELS,
+  type VehicleNotice,
+  type VehicleNoticeStats,
+  type VehicleNoticeStatus,
+} from '../types';
+import { todayLocalISO } from '../utils/date';
+import { maskVehiclePlateInput } from '../utils/vehiclePlate';
+import './VehicleNoticesPage.css';
+
+const POLL_MS = 12_000;
+
+const STATUS_FILTERS: Array<{ value: VehicleNoticeStatus | 'all'; label: string }> = [
+  { value: 'all', label: 'Todos' },
+  { value: 'pending', label: 'Pendentes' },
+  { value: 'announced', label: 'Anunciados' },
+  { value: 'resolved', label: 'Resolvidos' },
+];
+
+const STATUS_LABELS: Record<VehicleNoticeStatus, string> = {
+  pending: 'Pendente',
+  announced: 'Anunciado',
+  resolved: 'Resolvido',
+};
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return 'Agora';
+  if (minutes < 60) return `Há ${minutes} minuto${minutes === 1 ? '' : 's'}`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Há ${hours} hora${hours === 1 ? '' : 's'}`;
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(
+    new Date(iso)
+  );
+}
+
+export function VehicleNoticesPage() {
+  const { user } = useAuth();
+  const [date, setDate] = useState(todayLocalISO());
+  const [statusFilter, setStatusFilter] = useState<VehicleNoticeStatus | 'all'>('pending');
+  const [plateSearch, setPlateSearch] = useState('');
+  const [notices, setNotices] = useState<VehicleNotice[]>([]);
+  const [stats, setStats] = useState<VehicleNoticeStats>({
+    pending: 0,
+    announced: 0,
+    resolvedToday: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState('');
+  const [error, setError] = useState('');
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const [list, summary] = await Promise.all([
+        api.getVehicleNotices({
+          date,
+          status: statusFilter,
+          plate: plateSearch.trim() || undefined,
+        }),
+        api.getVehicleNoticeStats(date),
+      ]);
+      setNotices(list);
+      setStats(summary);
+      setLastRefresh(new Date());
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar avisos');
+    } finally {
+      setLoading(false);
+    }
+  }, [date, statusFilter, plateSearch]);
+
+  useEffect(() => {
+    setLoading(true);
+    load();
+    const poll = window.setInterval(load, POLL_MS);
+    return () => window.clearInterval(poll);
+  }, [load]);
+
+  async function setStatus(id: string, status: VehicleNoticeStatus) {
+    setBusyId(id);
+    setError('');
+    try {
+      await api.updateVehicleNoticeStatus(id, status);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar status');
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  return (
+    <div className="vehicle-notices-page">
+      <header className="vehicle-notices-header">
+        <div>
+          <h1>Avisos de veículos</h1>
+          <p>Acompanhe os avisos recebidos durante o culto.</p>
+        </div>
+        <label className="vehicle-date-filter">
+          <AppIcon name="calendar" />
+          <span>{date === todayLocalISO() ? 'Culto de hoje' : 'Data'}</span>
+          <input
+            type="date"
+            value={date}
+            onChange={(event) => setDate(event.target.value || todayLocalISO())}
+            aria-label="Filtrar por data do culto"
+          />
+        </label>
+      </header>
+
+      <div className="vehicle-stats">
+        <article className="vehicle-stat card pending">
+          <div>
+            <span>Pendentes</span>
+            <strong>{stats.pending}</strong>
+          </div>
+          <AppIcon name="bell" />
+        </article>
+        <article className="vehicle-stat card announced">
+          <div>
+            <span>Anunciado</span>
+            <strong>{stats.announced}</strong>
+          </div>
+          <AppIcon name="megaphone" />
+        </article>
+        <article className="vehicle-stat card resolved">
+          <div>
+            <span>Resolvidos hoje</span>
+            <strong>{stats.resolvedToday}</strong>
+          </div>
+          <AppIcon name="check" />
+        </article>
+      </div>
+
+      <section className="card vehicle-notices-panel">
+        <div className="vehicle-notices-toolbar">
+          <div className="vehicle-status-tabs" role="tablist" aria-label="Filtrar por status">
+            {STATUS_FILTERS.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                role="tab"
+                aria-selected={statusFilter === item.value}
+                className={statusFilter === item.value ? 'active' : ''}
+                onClick={() => setStatusFilter(item.value)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <label className="vehicle-search">
+            <AppIcon name="pin" />
+            <span className="sr-only">Buscar por placa</span>
+            <input
+              value={plateSearch}
+              onChange={(event) => setPlateSearch(maskVehiclePlateInput(event.target.value))}
+              placeholder="Buscar por placa"
+              maxLength={8}
+            />
+          </label>
+        </div>
+
+        <div className="vehicle-poll-hint">
+          <AppIcon name="refresh" />
+          Atualização automática
+          {lastRefresh && (
+            <span>
+              · {lastRefresh.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+        </div>
+
+        {error && (
+          <p className="error-message" role="alert">
+            {error}
+          </p>
+        )}
+
+        {loading ? (
+          <p className="empty-state">Carregando avisos...</p>
+        ) : notices.length === 0 ? (
+          <p className="empty-state">Nenhum aviso encontrado para este filtro.</p>
+        ) : (
+          <ul className="vehicle-notice-list">
+            {notices.map((notice) => (
+              <li key={notice.id} className="vehicle-notice-row">
+                <div className="vehicle-notice-main">
+                  <span className="vehicle-notice-car">
+                    <AppIcon name="car" />
+                  </span>
+                  <div className="vehicle-notice-plate">
+                    <strong>{notice.plate}</strong>
+                    <span>{notice.vehicleModel}</span>
+                  </div>
+                  <div className="vehicle-notice-action">
+                    <strong>{VEHICLE_NOTICE_ACTION_LABELS[notice.requestedAction]}</strong>
+                    {notice.details ? <span>{notice.details}</span> : null}
+                    <small>
+                      {notice.source === 'guest_access'
+                        ? notice.guestAccessName || 'Acesso convidado'
+                        : 'Equipe da igreja'}
+                    </small>
+                  </div>
+                  <div className="vehicle-notice-meta">
+                    <time dateTime={notice.createdAt}>{relativeTime(notice.createdAt)}</time>
+                    <span className={`vehicle-status-badge ${notice.status}`}>
+                      {STATUS_LABELS[notice.status]}
+                    </span>
+                  </div>
+                </div>
+                <div className="vehicle-notice-actions">
+                  {notice.status === 'pending' && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        disabled={busyId === notice.id}
+                        onClick={() => setStatus(notice.id, 'announced')}
+                      >
+                        Marcar como anunciado
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        disabled={busyId === notice.id}
+                        onClick={() => setStatus(notice.id, 'resolved')}
+                      >
+                        Resolver
+                      </button>
+                    </>
+                  )}
+                  {notice.status === 'announced' && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        disabled={busyId === notice.id}
+                        onClick={() => setStatus(notice.id, 'resolved')}
+                      >
+                        Resolver
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        disabled={busyId === notice.id}
+                        onClick={() => setStatus(notice.id, 'pending')}
+                      >
+                        Reabrir
+                      </button>
+                    </>
+                  )}
+                  {notice.status === 'resolved' && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      disabled={busyId === notice.id}
+                      onClick={() => setStatus(notice.id, 'pending')}
+                    >
+                      Reabrir aviso
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p className="vehicle-tenant-note">
+          <AppIcon name="lock" />
+          Somente avisos da {user?.churchName || 'sua igreja'} aparecem aqui.
+        </p>
+      </section>
+    </div>
+  );
+}

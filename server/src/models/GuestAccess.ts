@@ -1,7 +1,11 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 import { actorSchema, type IActor } from './Actor.js';
 
-export const GUEST_ACCESS_TYPES = ['visitors:create', 'prayers:create'] as const;
+export const GUEST_ACCESS_TYPES = [
+  'visitors:create',
+  'prayers:create',
+  'vehicle_notices:create',
+] as const;
 export type GuestAccessType = (typeof GUEST_ACCESS_TYPES)[number];
 
 export interface IGuestAccess extends Document {

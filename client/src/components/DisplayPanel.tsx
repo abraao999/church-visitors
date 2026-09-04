@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from './AppIcon';
 import { formatTodayLabel } from '../utils/date';
 import './DisplayPanel.css';
@@ -12,11 +13,14 @@ interface Props {
 }
 
 export function DisplayPanel({ title, subtitle, count, loading, children }: Props) {
+  const { user } = useAuth();
+  const brandName = user?.churchName?.trim() || 'Church Visitors';
+
   return (
     <div className="display-panel">
       <div className="display-panel-brand">
         <span className="display-panel-logo">✝</span>
-        <span>Church Visitors</span>
+        <span>{brandName}</span>
       </div>
       <header className="display-panel-header">
         <div>

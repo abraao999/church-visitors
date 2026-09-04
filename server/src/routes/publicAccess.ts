@@ -6,10 +6,17 @@ import {
 } from '../middleware/guestAccess.js';
 import { PrayerRequest } from '../models/PrayerRequest.js';
 import { Visitor, RELATIONSHIPS } from '../models/Visitor.js';
+import {
+  VehicleNotice,
+  isVehicleNoticeAction,
+} from '../models/VehicleNotice.js';
 import type { Relationship } from '../constants/relationships.js';
+import { parseVehiclePlate } from '../utils/vehiclePlate.js';
+import { Types } from 'mongoose';
 
 const router = Router();
 const MAX_VISITORS_PER_REQUEST = 10;
+const MAX_DETAILS_LENGTH = 500;
 
 router.use((_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -147,6 +154,69 @@ router.post(
       return res.status(500).json({ error: 'Não foi possível enviar o pedido de oração.' });
     }
   }
+);
+
+export async function createPublicVehicleNotice(req: GuestAccessRequest, res: Response) {
+  try {
+    if (rejectsClientChurchId(req.body)) {
+      return res.status(400).json({ error: 'O identificador da igreja não deve ser enviado.' });
+    }
+
+    const body =
+      req.body && typeof req.body === 'object' ? (req.body as Record<string, unknown>) : {};
+
+    const plate = parseVehiclePlate(body.plate);
+    if (!plate) {
+      return res.status(400).json({ error: 'Confira a placa do veículo.' });
+    }
+
+    const vehicleModel = normalizeSingleLine(body.vehicleModel, 120);
+    const requestedAction = body.requestedAction;
+    const detailsRaw = typeof body.details === 'string' ? body.details.trim() : '';
+    const details = detailsRaw.slice(0, MAX_DETAILS_LENGTH);
+
+    if (!vehicleModel || !isVehicleNoticeAction(requestedAction)) {
+      return res.status(400).json({ error: 'Revise o modelo e a ação solicitada.' });
+    }
+
+    if (requestedAction === 'other' && !details) {
+      return res.status(400).json({ error: 'Descreva o aviso na observação.' });
+    }
+
+    if (detailsRaw.length > MAX_DETAILS_LENGTH) {
+      return res.status(400).json({ error: 'A observação está muito longa.' });
+    }
+
+    const access = req.guestAccess!;
+    await VehicleNotice.create({
+      churchId: new Types.ObjectId(access.churchId),
+      guestAccessId: new Types.ObjectId(access.guestAccessId),
+      plate: plate.plate,
+      plateNormalized: plate.plateNormalized,
+      vehicleModel,
+      requestedAction,
+      details,
+      status: 'pending',
+      source: 'guest_access',
+      guestAccess: {
+        guestAccessId: access.guestAccessId,
+        name: access.accessName,
+        type: access.scope,
+      },
+      archived: false,
+    });
+
+    await markGuestAccessUsed(access).catch(() => undefined);
+    return res.status(201).json({ success: true, message: 'Aviso enviado' });
+  } catch {
+    return res.status(500).json({ error: 'Não foi possível enviar o aviso.' });
+  }
+}
+
+router.post(
+  '/:token/vehicle-notices',
+  requireGuestAccess('vehicle_notices:create'),
+  createPublicVehicleNotice
 );
 
 export default router;

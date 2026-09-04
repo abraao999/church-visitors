@@ -11,18 +11,32 @@ const TYPES: Array<{
   title: string;
   permission: string;
   defaultName: string;
+  createLabel: string;
+  icon: 'users' | 'prayer' | 'car';
 }> = [
   {
     type: 'visitors:create',
     title: 'Equipe da portaria',
     permission: 'Cadastrar visitantes',
     defaultName: 'Portaria — culto',
+    createLabel: 'Gerar acesso da portaria',
+    icon: 'users',
   },
   {
     type: 'prayers:create',
     title: 'Pedidos de oração',
     permission: 'Enviar pedidos',
     defaultName: 'Oração — transmissão',
+    createLabel: 'Gerar acesso de oração',
+    icon: 'prayer',
+  },
+  {
+    type: 'vehicle_notices:create',
+    title: 'Avisos de veículos',
+    permission: 'Enviar avisos sobre veículos',
+    defaultName: 'Estacionamento — culto',
+    createLabel: 'Gerar acesso de veículos',
+    icon: 'car',
   },
 ];
 
@@ -112,7 +126,7 @@ export function GuestAccessOverview() {
             <article className="access-overview-card card" key={item.type}>
               <div className="access-overview-card-header">
                 <span className={item.type === 'prayers:create' ? 'prayer' : ''}>
-                  <AppIcon name={item.type === 'visitors:create' ? 'users' : 'prayer'} />
+                  <AppIcon name={item.icon} />
                 </span>
                 <div>
                   <h3>{item.title}</h3>
@@ -140,7 +154,7 @@ export function GuestAccessOverview() {
                   <p>Nenhum link foi ativado para esta finalidade.</p>
                   <button type="button" onClick={() => create(item.type, item.defaultName)} disabled={busyType === item.type}>
                     <AppIcon name="plus" />
-                    {busyType === item.type ? 'Gerando...' : item.type === 'visitors:create' ? 'Gerar acesso da portaria' : 'Gerar acesso de oração'}
+                    {busyType === item.type ? 'Gerando...' : item.createLabel}
                   </button>
                 </div>
               )}

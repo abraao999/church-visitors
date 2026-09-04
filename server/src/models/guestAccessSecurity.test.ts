@@ -38,10 +38,11 @@ test('adulteração do token é rejeitada', () => {
   const parsed = parseGuestToken(token);
   assert.ok(parsed);
 
-  const replacement = parsed.signature.endsWith('A') ? 'B' : 'A';
-  const changed = parseGuestToken(
-    `${parsed.publicId}.${parsed.signature.slice(0, -1)}${replacement}`
-  );
+  const flipped = parsed.signature
+    .split('')
+    .map((char, index) => (index === 0 ? (char === 'A' ? 'B' : 'A') : char))
+    .join('');
+  const changed = parseGuestToken(`${parsed.publicId}.${flipped}`);
 
   assert.ok(changed);
   assert.equal(verifyGuestTokenSignature(changed, 1), false);
@@ -80,5 +81,9 @@ test('modelo restringe cada acesso a uma única permissão', () => {
 
   assert.equal(new GuestAccess({ ...base, type: 'visitors:create' }).validateSync(), undefined);
   assert.equal(new GuestAccess({ ...base, type: 'prayers:create' }).validateSync(), undefined);
+  assert.equal(
+    new GuestAccess({ ...base, type: 'vehicle_notices:create' }).validateSync(),
+    undefined
+  );
   assert.ok(new GuestAccess({ ...base, type: 'records:read' }).validateSync());
 });

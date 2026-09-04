@@ -1,8 +1,10 @@
 import type {
   AuthUser,
+  ChurchProfile,
   CreatePrayerDto,
   CreateServiceDto,
   CreateServiceResponse,
+  CreateVehicleNoticeDto,
   CreateVisitorDto,
   GuestAccess,
   GuestAccessType,
@@ -12,6 +14,9 @@ import type {
   PublicAccessMetadata,
   Service,
   UpdateServiceDto,
+  VehicleNotice,
+  VehicleNoticeStats,
+  VehicleNoticeStatus,
   Visitor,
 } from '../types';
 
@@ -174,6 +179,27 @@ export const api = {
     await handleResponse(response);
   },
 
+  async getChurch(): Promise<ChurchProfile> {
+    const response = await fetch(`${API_BASE}/church`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<ChurchProfile>(response);
+  },
+
+  async updateChurch(data: {
+    name: string;
+    city?: string;
+    phone?: string;
+    address?: string;
+  }): Promise<ChurchProfile> {
+    const response = await fetch(`${API_BASE}/church`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<ChurchProfile>(response);
+  },
+
   async getHolyricsSettings(): Promise<HolyricsSettings> {
     const response = await fetch(`${API_BASE}/holyrics/settings`, {
       headers: authHeaders(),
@@ -304,5 +330,56 @@ export const api = {
       }
     );
     return handleResponse(response);
+  },
+
+  async submitPublicVehicleNotice(
+    token: string,
+    data: CreateVehicleNoticeDto
+  ): Promise<{ success: true; message: string }> {
+    const response = await fetch(
+      `${API_BASE}/public-access/${encodeURIComponent(token)}/vehicle-notices`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }
+    );
+    return handleResponse(response);
+  },
+
+  async getVehicleNotices(params?: {
+    date?: string;
+    status?: VehicleNoticeStatus | 'all';
+    plate?: string;
+  }): Promise<VehicleNotice[]> {
+    const search = new URLSearchParams();
+    if (params?.date) search.set('date', params.date);
+    if (params?.status) search.set('status', params.status);
+    if (params?.plate) search.set('plate', params.plate);
+    const query = search.toString();
+    const response = await fetch(`${API_BASE}/vehicle-notices${query ? `?${query}` : ''}`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<VehicleNotice[]>(response);
+  },
+
+  async getVehicleNoticeStats(date?: string): Promise<VehicleNoticeStats> {
+    const params = date ? `?date=${date}` : '';
+    const response = await fetch(`${API_BASE}/vehicle-notices/stats${params}`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<VehicleNoticeStats>(response);
+  },
+
+  async updateVehicleNoticeStatus(
+    id: string,
+    status: VehicleNoticeStatus
+  ): Promise<VehicleNotice> {
+    const response = await fetch(`${API_BASE}/vehicle-notices/${id}/status`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ status }),
+    });
+    return handleResponse<VehicleNotice>(response);
   },
 };

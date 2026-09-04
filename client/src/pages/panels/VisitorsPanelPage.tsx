@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../api/client';
+import { useAuth } from '../../auth/AuthContext';
 import { AppIcon } from '../../components/AppIcon';
 import type { Visitor } from '../../types';
 import {
@@ -89,6 +90,8 @@ function pageSizeFor(groupCount: number): number {
 }
 
 export function VisitorsPanelPage() {
+  const { user } = useAuth();
+  const brandName = user?.churchName?.trim() || 'Church Visitors';
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(() => new Date());
@@ -198,7 +201,7 @@ export function VisitorsPanelPage() {
       <header className="visitors-tv-top">
         <div className="visitors-tv-brand">
           <span className="visitors-tv-logo" aria-hidden="true">✝</span>
-          <span>Church Visitors</span>
+          <span>{brandName}</span>
         </div>
         <div className="visitors-tv-live">
           <span className="visitors-tv-live-dot" aria-hidden="true" />

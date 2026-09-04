@@ -1,0 +1,69 @@
+import { Router, type Response } from 'express';
+import { Church } from '../models/Church.js';
+import { requireAuth, type AuthenticatedRequest } from '../middleware/auth.js';
+import { normalizeChurchName } from '../utils/church.js';
+
+const router = Router();
+
+function normalizeOptionalLine(value: unknown, maxLength: number): string {
+  if (typeof value !== 'string') return '';
+  return value.trim().replace(/\s+/g, ' ').slice(0, maxLength);
+}
+
+function publicChurch(church: {
+  _id: unknown;
+  name: string;
+  slug: string;
+  city?: string;
+  phone?: string;
+  address?: string;
+  active: boolean;
+}) {
+  return {
+    id: String(church._id),
+    name: church.name,
+    slug: church.slug,
+    city: church.city || '',
+    phone: church.phone || '',
+    address: church.address || '',
+    active: church.active,
+  };
+}
+
+router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const church = await Church.findById(req.auth!.churchId);
+    if (!church || !church.active) {
+      return res.status(404).json({ error: 'Igreja não encontrada.' });
+    }
+    return res.json(publicChurch(church));
+  } catch {
+    return res.status(500).json({ error: 'Não foi possível carregar os dados da igreja.' });
+  }
+});
+
+router.patch('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const church = await Church.findById(req.auth!.churchId);
+    if (!church || !church.active) {
+      return res.status(404).json({ error: 'Igreja não encontrada.' });
+    }
+
+    const name = normalizeChurchName(req.body?.name);
+    if (!name) {
+      return res.status(400).json({ error: 'Informe o nome da igreja.' });
+    }
+
+    church.name = name;
+    church.city = normalizeOptionalLine(req.body?.city, 100);
+    church.phone = normalizeOptionalLine(req.body?.phone, 40);
+    church.address = normalizeOptionalLine(req.body?.address, 200);
+    await church.save();
+
+    return res.json(publicChurch(church));
+  } catch {
+    return res.status(500).json({ error: 'Não foi possível salvar os dados da igreja.' });
+  }
+});
+
+export default router;

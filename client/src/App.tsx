@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { HomePage } from './pages/HomePage';
 import { GuestAccessesPage } from './pages/GuestAccessesPage';
 import { HolyricsSettingsPage } from './pages/HolyricsSettingsPage';
+import { ChurchSettingsPage } from './pages/ChurchSettingsPage';
 import { LivePrayerPage } from './pages/LivePrayerPage';
 import { LoginPage } from './pages/LoginPage';
 import { PanelsPage } from './pages/PanelsPage';
@@ -14,6 +15,7 @@ import { VisitorsPanelPage } from './pages/panels/VisitorsPanelPage';
 import { PrayerRequestsPage } from './pages/PrayerRequestsPage';
 import { PublicAccessPage } from './pages/PublicAccessPage';
 import { ServicesPage } from './pages/ServicesPage';
+import { VehicleNoticesPage } from './pages/VehicleNoticesPage';
 import { VisitorsPage } from './pages/VisitorsPage';
 
 export function App() {
@@ -33,6 +35,8 @@ export function App() {
               <Route path="/oracao" element={<PrayerRequestsPage />} />
               <Route path="/acessos" element={<GuestAccessesPage />} />
               <Route path="/cultos" element={<ServicesPage />} />
+              <Route path="/avisos-veiculos" element={<VehicleNoticesPage />} />
+              <Route path="/igreja" element={<ChurchSettingsPage />} />
               <Route path="/configuracoes" element={<HolyricsSettingsPage />} />
               <Route path="/paineis" element={<PanelsPage />} />
               <Route path="/painel/louvores" element={<HymnsPanelPage />} />

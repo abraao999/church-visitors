@@ -8,6 +8,7 @@ import { PrayerRequest } from './PrayerRequest.js';
 import { Service } from './Service.js';
 import { User } from './User.js';
 import { Visitor } from './Visitor.js';
+import { VehicleNotice } from './VehicleNotice.js';
 import { createChurchSlug, normalizeChurchName } from '../utils/church.js';
 
 function hasIndex(
@@ -48,6 +49,13 @@ test('modelos privados possuem churchId e índices compostos de isolamento', () 
 
   assert.ok(HolyricsSettings.schema.path('churchId'));
   assert.ok(hasIndex(HolyricsSettings.schema.indexes(), { churchId: 1 }, { unique: true }));
+
+  assert.equal(VehicleNotice.schema.path('churchId').isRequired, true);
+  assert.ok(hasIndex(VehicleNotice.schema.indexes(), { churchId: 1, status: 1, createdAt: -1 }));
+  assert.ok(
+    hasIndex(VehicleNotice.schema.indexes(), { churchId: 1, plateNormalized: 1, createdAt: -1 })
+  );
+  assert.ok(hasIndex(VehicleNotice.schema.indexes(), { guestAccessId: 1, createdAt: -1 }));
 
   assert.equal(GuestAccess.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(GuestAccess.schema.indexes(), { publicId: 1 }, { unique: true }));

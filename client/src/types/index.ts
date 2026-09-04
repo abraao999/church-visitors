@@ -34,7 +34,20 @@ export interface AuthUser {
   churchName: string;
 }
 
-export type GuestAccessType = 'visitors:create' | 'prayers:create';
+export interface ChurchProfile {
+  id: string;
+  name: string;
+  slug: string;
+  city: string;
+  phone: string;
+  address: string;
+  active: boolean;
+}
+
+export type GuestAccessType =
+  | 'visitors:create'
+  | 'prayers:create'
+  | 'vehicle_notices:create';
 
 export interface GuestOrigin {
   guestAccessId: string;
@@ -167,6 +180,51 @@ export interface HolyricsSyncResponse {
   errors: number;
   results: HolyricsSyncResultItem[];
   message: string;
+}
+
+export const VEHICLE_NOTICE_ACTIONS = [
+  { value: 'remove_vehicle', label: 'Retirar o veículo' },
+  { value: 'turn_off_lights', label: 'Apagar os faróis' },
+  { value: 'close_door_or_window', label: 'Fechar porta ou janela' },
+  { value: 'reposition_vehicle', label: 'Reposicionar o veículo' },
+  { value: 'other', label: 'Outro aviso' },
+] as const;
+
+export type VehicleNoticeAction = (typeof VEHICLE_NOTICE_ACTIONS)[number]['value'];
+
+export const VEHICLE_NOTICE_ACTION_LABELS: Record<VehicleNoticeAction, string> = Object.fromEntries(
+  VEHICLE_NOTICE_ACTIONS.map((item) => [item.value, item.label])
+) as Record<VehicleNoticeAction, string>;
+
+export type VehicleNoticeStatus = 'pending' | 'announced' | 'resolved';
+
+export interface VehicleNotice {
+  id: string;
+  plate: string;
+  plateNormalized: string;
+  vehicleModel: string;
+  requestedAction: VehicleNoticeAction;
+  details: string;
+  status: VehicleNoticeStatus;
+  source: 'guest_access' | 'owner';
+  guestAccessName?: string;
+  announcedAt?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VehicleNoticeStats {
+  pending: number;
+  announced: number;
+  resolvedToday: number;
+}
+
+export interface CreateVehicleNoticeDto {
+  plate: string;
+  vehicleModel: string;
+  requestedAction: VehicleNoticeAction;
+  details?: string;
 }
 
 export function formatVisitor(visitor: Pick<Visitor, 'name' | 'relationship' | 'city'>): string {

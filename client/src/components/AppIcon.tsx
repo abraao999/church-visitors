@@ -25,7 +25,19 @@ export type AppIconName =
   | 'sun'
   | 'moon'
   | 'pin'
-  | 'shield';
+  | 'shield'
+  | 'car'
+  | 'send'
+  | 'bell'
+  | 'megaphone'
+  | 'eyeOff'
+  | 'info'
+  | 'headlight'
+  | 'parking'
+  | 'tow'
+  | 'door'
+  | 'chat'
+  | 'plate';
 
 export function AppIcon({ name, className = '' }: { name: AppIconName; className?: string }) {
   const content = {
@@ -56,6 +68,18 @@ export function AppIcon({ name, className = '' }: { name: AppIconName; className
     moon: <><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.8 8.8 0 1 0 20.5 14.2Z" /></>,
     pin: <><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z" /><circle cx="12" cy="10" r="2.5" /></>,
     shield: <><path d="M12 3 5 6v6c0 5 3.1 7.8 7 9 3.9-1.2 7-4 7-9V6l-7-3Z" /><path d="m9.5 12 1.8 1.8L15 10" /></>,
+    car: <><path d="M5 16V11l2.2-4.5A2 2 0 0 1 9 5.5h6a2 2 0 0 1 1.8 1L19 11v5" /><path d="M3 16h18" /><circle cx="7.5" cy="16.5" r="1.5" /><circle cx="16.5" cy="16.5" r="1.5" /><path d="M7 11h10" /></>,
+    send: <><path d="m4 11 15-7-7 15-2-6-6-2Z" /></>,
+    bell: <><path d="M12 3a5 5 0 0 0-5 5v3.2L5 14h14l-2-2.8V8a5 5 0 0 0-5-5Z" /><path d="M9.5 17a2.5 2.5 0 0 0 5 0" /></>,
+    megaphone: <><path d="m4 11 11-5v12L4 13v-2Z" /><path d="M15 10.5V8a3 3 0 0 1 3-3h1v14h-1a3 3 0 0 1-3-3v-2.5" /><path d="M4 13v4a2 2 0 0 0 2 2h1" /></>,
+    eyeOff: <><path d="m4 4 16 16" /><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" /><path d="M9.9 5.2A9.8 9.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7-.4 1-1.2 2.3-2.4 3.5M6.1 6.1C4.4 7.5 3.2 9.3 2.5 12c1 2.5 4.5 7 9.5 7 1.4 0 2.7-.3 3.9-.8" /></>,
+    info: <><circle cx="12" cy="12" r="9" /><path d="M12 10v6m0-8.5v.5" /></>,
+    headlight: <><circle cx="9" cy="12" r="4" /><path d="M13 9.5 20 7m-7 5h8m-8 2.5 7 2.5" /></>,
+    parking: <><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M9 17V7h4.2a3.2 3.2 0 0 1 0 6.4H9" /></>,
+    tow: <><path d="M3 16h8l2-5h4l2 5h2" /><circle cx="7" cy="17.5" r="1.5" /><circle cx="17" cy="17.5" r="1.5" /><path d="M5 11V8h5l2 3M14 8h4" /></>,
+    door: <><rect x="6" y="3" width="12" height="18" rx="1.5" /><path d="M14.5 12h.01" /></>,
+    chat: <><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" /></>,
+    plate: <><rect x="3" y="7" width="18" height="10" rx="2" /><path d="M7 12h.01M11 12h6" /></>,
   }[name];
 
   return (

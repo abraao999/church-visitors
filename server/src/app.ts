@@ -8,6 +8,8 @@ import servicesRouter from './routes/services.js';
 import holyricsRouter from './routes/holyrics.js';
 import publicAccessRouter from './routes/publicAccess.js';
 import guestAccessesRouter from './routes/guestAccesses.js';
+import churchRouter from './routes/church.js';
+import vehicleNoticesRouter from './routes/vehicleNotices.js';
 
 const DEFAULT_MONGODB_URI = 'mongodb://localhost:27017/church-visitors';
 
@@ -44,6 +46,8 @@ export function createApp() {
   app.use('/api/holyrics', holyricsRouter);
   app.use('/api/public-access', publicAccessRouter);
   app.use('/api/guest-accesses', guestAccessesRouter);
+  app.use('/api/church', churchRouter);
+  app.use('/api/vehicle-notices', vehicleNoticesRouter);
 
   return app;
 }

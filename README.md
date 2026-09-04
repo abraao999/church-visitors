@@ -7,6 +7,7 @@ Sistema web para registro de visitantes (famílias) e pedidos de oração em igr
 - **Autenticação**: conta com usuário/e-mail e senha
 - **Portaria**: cadastro de visitantes (nome, parentesco e cidade)
 - **Pedidos de oração**: registro privado pela equipe da igreja
+- **Avisos de veículos**: formulário público por QR Code e painel administrativo
 - **Calendário de cultos**: agenda mensal com louvores por culto
 - **Painéis**: visualização em tela cheia de louvores, visitantes e pedidos de oração
 - **Auditoria**: nome do usuário fica nos registros que ele adiciona
@@ -89,20 +90,23 @@ feito imediatamente antes da aplicação e volte à versão anterior do código.
 
 ## Núcleo dos acessos convidados
 
-O backend possui acessos restritos a uma única permissão: `visitors:create` ou `prayers:create`.
+O backend possui acessos restritos a uma única permissão: `visitors:create`, `prayers:create`
+ou `vehicle_notices:create`.
 O token público contém somente um `publicId` aleatório e uma assinatura HMAC; o identificador da
 igreja permanece no banco. A assinatura também considera a versão do acesso, permitindo invalidar
 um link antigo sem armazenar o token completo.
 
-Endpoints públicos disponíveis para a futura interface por QR Code:
+Endpoints públicos disponíveis para a interface por QR Code:
 
 - `GET /api/public-access/:token`: retorna somente nome da igreja, nome e tipo do acesso.
 - `POST /api/public-access/:token/visitors`: cadastra até 10 visitantes quando autorizado.
 - `POST /api/public-access/:token/prayer-requests`: envia oração quando autorizado.
+- `POST /api/public-access/:token/vehicle-notices`: registra aviso de veículo quando autorizado.
 
 Esses endpoints não listam registros, rejeitam a identidade da igreja enviada pelo navegador e
 possuem limite persistido de requisições por IP e por acesso. A criação e administração dos links
-serão disponibilizadas na tela autenticada de acessos.
+ficam na tela autenticada `/acessos`. O painel `/avisos-veiculos` lista e atualiza status somente
+dos avisos da igreja da sessão.
 
 ### Gerenciamento pelo proprietário
 

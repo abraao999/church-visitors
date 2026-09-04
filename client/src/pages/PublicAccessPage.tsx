@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon } from '../components/AppIcon';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { type PublicAccessMetadata } from '../types';
+import { type PublicAccessMetadata, type VehicleNoticeAction } from '../types';
+import { PublicVehicleNoticeForm, PublicVehicleSuccess } from './PublicVehicleNotice';
 import './PublicAccessPage.css';
 
 interface PersonDraft {
@@ -415,6 +416,11 @@ export function PublicAccessPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [vehicleSummary, setVehicleSummary] = useState<{
+    plate: string;
+    vehicleModel: string;
+    requestedAction: VehicleNoticeAction;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -435,11 +441,39 @@ export function PublicAccessPage() {
 
   if (loading) return <PublicLoading />;
   if (!metadata) return <PublicInvalid message={error} retry={load} />;
+
+  if (success && metadata.type === 'vehicle_notices:create' && vehicleSummary) {
+    return (
+      <PublicVehicleSuccess
+        churchName={metadata.churchName}
+        plate={vehicleSummary.plate}
+        vehicleModel={vehicleSummary.vehicleModel}
+        action={vehicleSummary.requestedAction}
+        onAgain={() => {
+          setSuccess(false);
+          setVehicleSummary(null);
+        }}
+      />
+    );
+  }
+
   if (success) {
     return <PublicSuccess type={metadata.type} churchName={metadata.churchName} onAgain={() => setSuccess(false)} />;
   }
   if (metadata.type === 'visitors:create') {
     return <PublicVisitorsForm metadata={metadata} token={token} onSuccess={() => setSuccess(true)} />;
+  }
+  if (metadata.type === 'vehicle_notices:create') {
+    return (
+      <PublicVehicleNoticeForm
+        metadata={metadata}
+        token={token}
+        onSuccess={(summary) => {
+          setVehicleSummary(summary);
+          setSuccess(true);
+        }}
+      />
+    );
   }
   return <PublicPrayerForm metadata={metadata} token={token} onSuccess={() => setSuccess(true)} />;
 }

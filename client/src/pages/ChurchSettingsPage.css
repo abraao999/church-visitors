@@ -1,0 +1,110 @@
+.church-settings-page {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.church-settings-hero {
+  margin-bottom: 1.5rem;
+  padding: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: linear-gradient(115deg, var(--surface-muted) 0%, var(--surface) 78%);
+}
+
+.church-settings-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.55rem;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.church-settings-eyebrow .app-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.church-settings-hero h1 {
+  color: var(--text);
+  font-size: clamp(2rem, 4vw, 2.55rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.church-settings-hero p {
+  max-width: 560px;
+  margin-top: 0.55rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.church-settings-form {
+  padding: 1.5rem;
+}
+
+.church-settings-form-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.church-settings-form-heading > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--surface-muted);
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.church-settings-form-heading h2 {
+  color: var(--text);
+  font-size: 1.2rem;
+}
+
+.church-settings-form-heading p {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.church-settings-feedback {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.church-settings-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.church-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .church-settings-form .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .church-settings-actions {
+    justify-content: stretch;
+  }
+
+  .church-settings-actions .btn {
+    width: 100%;
+  }
+}
