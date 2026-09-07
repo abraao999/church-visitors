@@ -66,5 +66,7 @@ const guestAccessSchema = new Schema<IGuestAccess>(
 );
 
 guestAccessSchema.index({ churchId: 1, active: 1 });
+guestAccessSchema.index({ churchId: 1, expiresAt: 1 });
+guestAccessSchema.index({ churchId: 1, active: 1, updatedAt: 1 });
 
 export const GuestAccess = mongoose.model<IGuestAccess>('GuestAccess', guestAccessSchema);

@@ -56,6 +56,7 @@ const portariaDeviceSchema = new Schema<IPortariaDevice>(
 );
 
 portariaDeviceSchema.index({ churchId: 1, active: 1, createdAt: -1 });
+portariaDeviceSchema.index({ churchId: 1, active: 1, revokedAt: 1 });
 
 export const PortariaDevice = mongoose.model<IPortariaDevice>(
   'PortariaDevice',

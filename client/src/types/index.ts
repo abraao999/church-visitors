@@ -104,6 +104,57 @@ export interface ChurchProfile {
   active: boolean;
 }
 
+export interface RetentionPolicy {
+  enabled: boolean;
+  visitorsMonths: number;
+  prayersDays: number;
+  vehicleNoticesDays: number;
+  guestAccessesDays: number;
+  teamInvitationsDays: number;
+  portariaDevicesDays: number;
+  activatedAt?: string;
+  lastRunAt?: string;
+  lastRunStatus?: 'completed' | 'failed';
+  updatedAt?: string;
+}
+
+export interface RetentionSummary {
+  visitorsAnonymized: number;
+  prayersDeleted: number;
+  vehicleNoticesDeleted: number;
+  guestAccessesDeleted: number;
+  teamInvitationsDeleted: number;
+  portariaDevicesDeleted: number;
+}
+
+export interface RetentionPreview {
+  generatedAt: string;
+  cutoffs: {
+    visitors: string;
+    prayers: string;
+    vehicleNotices: string;
+    guestAccesses: string;
+    teamInvitations: string;
+    portariaDevices: string;
+  };
+  counts: RetentionSummary;
+}
+
+export interface RetentionRun {
+  id: string;
+  trigger: 'automatic' | 'owner';
+  status: 'completed' | 'failed';
+  summary: RetentionSummary;
+  startedAt: string;
+  completedAt: string;
+}
+
+export interface RetentionOverview {
+  policy: RetentionPolicy;
+  preview: RetentionPreview;
+  history: RetentionRun[];
+}
+
 export type GuestAccessType =
   | 'visitors:create'
   | 'prayers:create'

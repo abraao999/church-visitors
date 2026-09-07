@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
 import { ChurchSectionNav } from '../components/ChurchSectionNav';
+import { RetentionPolicySection } from '../components/RetentionPolicySection';
 import { hasPermission } from '../utils/permissions';
 import './ChurchSettingsPage.css';
 
@@ -219,6 +220,8 @@ export function ChurchSettingsPage() {
           </div>
         </section>
       )}
+
+      {user?.role === 'owner' && <RetentionPolicySection />}
 
       <form className="card church-settings-form" onSubmit={handlePassword}>
         <div className="church-settings-form-heading">

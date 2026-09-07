@@ -44,5 +44,6 @@ prayerRequestSchema.index({ churchId: 1, 'guestAccess.guestAccessId': 1 });
 prayerRequestSchema.index({ churchId: 1, allowProjection: 1, createdAt: -1 });
 prayerRequestSchema.index({ churchId: 1, requestId: 1 }, { unique: true, sparse: true });
 prayerRequestSchema.index({ churchId: 1, serviceId: 1, createdAt: -1 });
+prayerRequestSchema.index({ churchId: 1, createdAt: 1 });
 
 export const PrayerRequest = mongoose.model<IPrayerRequest>('PrayerRequest', prayerRequestSchema);

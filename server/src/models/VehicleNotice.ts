@@ -104,6 +104,8 @@ vehicleNoticeSchema.index({ churchId: 1, plateNormalized: 1, createdAt: -1 });
 vehicleNoticeSchema.index({ guestAccessId: 1, createdAt: -1 });
 vehicleNoticeSchema.index({ churchId: 1, requestId: 1 }, { unique: true, sparse: true });
 vehicleNoticeSchema.index({ churchId: 1, serviceId: 1, createdAt: -1 });
+vehicleNoticeSchema.index({ churchId: 1, resolvedAt: 1 });
+vehicleNoticeSchema.index({ churchId: 1, archived: 1, updatedAt: 1 });
 
 export function isVehicleNoticeAction(value: unknown): value is VehicleNoticeAction {
   return (

@@ -19,6 +19,7 @@ export interface IVisitor extends Document {
   requestId?: string;
   serviceId?: Types.ObjectId;
   capturedAt?: Date;
+  anonymizedAt?: Date;
   createdAt: Date;
 }
 
@@ -45,6 +46,7 @@ const visitorSchema = new Schema<IVisitor>(
     requestId: { type: String, trim: true, maxlength: 64 },
     serviceId: { type: Schema.Types.ObjectId, ref: 'Service' },
     capturedAt: { type: Date },
+    anonymizedAt: { type: Date },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
@@ -53,6 +55,7 @@ visitorSchema.index({ churchId: 1, createdAt: -1 });
 visitorSchema.index({ churchId: 1, 'guestAccess.guestAccessId': 1 });
 visitorSchema.index({ churchId: 1, requestId: 1 }, { unique: true, sparse: true });
 visitorSchema.index({ churchId: 1, serviceId: 1, createdAt: -1 });
+visitorSchema.index({ churchId: 1, anonymizedAt: 1, visitDate: 1 });
 
 export { RELATIONSHIPS, type Relationship };
 export const Visitor = mongoose.model<IVisitor>('Visitor', visitorSchema);

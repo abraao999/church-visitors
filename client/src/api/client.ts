@@ -16,6 +16,8 @@ import type {
   PrayerRequest,
   PrayerRequestPanelItem,
   PublicInvitation,
+  RetentionOverview,
+  RetentionPolicy,
   ServicePanelItem,
   VisitorPanelItem,
   PublicAccessMetadata,
@@ -469,6 +471,47 @@ export const api = {
       body: JSON.stringify(data),
     });
     return handleResponse<ChurchProfile>(response);
+  },
+
+  async getRetentionOverview(): Promise<RetentionOverview> {
+    const response = await apiFetch(`${API_BASE}/retention`, {
+      headers: authHeaders(),
+      cache: 'no-store',
+    });
+    return handleResponse<RetentionOverview>(response);
+  },
+
+  async saveRetentionPolicy(
+    data: Pick<
+      RetentionPolicy,
+      | 'enabled'
+      | 'visitorsMonths'
+      | 'prayersDays'
+      | 'vehicleNoticesDays'
+      | 'guestAccessesDays'
+      | 'teamInvitationsDays'
+      | 'portariaDevicesDays'
+    >,
+    confirmActivation = false
+  ): Promise<RetentionOverview> {
+    const response = await apiFetch(`${API_BASE}/retention`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify({ ...data, confirmActivation }),
+    });
+    return handleResponse<RetentionOverview>(response);
+  },
+
+  async runRetentionNow(): Promise<{
+    message: string;
+    overview: RetentionOverview;
+  }> {
+    const response = await apiFetch(`${API_BASE}/retention/run`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ confirmation: 'EXCLUIR DADOS VENCIDOS' }),
+    });
+    return handleResponse(response);
   },
 
   async getHolyricsSettings(): Promise<HolyricsSettings> {

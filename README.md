@@ -162,6 +162,7 @@ Em **Network Access**, libere `0.0.0.0/0` (a Vercel usa IPs dinâmicos).
 | `MONGODB_URI` | Server | connection string do Atlas |
 | `JWT_SECRET` | Server | chave longa e aleatória |
 | `GUEST_ACCESS_SECRET` | Server | outra chave longa e aleatória |
+| `CRON_SECRET` | Server | chave aleatória para proteger a limpeza automática diária |
 
 ### 4. Deploy
 
@@ -171,6 +172,18 @@ Clique em **Deploy**. Depois:
 - Login: `https://SEU-PROJETO.vercel.app/login`
 - Link público legado (somente aviso): `https://SEU-PROJETO.vercel.app/live/oracao`
 - Health: `https://SEU-PROJETO.vercel.app/api/health`
+
+## Retenção automática de dados
+
+A política é configurada pelo proprietário em **Igreja → Retenção e exclusão de dados** e nasce desativada para cada igreja. A tela mostra uma prévia antes da ativação e permite definir prazos separados para visitantes, pedidos de oração, avisos de veículos, acessos sem login, convites e dispositivos da portaria.
+
+- Visitantes antigos são anonimizados, preservando apenas os totais históricos por culto.
+- As demais categorias vencidas são excluídas conforme o prazo configurado.
+- Todas as consultas são isoladas por `churchId`; uma igreja nunca processa dados de outra.
+- A execução automática ocorre diariamente pelo cron definido em `vercel.json` e exige `CRON_SECRET`.
+- O histórico guarda somente datas, resultado e contagens, sem copiar dados pessoais.
+
+Backups do MongoDB Atlas ou da plataforma de hospedagem seguem a retenção configurada nesses próprios serviços e não são apagados por esta rotina.
 
 ## Integração com Holyrics
 

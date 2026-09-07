@@ -1,0 +1,181 @@
+.retention-section {
+  margin-top: 1.25rem;
+  padding: 1.5rem;
+}
+
+.retention-title-row,
+.retention-preview-heading,
+.retention-toggle,
+.retention-preview li,
+.retention-history li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.retention-title-row {
+  justify-content: flex-start;
+}
+
+.retention-status,
+.retention-run-status {
+  padding: 0.24rem 0.55rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.retention-status.active,
+.retention-run-status.completed {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.retention-run-status.failed {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.retention-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.2rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.retention-notice .app-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  color: var(--primary);
+}
+
+.retention-toggle {
+  margin-bottom: 1.2rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  cursor: pointer;
+}
+
+.retention-toggle span,
+.retention-fields label,
+.retention-preview li > span:first-child,
+.retention-history li > span:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.retention-toggle small,
+.retention-fields small,
+.retention-preview small,
+.retention-history small,
+.retention-preview-heading p,
+.retention-last-run {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.retention-toggle input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--primary);
+  flex: 0 0 22px;
+}
+
+.retention-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+
+.retention-fields label {
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.retention-fields label > span {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.retention-fields select {
+  margin-top: 0.35rem;
+}
+
+.retention-preview,
+.retention-history {
+  margin-top: 1.4rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.retention-preview h3,
+.retention-history h3 {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.retention-preview ul,
+.retention-history ul {
+  display: grid;
+  margin-top: 0.8rem;
+  list-style: none;
+}
+
+.retention-preview li,
+.retention-history li {
+  min-height: 54px;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.retention-preview li:first-child,
+.retention-history li:first-child {
+  border-top: 0;
+}
+
+.retention-preview li > span:last-child {
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.retention-last-run {
+  margin-top: 1rem;
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .retention-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .retention-preview-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .retention-preview-heading .btn {
+    width: 100%;
+  }
+
+  .retention-preview li,
+  .retention-history li {
+    align-items: flex-start;
+  }
+}
