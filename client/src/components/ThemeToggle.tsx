@@ -4,9 +4,11 @@ import './ThemeToggle.css';
 
 interface Props {
   compact?: boolean;
+  label?: string;
+  tabIndex?: number;
 }
 
-export function ThemeToggle({ compact = false }: Props) {
+export function ThemeToggle({ compact = false, label, tabIndex }: Props) {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -15,11 +17,12 @@ export function ThemeToggle({ compact = false }: Props) {
       type="button"
       className={`theme-toggle${compact ? ' theme-toggle-compact' : ''}`}
       onClick={toggleTheme}
-      aria-label={isDark ? 'Ativar tema claro' : 'Ativar tema escuro'}
+      aria-label={label || (isDark ? 'Ativar tema claro' : 'Ativar tema escuro')}
       title={isDark ? 'Tema claro' : 'Tema escuro'}
+      tabIndex={tabIndex}
     >
       <AppIcon name={isDark ? 'sun' : 'moon'} />
-      {!compact && <span>{isDark ? 'Claro' : 'Escuro'}</span>}
+      {!compact && <span>{label || (isDark ? 'Claro' : 'Escuro')}</span>}
     </button>
   );
 }

@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useVehicleAlerts, VehicleAlertProvider } from '../alerts/VehicleAlertProvider';
 import { formatPendingBadge, pendingBadgeLabel } from '../alerts/vehicleAlertLogic';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon, type AppIconName } from './AppIcon';
+import { MobileNavDrawer } from './MobileNavDrawer';
 import { ThemeToggle } from './ThemeToggle';
+import { drawerSections, NAV_ITEMS } from './navItems';
 import { navItemVisible } from '../utils/permissions';
-import { MOBILE_NAV_ITEMS, NAV_ITEMS } from './navItems';
 import './Layout.css';
 
 function isActive(pathname: string, to: string) {
@@ -50,34 +51,67 @@ function VehicleNavBadge({ to }: { to: string }) {
 
 function AuthenticatedShell({ pathname }: { pathname: string }) {
   const { user, logout } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isVisitorsPage = pathname === '/visitantes';
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerOpenRef = useRef(false);
   const brandName = user?.churchName?.trim() || 'Church Visitors';
   const navItems = NAV_ITEMS.filter((item) =>
     navItemVisible(item.to, user?.role, user?.permissions)
   );
-  const mobileNavItems = MOBILE_NAV_ITEMS.filter((item) =>
-    navItemVisible(item.to, user?.role, user?.permissions)
-  );
+  const { primary, admin } = drawerSections(navItems);
+
+  drawerOpenRef.current = drawerOpen;
 
   useEffect(() => {
     document.title = brandName;
   }, [brandName]);
 
-  function closeMobileMenu() {
-    setMobileMenuOpen(false);
+  useEffect(() => {
+    if (!drawerOpenRef.current) return;
+    setDrawerOpen(false);
+    menuButtonRef.current?.focus();
+  }, [pathname]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 769px)');
+    function onChange() {
+      if (media.matches) setDrawerOpen(false);
+    }
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
+    queueMicrotask(() => menuButtonRef.current?.focus());
+  }, []);
+
+  function handleLogout() {
+    setDrawerOpen(false);
+    logout();
   }
 
   return (
-    <div className={`app-layout${isVisitorsPage ? ' visitors-layout' : ''}`}>
+    <div className="app-layout">
       <header className="app-header">
         <div className="container header-inner">
+          <button
+            ref={menuButtonRef}
+            type="button"
+            className="mobile-menu-open"
+            aria-expanded={drawerOpen}
+            aria-controls="mobile-nav-drawer"
+            aria-haspopup="dialog"
+            onClick={() => setDrawerOpen(true)}
+          >
+            <AppIcon name="menu" />
+            Menu
+          </button>
+
           <Link to="/" className="logo">
             <span className="logo-icon">✝</span>
             <span className="logo-text">{brandName}</span>
           </Link>
-
-          {isVisitorsPage && <span className="mobile-page-title">Visitantes</span>}
 
           <div className="header-right">
             <nav className="nav nav-desktop" aria-label="Menu principal">
@@ -109,113 +143,30 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
             )}
           </div>
 
-          {isVisitorsPage && (
-            <button
-              type="button"
-              className="mobile-menu-button"
-              aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
-              aria-expanded={mobileMenuOpen}
-              aria-controls="visitors-mobile-menu"
-              onClick={() => setMobileMenuOpen((open) => !open)}
-            >
-              <span />
-              <span />
-              <span />
-            </button>
+          {user && (
+            <span className="mobile-user-avatar" title={user.name} aria-label={user.name}>
+              <AppIcon name="user" />
+            </span>
           )}
         </div>
       </header>
 
-      {isVisitorsPage && mobileMenuOpen && (
-        <div className="mobile-menu-backdrop" onClick={closeMobileMenu}>
-          <nav
-            id="visitors-mobile-menu"
-            className="mobile-more-menu"
-            aria-label="Outras opções"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mobile-more-heading">
-              <strong>Mais opções</strong>
-              <button type="button" onClick={closeMobileMenu} aria-label="Fechar menu">Fechar</button>
-            </div>
-            <Link to="/oracao" onClick={closeMobileMenu}>Pedidos de oração</Link>
-            {navItemVisible('/acessos', user?.role, user?.permissions) && (
-              <Link to="/acessos" onClick={closeMobileMenu}>Acessos sem login</Link>
-            )}
-            {navItemVisible('/cultos', user?.role, user?.permissions) && (
-              <Link to="/cultos" onClick={closeMobileMenu}>Calendário de cultos</Link>
-            )}
-            {navItemVisible('/paineis', user?.role, user?.permissions) && (
-              <Link to="/paineis" onClick={closeMobileMenu}>Painéis</Link>
-            )}
-            {navItemVisible('/configuracoes', user?.role, user?.permissions) && (
-              <Link to="/configuracoes" onClick={closeMobileMenu}>Configurações do Holyrics</Link>
-            )}
-            <button type="button" className="mobile-logout" onClick={logout}>Sair da conta</button>
-          </nav>
-        </div>
-      )}
+      <MobileNavDrawer
+        open={drawerOpen}
+        brandName={brandName}
+        userName={user?.name}
+        pathname={pathname}
+        primary={primary}
+        admin={admin}
+        isActive={isActive}
+        onClose={closeDrawer}
+        onLogout={handleLogout}
+        renderBadge={(to) => <VehicleNavBadge to={to} />}
+      />
 
       <main className="app-main container">
         <Outlet />
       </main>
-
-      {isVisitorsPage ? (
-        <nav className="nav-mobile visitors-bottom-nav" aria-label="Menu inferior">
-          <Link to="/">
-            <NavIcon name="home" />
-            <span className="nav-mobile-label">Início</span>
-          </Link>
-          <Link to="/visitantes" className="active" aria-current="page">
-            <NavIcon name="people" />
-            <span className="nav-mobile-label">Visitantes</span>
-          </Link>
-          <button type="button" onClick={() => setMobileMenuOpen(true)}>
-            <NavIcon name="more" />
-            <span className="nav-mobile-label">Mais</span>
-          </button>
-        </nav>
-      ) : (
-        <nav className="nav-mobile" aria-label="Menu inferior">
-          {mobileNavItems.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={isActive(pathname, item.to) ? 'active' : ''}
-            >
-              <AppIcon name={item.icon as AppIconName} />
-              <span className="nav-mobile-label">{item.short}</span>
-              <VehicleNavBadge to={item.to} />
-            </Link>
-          ))}
-        </nav>
-      )}
     </div>
-  );
-}
-
-function NavIcon({ name }: { name: 'home' | 'people' | 'more' }) {
-  if (name === 'home') {
-    return (
-      <svg className="nav-mobile-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z" />
-      </svg>
-    );
-  }
-
-  if (name === 'people') {
-    return (
-      <svg className="nav-mobile-icon nav-mobile-icon-fill" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M16 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM8 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm8 1c-3.3 0-6 1.8-6 4v3h6v-3c0-2.2-2.7-4-6-4ZM8 14c-3.3 0-6 1.7-6 3.8V20h6v-3c0-1 .4-2 1.2-2.8-.4-.1-.8-.2-1.2-.2Z" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg className="nav-mobile-icon nav-mobile-icon-fill" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="5" cy="12" r="2" />
-      <circle cx="12" cy="12" r="2" />
-      <circle cx="19" cy="12" r="2" />
-    </svg>
   );
 }

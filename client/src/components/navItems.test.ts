@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { MOBILE_NAV_ITEMS, NAV_ITEMS } from './navItems.ts';
+import { drawerLabel, drawerSections, MOBILE_NAV_ITEMS, NAV_ITEMS } from './navItems.ts';
 
 test('a barra de navegação permanece com os mesmos itens, textos e ordem', () => {
   assert.deepEqual(
@@ -23,4 +23,36 @@ test('a barra de navegação permanece com os mesmos itens, textos e ordem', () 
     MOBILE_NAV_ITEMS.map((item) => item.to),
     NAV_ITEMS.filter((item) => item.to !== '/acessos').map((item) => item.to)
   );
+});
+
+test('a gaveta mobile reaproveita os itens atuais com textos completos e ordem própria', () => {
+  const { primary, admin } = drawerSections(NAV_ITEMS);
+  assert.deepEqual(
+    primary.map((item) => ({ to: item.to, label: drawerLabel(item) })),
+    [
+      { to: '/', label: 'Início' },
+      { to: '/visitantes', label: 'Visitantes' },
+      { to: '/oracao', label: 'Pedidos de oração' },
+      { to: '/cultos', label: 'Cultos' },
+      { to: '/avisos-veiculos', label: 'Avisos de veículos' },
+      { to: '/paineis', label: 'Painéis' },
+      { to: '/acessos', label: 'Acessos sem login' },
+    ]
+  );
+  assert.deepEqual(
+    admin.map((item) => ({ to: item.to, label: drawerLabel(item) })),
+    [
+      { to: '/igreja', label: 'Igreja' },
+      { to: '/configuracoes', label: 'Holyric' },
+    ]
+  );
+});
+
+test('a gaveta só apresenta os itens já filtrados por permissão', () => {
+  const visible = NAV_ITEMS.filter((item) =>
+    ['/', '/visitantes', '/avisos-veiculos'].includes(item.to)
+  );
+  const { primary, admin } = drawerSections(visible);
+  assert.deepEqual(primary.map((item) => item.to), ['/', '/visitantes', '/avisos-veiculos']);
+  assert.deepEqual(admin.map((item) => item.to), []);
 });

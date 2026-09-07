@@ -10,4 +10,40 @@ export const NAV_ITEMS = [
   { to: '/configuracoes', label: 'Holyric', short: 'Holyric', icon: 'music' },
 ] as const;
 
+export type NavItem = (typeof NAV_ITEMS)[number];
+
 export const MOBILE_NAV_ITEMS = NAV_ITEMS.filter((item) => item.to !== '/acessos');
+
+const DRAWER_PRIMARY = [
+  '/',
+  '/visitantes',
+  '/oracao',
+  '/cultos',
+  '/avisos-veiculos',
+  '/paineis',
+  '/acessos',
+] as const;
+
+const DRAWER_ADMIN = ['/igreja', '/configuracoes'] as const;
+
+const DRAWER_LABELS: Partial<Record<NavItem['to'], string>> = {
+  '/oracao': 'Pedidos de oração',
+  '/acessos': 'Acessos sem login',
+};
+
+export function drawerLabel(item: NavItem): string {
+  return DRAWER_LABELS[item.to] ?? item.label;
+}
+
+function pickDrawerItems(visible: readonly NavItem[], order: readonly string[]): NavItem[] {
+  return order
+    .map((to) => visible.find((item) => item.to === to))
+    .filter((item): item is NavItem => Boolean(item));
+}
+
+export function drawerSections(visible: readonly NavItem[]) {
+  return {
+    primary: pickDrawerItems(visible, DRAWER_PRIMARY),
+    admin: pickDrawerItems(visible, DRAWER_ADMIN),
+  };
+}

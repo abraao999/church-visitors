@@ -42,7 +42,8 @@ export type AppIconName =
   | 'search'
   | 'checkPlain'
   | 'clipboard'
-  | 'close';
+  | 'close'
+  | 'menu';
 
 export function AppIcon({ name, className = '' }: { name: AppIconName; className?: string }) {
   const content = {
@@ -90,6 +91,7 @@ export function AppIcon({ name, className = '' }: { name: AppIconName; className
     search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></>,
     clipboard: <><rect x="7" y="4" width="10" height="16" rx="2" /><path d="M9 4.5h6V6a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V4.5Z" /><path d="M10 11h4m-4 3h4" /></>,
     close: <><path d="M6 6l12 12M18 6 6 18" /></>,
+    menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
   }[name];
 
   return (

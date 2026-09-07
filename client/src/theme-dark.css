@@ -22,7 +22,7 @@ html[data-theme='dark'] .btn-logout:hover {
 }
 
 html[data-theme='dark'] .nav-desktop a.active,
-html[data-theme='dark'] .nav-mobile a.active {
+html[data-theme='dark'] .mobile-drawer-nav a.active {
   background: var(--primary-soft);
   color: var(--primary);
 }
@@ -38,48 +38,40 @@ html[data-theme='dark'] .panel-layout {
     var(--bg);
 }
 
-html[data-theme='dark'] .nav-mobile {
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35);
-}
-
 @media (max-width: 768px) {
-  html[data-theme='dark'] .visitors-layout {
-    background: var(--bg);
-  }
-
-  html[data-theme='dark'] .visitors-layout .app-header {
-    background: color-mix(in srgb, var(--surface) 92%, transparent);
-    box-shadow: 0 3px 16px rgba(0, 0, 0, 0.28);
-  }
-
-  html[data-theme='dark'] .visitors-layout .logo-icon {
-    background: var(--accent-soft);
-    color: var(--accent);
-  }
-
-  html[data-theme='dark'] .visitors-bottom-nav a,
-  html[data-theme='dark'] .visitors-bottom-nav button {
-    color: var(--text-muted);
-  }
-
-  html[data-theme='dark'] .visitors-bottom-nav a.active {
-    color: var(--primary);
-    background: var(--primary-soft);
-  }
-
-  html[data-theme='dark'] .mobile-more-menu {
+  html[data-theme='dark'] .mobile-drawer {
     background: var(--surface);
-    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.45);
+    color: var(--text);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
   }
 
-  html[data-theme='dark'] .mobile-more-menu > a,
-  html[data-theme='dark'] .mobile-logout {
-    border-bottom-color: var(--border);
+  html[data-theme='dark'] .mobile-drawer-nav a {
     color: var(--text);
   }
 
-  html[data-theme='dark'] .mobile-logout {
-    color: var(--danger);
+  html[data-theme='dark'] .mobile-drawer-nav a .app-icon {
+    color: var(--text-muted);
+  }
+
+  html[data-theme='dark'] .mobile-drawer-nav a.active .app-icon {
+    color: var(--primary);
+  }
+
+  html[data-theme='dark'] .mobile-menu-open,
+  html[data-theme='dark'] .mobile-drawer-close,
+  html[data-theme='dark'] .mobile-drawer-brand strong,
+  html[data-theme='dark'] .mobile-drawer-user {
+    color: var(--text);
+  }
+
+  html[data-theme='dark'] .mobile-user-avatar {
+    background: var(--surface-muted);
+    color: var(--text-muted);
+  }
+
+  html[data-theme='dark'] .mobile-drawer-section,
+  html[data-theme='dark'] .mobile-drawer-logout {
+    color: var(--text-muted);
   }
 }
 
