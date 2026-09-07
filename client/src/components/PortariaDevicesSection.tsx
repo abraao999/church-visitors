@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { api } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import { portariaPairingUrl } from '../portaria/constants';
 import type { PortariaDevice, PortariaPairing } from '../types';
+import { hasPermission } from '../utils/permissions';
 import { AppIcon } from './AppIcon';
 import './PortariaDevicesSection.css';
 
@@ -20,6 +22,10 @@ function permissionLabel(permission: string): string {
 }
 
 export function PortariaDevicesSection() {
+  const { user } = useAuth();
+  const canCreate = hasPermission(user?.permissions, 'portaria_devices:create') || user?.role === 'owner';
+  const canRename = hasPermission(user?.permissions, 'portaria_devices:update') || user?.role === 'owner';
+  const canRevoke = hasPermission(user?.permissions, 'portaria_devices:revoke') || user?.role === 'owner';
   const [devices, setDevices] = useState<PortariaDevice[]>([]);
   const [pairing, setPairing] = useState<PortariaPairing | null>(null);
   const [qr, setQr] = useState('');
@@ -110,9 +116,11 @@ export function PortariaDevicesSection() {
             convite é de uso único e vale 15 minutos.
           </p>
         </div>
-        <button type="button" className="btn btn-secondary" onClick={() => void prepareDevice()}>
-          <AppIcon name="plus" /> Preparar novo aparelho
-        </button>
+        {canCreate && (
+          <button type="button" className="btn btn-secondary" onClick={() => void prepareDevice()}>
+            <AppIcon name="plus" /> Preparar novo aparelho
+          </button>
+        )}
       </div>
 
       {feedback && (
@@ -166,16 +174,20 @@ export function PortariaDevicesSection() {
                 <p>{device.permissions.map(permissionLabel).join(' · ')}</p>
                 <p>Última conexão: {formatDate(device.lastUsedAt)}</p>
               </div>
-              <div className="portaria-admin-actions">
-                <button type="button" onClick={() => void rename(device)} disabled={busyId === device.id}>
-                  Renomear aparelho
-                </button>
-                {device.active && (
-                  <button type="button" className="danger" onClick={() => void revoke(device)} disabled={busyId === device.id}>
-                    Desativar aparelho
-                  </button>
-                )}
-              </div>
+              {(canRename || (canRevoke && device.active)) && (
+                <div className="portaria-admin-actions">
+                  {canRename && (
+                    <button type="button" onClick={() => void rename(device)} disabled={busyId === device.id}>
+                      Renomear aparelho
+                    </button>
+                  )}
+                  {canRevoke && device.active && (
+                    <button type="button" className="danger" onClick={() => void revoke(device)} disabled={busyId === device.id}>
+                      Desativar aparelho
+                    </button>
+                  )}
+                </div>
+              )}
             </li>
           ))}
         </ul>

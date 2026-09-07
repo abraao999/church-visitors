@@ -3,6 +3,8 @@ import { describe, test } from 'node:test';
 import { NAV_ITEMS } from '../components/navItems.ts';
 import {
   navItemVisible,
+  PERMISSIONS,
+  PERMISSION_GROUPS,
   permissionsForRole,
   type TeamRole,
 } from './permissions.ts';
@@ -55,11 +57,20 @@ describe('menu lateral por permissão', () => {
         (item) => item.to
       );
 
-    assert.deepEqual(visible('portaria'), ['/', '/visitantes', '/avisos-veiculos']);
+    assert.deepEqual(visible('portaria'), ['/', '/visitantes', '/cultos', '/avisos-veiculos']);
     assert.deepEqual(visible('intercession'), ['/', '/oracao']);
     assert.deepEqual(visible('louvor'), ['/', '/cultos', '/paineis', '/configuracoes']);
     assert.deepEqual(visible('midia'), ['/', '/acessos', '/paineis']);
     assert.ok(visible('admin').includes('/igreja'));
-    assert.equal(visible('admin').includes('/configuracoes'), false);
+    assert.ok(visible('admin').includes('/configuracoes'));
+  });
+});
+
+describe('catálogo de permissões da equipe', () => {
+  test('a tela de equipe lista todas as chaves usadas no sistema', () => {
+    const listed = PERMISSION_GROUPS.flatMap((group) => group.items.map((item) => item.key));
+    for (const key of PERMISSIONS) {
+      assert.equal(listed.includes(key), true, `faltou ${key} na tela de equipe`);
+    }
   });
 });

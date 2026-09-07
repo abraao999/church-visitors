@@ -221,7 +221,9 @@ export function ChurchSettingsPage() {
         </section>
       )}
 
-      {user?.role === 'owner' && <RetentionPolicySection />}
+      {(hasPermission(user?.permissions, 'retention:manage') || user?.role === 'owner') && (
+        <RetentionPolicySection />
+      )}
 
       <form className="card church-settings-form" onSubmit={handlePassword}>
         <div className="church-settings-form-heading">

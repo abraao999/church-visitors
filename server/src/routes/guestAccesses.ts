@@ -5,7 +5,7 @@ import {
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/requirePermission.js';
-import { hasAnyPermission } from '../utils/permissions.js';
+import { hasAnyPermission, hasPermission } from '../utils/permissions.js';
 import {
   GuestAccess,
   type GuestAccessType,
@@ -75,6 +75,10 @@ function canManageFormAccesses(req: AuthenticatedRequest): boolean {
   ]);
 }
 
+function canManagePanelAccesses(req: AuthenticatedRequest): boolean {
+  return hasPermission(req.auth?.permissions, 'panels:manage');
+}
+
 function typesFromBody(body: unknown): GuestAccessType[] {
   const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
   return parseGuestAccessTypes(payload.types ?? payload.type);
@@ -125,6 +129,9 @@ router.post('/', requireAuth, requirePermission('guest_accesses:create'), async 
     }
     if (!canManageFormAccesses(req) && !isPanelOnlyAccess(types)) {
       return res.status(403).json({ error: 'Este acesso só pode criar links de leitura para as TVs.' });
+    }
+    if (isPanelOnlyAccess(types) && !canManagePanelAccesses(req)) {
+      return res.status(403).json({ error: 'Este acesso não pode criar links de painel de TV.' });
     }
     if (expiresAt === null) {
       return res.status(400).json({ error: 'A validade deve ser uma data futura.' });
@@ -190,6 +197,9 @@ router.put('/:id', requireAuth, requirePermission('guest_accesses:update'), asyn
     }
     if (!canManageFormAccesses(req) && !isPanelOnlyAccess(types)) {
       return res.status(403).json({ error: 'Este acesso só pode alterar links de leitura para as TVs.' });
+    }
+    if (isPanelOnlyAccess(types) && !canManagePanelAccesses(req)) {
+      return res.status(403).json({ error: 'Este acesso não pode alterar links de painel de TV.' });
     }
 
     access.name = name;

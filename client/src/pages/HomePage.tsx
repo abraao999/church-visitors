@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { GuestAccessOverview } from '../components/GuestAccessOverview';
+import { PortariaDevicesSection } from '../components/PortariaDevicesSection';
 import { useAuth } from '../auth/AuthContext';
 import { hasPermission } from '../utils/permissions';
 import type { Service } from '../types';
@@ -37,6 +38,12 @@ const QUICK_ACTIONS: Array<{
     description: 'Organize cultos e louvores',
   },
   {
+    to: '/avisos-veiculos',
+    icon: 'car',
+    title: 'Avisos de veículos',
+    description: 'Veja e resolva os avisos de hoje',
+  },
+  {
     to: '/paineis',
     icon: 'panels',
     title: 'Abrir painéis',
@@ -50,10 +57,15 @@ export function HomePage() {
   const canPrayers = hasPermission(user?.permissions, 'prayers:read') || user?.role === 'owner';
   const canAccesses = hasPermission(user?.permissions, 'guest_accesses:read') || user?.role === 'owner';
   const canHolyrics = hasPermission(user?.permissions, 'holyrics:read') || user?.role === 'owner';
+  const canPortariaDevices =
+    hasPermission(user?.permissions, 'portaria_devices:read') || user?.role === 'owner';
   const visibleActions = QUICK_ACTIONS.filter((action) => {
     if (action.to === '/visitantes') return canVisitors || hasPermission(user?.permissions, 'visitors:create');
     if (action.to === '/oracao') return canPrayers || hasPermission(user?.permissions, 'prayers:create');
     if (action.to === '/cultos') return hasPermission(user?.permissions, 'services:read') || user?.role === 'owner';
+    if (action.to === '/avisos-veiculos') {
+      return hasPermission(user?.permissions, 'vehicle_notices:read') || user?.role === 'owner';
+    }
     if (action.to === '/paineis') return hasPermission(user?.permissions, 'panels:open') || user?.role === 'owner';
     return true;
   });
@@ -196,6 +208,7 @@ export function HomePage() {
       </div>
 
       {canAccesses && <GuestAccessOverview />}
+      {canPortariaDevices && !canAccesses && <PortariaDevicesSection />}
 
       {canHolyrics && (
       <section className="holyrics-dashboard-card card">

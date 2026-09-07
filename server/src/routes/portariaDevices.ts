@@ -110,9 +110,9 @@ export async function revokePortariaDevice(req: AuthenticatedRequest, res: Respo
   return res.json(serializeDevice(device));
 }
 
-router.get('/', requirePermission('guest_accesses:read'), listPortariaDevices);
-router.post('/pairings', requirePermission('guest_accesses:create'), createPortariaPairing);
-router.patch('/:id', requirePermission('guest_accesses:update'), renamePortariaDevice);
-router.post('/:id/revoke', requirePermission('guest_accesses:revoke'), revokePortariaDevice);
+router.get('/', requirePermission('portaria_devices:read'), listPortariaDevices);
+router.post('/pairings', requirePermission('portaria_devices:create'), createPortariaPairing);
+router.patch('/:id', requirePermission('portaria_devices:update'), renamePortariaDevice);
+router.post('/:id/revoke', requirePermission('portaria_devices:revoke'), revokePortariaDevice);
 
 export default router;

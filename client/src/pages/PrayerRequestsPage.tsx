@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
 import { PrayerForm } from '../components/PrayerForm';
 import { PrayerList } from '../components/PrayerList';
 import type { PrayerRequest } from '../types';
 import { todayLocalISO } from '../utils/date';
+import { hasPermission } from '../utils/permissions';
 import './PrayerRequestsPage.css';
 
 export function PrayerRequestsPage() {
+  const { user } = useAuth();
+  const canProject = hasPermission(user?.permissions, 'prayers:project') || user?.role === 'owner';
   const [selectedDate, setSelectedDate] = useState(todayLocalISO());
   const [requests, setRequests] = useState<PrayerRequest[]>([]);
   const [loadingRecords, setLoadingRecords] = useState(true);
@@ -50,11 +54,13 @@ export function PrayerRequestsPage() {
           <h1>Pedidos de oração</h1>
           <p>Registre com cuidado os pedidos compartilhados pela igreja.</p>
         </div>
-        <Link to="/painel/oracao" className="prayer-panel-link">
-          <AppIcon name="panels" />
-          <span><strong>Ver painel</strong><small>Acompanhar pedidos de hoje</small></span>
-          <AppIcon name="arrow" />
-        </Link>
+        {canProject && (
+          <Link to="/painel/oracao" className="prayer-panel-link">
+            <AppIcon name="panels" />
+            <span><strong>Ver painel</strong><small>Acompanhar pedidos de hoje</small></span>
+            <AppIcon name="arrow" />
+          </Link>
+        )}
       </section>
       <div className="prayer-page-form">
         <PrayerForm onSuccess={loadRequests} />

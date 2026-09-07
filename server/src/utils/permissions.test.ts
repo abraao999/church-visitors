@@ -31,12 +31,23 @@ describe('funções e permissões da equipe', () => {
     assert.equal(hasPermission(permissionsForRole('midia'), 'church:update'), false);
     assert.equal(hasPermission(permissionsForRole('louvor'), 'holyrics:sync'), true);
     assert.equal(hasPermission(permissionsForRole('admin'), 'team:invite'), true);
-    assert.equal(hasPermission(permissionsForRole('admin'), 'church:update'), false);
+    assert.equal(hasPermission(permissionsForRole('admin'), 'church:update'), true);
+    assert.equal(hasPermission(permissionsForRole('admin'), 'holyrics:configure'), true);
+    assert.equal(hasPermission(permissionsForRole('admin'), 'retention:manage'), true);
+  });
+
+  test('portaria gerencia aparelhos e cultos de consulta, mídia não', () => {
+    const portaria = permissionsForRole('portaria');
+    assert.equal(hasPermission(portaria, 'portaria_devices:create'), true);
+    assert.equal(hasPermission(portaria, 'services:read'), true);
+    assert.equal(hasPermission(portaria, 'vehicle_notices:archive'), true);
+    assert.equal(hasPermission(permissionsForRole('midia'), 'portaria_devices:read'), false);
+    assert.equal(hasPermission(permissionsForRole('intercession'), 'prayers:project'), true);
   });
 
   test('permissões personalizadas são limitadas às do concedente', () => {
     const requested = sanitizePermissions(['visitors:read', 'church:update', 'unknown']);
-    const granted = clampPermissionsToGrant(requested, permissionsForRole('admin'));
+    const granted = clampPermissionsToGrant(requested, permissionsForRole('portaria'));
     assert.equal(granted.includes('visitors:read'), true);
     assert.equal(granted.includes('church:update'), false);
     assert.equal(canGrantPermissions(permissionsForRole('portaria'), ['prayers:read']), false);

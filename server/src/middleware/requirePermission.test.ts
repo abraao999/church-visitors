@@ -123,12 +123,19 @@ describe('checagem de permissão nas APIs', () => {
     assert.equal(ok, true);
   });
 
-  test('administrador não recebe permissão de alterar proprietário via church:update', () => {
-    const { res, state } = mockRes();
-    requirePermission('church:update')(authReq('admin'), res, () => {
-      assert.fail('admin não altera dados da igreja');
+  test('administrador altera dados da igreja e a portaria não', () => {
+    const admin = mockRes();
+    let adminOk = false;
+    requirePermission('church:update')(authReq('admin'), admin.res, () => {
+      adminOk = true;
     });
-    assert.equal(state.statusCode, 403);
+    assert.equal(adminOk, true);
+
+    const portaria = mockRes();
+    requirePermission('church:update')(authReq('portaria'), portaria.res, () => {
+      assert.fail('portaria não altera dados da igreja');
+    });
+    assert.equal(portaria.state.statusCode, 403);
   });
 
   test('rota de oração privada usa a igreja da sessão mesmo com permissão', async () => {

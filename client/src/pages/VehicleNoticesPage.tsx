@@ -11,6 +11,7 @@ import {
   type VehicleNoticeStatus,
 } from '../types';
 import { todayLocalISO } from '../utils/date';
+import { hasPermission } from '../utils/permissions';
 import { maskVehiclePlateInput } from '../utils/vehiclePlate';
 import './VehicleNoticesPage.css';
 
@@ -43,6 +44,9 @@ function relativeTime(iso: string): string {
 
 export function VehicleNoticesPage() {
   const { user } = useAuth();
+  const canAnnounce = hasPermission(user?.permissions, 'vehicle_notices:announce') || user?.role === 'owner';
+  const canResolve = hasPermission(user?.permissions, 'vehicle_notices:resolve') || user?.role === 'owner';
+  const canArchive = hasPermission(user?.permissions, 'vehicle_notices:archive') || user?.role === 'owner';
   const alerts = useVehicleAlerts();
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get('aviso') || '';
@@ -118,6 +122,20 @@ export function VehicleNoticesPage() {
       await load();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Não foi possível atualizar o aviso.');
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  async function archiveNotice(id: string) {
+    if (!window.confirm('Arquivar este aviso? Ele sai da lista operacional.')) return;
+    setBusyId(id);
+    setActionError('');
+    try {
+      await api.archiveVehicleNotice(id);
+      await load();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Não foi possível arquivar o aviso.');
     } finally {
       setBusyId('');
     }
@@ -292,45 +310,53 @@ export function VehicleNoticesPage() {
                 <div className="vehicle-notice-actions">
                   {notice.status === 'pending' && (
                     <>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        disabled={busyId === notice.id}
-                        onClick={() => setStatus(notice.id, 'announced', notice.status, notice.updatedAt)}
-                      >
-                        Marcar como anunciado
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        disabled={busyId === notice.id}
-                        onClick={() => setStatus(notice.id, 'resolved', notice.status, notice.updatedAt)}
-                      >
-                        Resolver
-                      </button>
+                      {canAnnounce && (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          disabled={busyId === notice.id}
+                          onClick={() => setStatus(notice.id, 'announced', notice.status, notice.updatedAt)}
+                        >
+                          Marcar como anunciado
+                        </button>
+                      )}
+                      {canResolve && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          disabled={busyId === notice.id}
+                          onClick={() => setStatus(notice.id, 'resolved', notice.status, notice.updatedAt)}
+                        >
+                          Resolver
+                        </button>
+                      )}
                     </>
                   )}
                   {notice.status === 'announced' && (
                     <>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        disabled={busyId === notice.id}
-                        onClick={() => setStatus(notice.id, 'resolved', notice.status, notice.updatedAt)}
-                      >
-                        Resolver
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        disabled={busyId === notice.id}
-                        onClick={() => setStatus(notice.id, 'pending', notice.status, notice.updatedAt)}
-                      >
-                        Reabrir
-                      </button>
+                      {canResolve && (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          disabled={busyId === notice.id}
+                          onClick={() => setStatus(notice.id, 'resolved', notice.status, notice.updatedAt)}
+                        >
+                          Resolver
+                        </button>
+                      )}
+                      {canResolve && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          disabled={busyId === notice.id}
+                          onClick={() => setStatus(notice.id, 'pending', notice.status, notice.updatedAt)}
+                        >
+                          Reabrir
+                        </button>
+                      )}
                     </>
                   )}
-                  {notice.status === 'resolved' && (
+                  {notice.status === 'resolved' && canResolve && (
                     <button
                       type="button"
                       className="btn btn-secondary"
@@ -338,6 +364,16 @@ export function VehicleNoticesPage() {
                       onClick={() => setStatus(notice.id, 'pending', notice.status, notice.updatedAt)}
                     >
                       Reabrir aviso
+                    </button>
+                  )}
+                  {canArchive && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      disabled={busyId === notice.id}
+                      onClick={() => void archiveNotice(notice.id)}
+                    >
+                      Arquivar
                     </button>
                   )}
                 </div>

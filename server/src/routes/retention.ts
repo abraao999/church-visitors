@@ -1,4 +1,4 @@
-import { Router, type NextFunction, type Response } from 'express';
+import { Router, type Response } from 'express';
 import {
   requireAuth,
   type AuthenticatedRequest,
@@ -16,15 +16,9 @@ import {
 import { sendPrivateJson } from '../utils/publicRecord.js';
 import { validCronAuthorization } from '../utils/cronSecret.js';
 import { withChurch } from '../utils/tenant.js';
+import { requirePermission } from '../middleware/requirePermission.js';
 
 const router = Router();
-
-function requireOwner(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  if (req.auth?.role !== 'owner') {
-    return res.status(403).json({ error: 'Somente o proprietário pode gerenciar a retenção.' });
-  }
-  next();
-}
 
 function serializePolicy(policy: IRetentionPolicy | null) {
   return {
@@ -79,7 +73,7 @@ router.get('/cron', async (req, res) => {
   }
 });
 
-router.use(requireAuth, requireOwner);
+router.use(requireAuth, requirePermission('retention:manage'));
 
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
   try {

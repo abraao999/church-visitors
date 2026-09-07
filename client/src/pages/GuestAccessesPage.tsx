@@ -6,6 +6,7 @@ import { PortariaDevicesSection } from '../components/PortariaDevicesSection';
 import { GuestAccessQr, guestAccessUrl } from '../components/GuestAccessQr';
 import type { GuestAccess, GuestAccessType } from '../types';
 import { OPTION_LABELS } from '../utils/publicAccess';
+import { hasPermission } from '../utils/permissions';
 import './GuestAccessesPage.css';
 
 const FORM_OPTIONS: GuestAccessType[] = [
@@ -57,6 +58,9 @@ async function copyText(value: string): Promise<void> {
 
 export function GuestAccessesPage() {
   const { user } = useAuth();
+  const canManagePanels = hasPermission(user?.permissions, 'panels:manage') || user?.role === 'owner';
+  const canPortariaDevices =
+    hasPermission(user?.permissions, 'portaria_devices:read') || user?.role === 'owner';
   const [accesses, setAccesses] = useState<GuestAccess[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
@@ -235,13 +239,15 @@ export function GuestAccessesPage() {
           <button type="button" className="btn btn-primary" onClick={() => openCreate('portal')}>
             <AppIcon name="plus" /> Criar portal público
           </button>
-          <button type="button" className="btn btn-secondary" onClick={() => openCreate('panel')}>
-            <AppIcon name="panels" /> Criar acesso de painel
-          </button>
+          {canManagePanels && (
+            <button type="button" className="btn btn-secondary" onClick={() => openCreate('panel')}>
+              <AppIcon name="panels" /> Criar acesso de painel
+            </button>
+          )}
         </div>
       </header>
 
-      <PortariaDevicesSection />
+      {canPortariaDevices && <PortariaDevicesSection />}
 
       <div className="guest-access-notice">
         <AppIcon name="lock" />
@@ -322,6 +328,7 @@ export function GuestAccessesPage() {
             ))}
           </fieldset>
 
+          {canManagePanels && (
           <fieldset className="guest-access-options">
             <legend>Ou exibição nas TVs</legend>
             <label className="guest-access-option">
@@ -338,6 +345,7 @@ export function GuestAccessesPage() {
                 : 'Um mesmo link não pode juntar painel e formulários.'}
             </small>
           </fieldset>
+          )}
           <button type="submit" className="btn btn-primary" disabled={saving || types.length === 0}>
             <AppIcon name="check" />{' '}
             {saving ? 'Salvando...' : editing ? 'Salvar alterações' : 'Criar acesso seguro'}

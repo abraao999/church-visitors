@@ -769,4 +769,12 @@ export const api = {
     });
     return handleResponse<VehicleNotice>(response);
   },
+
+  async archiveVehicleNotice(id: string): Promise<{ success: true; message: string }> {
+    const response = await apiFetch(`${API_BASE}/vehicle-notices/${id}/archive`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    return handleResponse<{ success: true; message: string }>(response);
+  },
 };

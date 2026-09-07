@@ -55,7 +55,7 @@ function authReq(churchId: string, id?: string) {
       role: 'owner',
       name: 'Dono',
       email: 'dono@igreja.test',
-      permissions: ['guest_accesses:read', 'guest_accesses:revoke'],
+      permissions: ['portaria_devices:read', 'portaria_devices:revoke'],
     },
     params: { id },
   } as unknown as AuthenticatedRequest;
