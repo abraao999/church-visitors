@@ -1,0 +1,289 @@
+.team-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.team-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.team-eyebrow {
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.team-heading h1 {
+  margin-top: 0.35rem;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  letter-spacing: -0.03em;
+}
+
+.team-heading p {
+  margin-top: 0.4rem;
+  color: var(--text-muted);
+}
+
+.team-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.team-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.team-stat strong {
+  font-size: 1.6rem;
+}
+
+.team-stat span,
+.team-meta,
+.team-security {
+  color: var(--text-muted);
+}
+
+.team-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.team-filters input,
+.team-filters select {
+  min-height: 44px;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  min-width: 180px;
+}
+
+.team-list ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.team-list h2 {
+  margin-bottom: 1rem;
+}
+
+.team-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1.4fr) auto auto minmax(7rem, 0.8fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.team-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.team-row-copy {
+  min-width: 0;
+}
+
+.team-row-copy small {
+  display: block;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.team-role-badge,
+.team-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 32px;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.team-status.active {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.team-status.inactive,
+.team-status.expired {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.team-status.pending {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.team-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.team-security {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.team-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 40;
+  padding: 1rem;
+}
+
+.team-modal {
+  width: min(720px, 100%);
+  max-height: min(92vh, 900px);
+  overflow: auto;
+}
+
+.team-modal-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.team-modal-close {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.6rem;
+}
+
+.team-role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.team-role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-height: 88px;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: left;
+  color: var(--text);
+}
+
+.team-role-card.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.team-customize,
+.team-field-label {
+  margin: 0.4rem 0 0.8rem;
+  font-weight: 700;
+}
+
+.team-customize {
+  min-height: 44px;
+  border: none;
+  background: none;
+  color: var(--primary);
+  padding: 0;
+}
+
+.team-permission-groups {
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.team-permission-groups fieldset {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+.team-permission-groups label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+}
+
+.team-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@media (max-width: 840px) {
+  .team-stats,
+  .team-role-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .team-row {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .team-row .btn,
+  .team-role-badge,
+  .team-status,
+  .team-meta,
+  .team-row-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 720px) {
+  .team-modal-backdrop {
+    align-items: center;
+  }
+}

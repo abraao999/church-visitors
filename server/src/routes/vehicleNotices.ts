@@ -4,6 +4,8 @@ import {
   toActor,
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
+import { FORBIDDEN_ERROR, requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
+import { hasPermission } from '../utils/permissions.js';
 import {
   VehicleNotice,
   isVehicleNoticeAction,
@@ -171,6 +173,14 @@ export async function updateVehicleNoticeStatus(req: AuthenticatedRequest, res: 
       return res.status(409).json({ error: STALE_WRITE_ERROR });
     }
 
+    const needed =
+      nextStatus === 'announced'
+        ? 'vehicle_notices:announce'
+        : 'vehicle_notices:resolve';
+    if (!hasPermission(req.auth!.permissions, needed)) {
+      return res.status(403).json({ error: FORBIDDEN_ERROR });
+    }
+
     const allowed = ALLOWED_TRANSITIONS[notice.status];
     if (!allowed.includes(nextStatus)) {
       return res.status(400).json({
@@ -281,11 +291,11 @@ export async function createVehicleNoticeOwner(req: AuthenticatedRequest, res: R
   }
 }
 
-router.get('/', requireAuth, listVehicleNotices);
-router.get('/panel', requireAuth, listVehicleNoticesPanel);
-router.get('/stats', requireAuth, getVehicleNoticeStats);
-router.post('/', requireAuth, createVehicleNoticeOwner);
-router.patch('/:id/status', requireAuth, updateVehicleNoticeStatus);
-router.post('/:id/archive', requireAuth, archiveVehicleNotice);
+router.get('/', requireAuth, requirePermission('vehicle_notices:read'), listVehicleNotices);
+router.get('/panel', requireAuth, requireAnyPermission('panels:open', 'vehicle_notices:read'), listVehicleNoticesPanel);
+router.get('/stats', requireAuth, requirePermission('vehicle_notices:read'), getVehicleNoticeStats);
+router.post('/', requireAuth, requirePermission('vehicle_notices:create'), createVehicleNoticeOwner);
+router.patch('/:id/status', requireAuth, requirePermission('vehicle_notices:read'), updateVehicleNoticeStatus);
+router.post('/:id/archive', requireAuth, requirePermission('vehicle_notices:archive'), archiveVehicleNotice);
 
 export default router;

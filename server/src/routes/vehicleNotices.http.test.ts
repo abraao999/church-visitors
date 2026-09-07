@@ -20,6 +20,7 @@ import { VehicleNotice } from '../models/VehicleNotice.js';
 import { createGuestPublicId, createGuestToken } from '../utils/guestToken.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { requireAuth } from '../middleware/auth.js';
+import { permissionsForRole } from '../utils/permissions.js';
 
 process.env.GUEST_ACCESS_SECRET = 'teste-guest-veiculos-chave-outra-654321abcdef';
 process.env.JWT_SECRET = 'teste-jwt-veiculos-chave-longa-123456abcdef';
@@ -60,6 +61,7 @@ function authReq(
       role: 'owner',
       name: 'Responsável',
       email: 'owner@example.com',
+      permissions: permissionsForRole('owner'),
     },
     query: {},
     params: {},

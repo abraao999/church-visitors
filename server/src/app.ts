@@ -12,6 +12,8 @@ import publicAccessRouter from './routes/publicAccess.js';
 import guestAccessesRouter from './routes/guestAccesses.js';
 import churchRouter from './routes/church.js';
 import vehicleNoticesRouter from './routes/vehicleNotices.js';
+import teamRouter from './routes/team.js';
+import publicInvitationsRouter from './routes/publicInvitations.js';
 
 const DEFAULT_MONGODB_URI = 'mongodb://localhost:27017/church-visitors';
 
@@ -79,6 +81,8 @@ export function createApp() {
   app.use('/api/guest-accesses', guestAccessesRouter);
   app.use('/api/church', churchRouter);
   app.use('/api/vehicle-notices', vehicleNoticesRouter);
+  app.use('/api/team', teamRouter);
+  app.use('/api/public-invitations', publicInvitationsRouter);
 
   return app;
 }

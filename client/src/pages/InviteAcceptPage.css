@@ -1,0 +1,57 @@
+.invite-accept-page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: var(--bg);
+}
+
+.invite-accept-card {
+  width: min(520px, 100%);
+}
+
+.invite-accept-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.invite-accept-brand small {
+  display: block;
+  color: var(--text-muted);
+}
+
+.invite-role-box {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  margin: 1rem 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.invite-role-box small,
+.invite-role-box span,
+.invite-footnote {
+  display: block;
+  color: var(--text-muted);
+}
+
+.invite-login-link {
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-weight: 700;
+  min-height: 44px;
+}
+
+.invite-accept-card .btn-primary {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.ok {
+  color: var(--success);
+}

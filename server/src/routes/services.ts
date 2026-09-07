@@ -6,6 +6,7 @@ import {
   toActor,
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
+import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
 import { fetchHymnPanel } from '../services/panelData.js';
 import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
 import {
@@ -129,7 +130,7 @@ function buildPayload(
   };
 }
 
-router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/', requireAuth, requirePermission('services:read'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const fromParam = req.query.from as string | undefined;
     const toParam = req.query.to as string | undefined;
@@ -176,7 +177,7 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =>
 });
 
 /** Painel de TV: título, horário e louvores. Sem quem adicionou cada louvor. */
-router.get('/panel', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/panel', requireAuth, requireAnyPermission('panels:open', 'services:read'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const dateParam = req.query.date as string | undefined;
     const date = dateParam ? parseDateOnly(dateParam) : new Date();
@@ -192,7 +193,7 @@ router.get('/panel', requireAuth, async (req: AuthenticatedRequest, res: Respons
   }
 });
 
-router.get('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/:id', requireAuth, requirePermission('services:read'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
     if (!filter) {
@@ -209,7 +210,7 @@ router.get('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response)
   }
 });
 
-router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', requireAuth, requirePermission('services:create'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const actor = toActor(req.auth!);
     const payload = buildPayload(req.body, actor);
@@ -268,7 +269,7 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
   }
 });
 
-router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.put('/:id', requireAuth, requirePermission('services:update'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
     if (!filter) {
@@ -306,7 +307,7 @@ router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response)
   }
 });
 
-router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.delete('/:id', requireAuth, requirePermission('services:delete'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
     if (!filter) {

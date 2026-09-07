@@ -15,6 +15,7 @@ import {
 import { requireAuthRateLimit } from '../middleware/authRateLimit.js';
 import { createChurchSlug, normalizeChurchName } from '../utils/church.js';
 import { readLoginIdentifier } from '../utils/loginIdentifier.js';
+import { resolvePermissions, type Permission, type TeamRole } from '../utils/permissions.js';
 import { clearSessionCookie, setSessionCookie } from '../utils/sessionCookie.js';
 
 const router = Router();
@@ -44,15 +45,26 @@ function isValidEmail(value: string): boolean {
 }
 
 function publicUser(
-  user: { _id: unknown; name: string; email: string; username?: string },
+  user: {
+    _id: unknown;
+    name: string;
+    email: string;
+    username?: string;
+    role?: TeamRole;
+    permissions?: Permission[];
+    permissionsCustomized?: boolean;
+  },
   churchName: string
 ) {
+  const role = user.role || 'owner';
   return {
     id: String(user._id),
     name: user.name,
     email: user.email,
     username: user.username || undefined,
     churchName,
+    role,
+    permissions: resolvePermissions(user),
   };
 }
 
@@ -65,7 +77,9 @@ function issueSession(
     email: string;
     username?: string;
     churchId: Types.ObjectId;
-    role: 'owner';
+    role: TeamRole;
+    permissions?: Permission[];
+    permissionsCustomized?: boolean;
     tokenVersion?: number;
   },
   churchName: string
@@ -76,6 +90,7 @@ function issueSession(
     role: user.role,
     name: user.name,
     email: user.email,
+    permissions: resolvePermissions(user),
     tokenVersion: user.tokenVersion ?? 0,
   };
   setSessionCookie(req, res, signToken(payload));
@@ -193,7 +208,7 @@ export async function loginAccount(
       return res.status(401).json({ error: LOGIN_INVALID_ERROR });
     }
 
-    if (!user.churchId) {
+    if (!user.churchId || user.active === false) {
       return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
     }
 
@@ -201,6 +216,9 @@ export async function loginAccount(
     if (!church) {
       return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
     }
+
+    user.lastSeenAt = new Date();
+    await user.save();
 
     return res.json(issueSession(req, res, user as IUser & { churchId: Types.ObjectId }, church.name));
   } catch (error) {
@@ -232,7 +250,6 @@ export async function changePassword(req: AuthenticatedRequest, res: Response) {
     const user = await User.findOne({
       _id: req.auth!.userId,
       churchId: req.auth!.churchId,
-      role: req.auth!.role,
     });
 
     const passwordHash = user?.passwordHash || dummyHash();
@@ -279,9 +296,8 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
     const user = await User.findOne({
       _id: req.auth!.userId,
       churchId: req.auth!.churchId,
-      role: req.auth!.role,
-    }).select('name email username churchId role');
-    if (!user) {
+    }).select('name email username churchId role permissions permissionsCustomized active lastSeenAt');
+    if (!user || user.active === false) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
@@ -289,6 +305,9 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
     if (!church) {
       return res.status(403).json({ error: 'O acesso desta igreja está indisponível.' });
     }
+
+    user.lastSeenAt = new Date();
+    await user.save();
 
     res.json({ user: publicUser(user, church.name) });
   } catch {

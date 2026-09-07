@@ -5,6 +5,7 @@ import {
   toActor,
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
+import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
 import { fetchPrayerPanel } from '../services/panelData.js';
 import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
 import {
@@ -131,10 +132,10 @@ export async function deletePrayerRequest(req: AuthenticatedRequest, res: Respon
   }
 }
 
-router.get('/', requireAuth, listPrayerRequests);
-router.get('/stats', requireAuth, countPrayerRequests);
-router.get('/panel', requireAuth, listPrayerRequestsPanel);
-router.post('/', requireAuth, createPrayerRequest);
-router.delete('/:id', requireAuth, deletePrayerRequest);
+router.get('/', requireAuth, requirePermission('prayers:read'), listPrayerRequests);
+router.get('/stats', requireAuth, requirePermission('prayers:read'), countPrayerRequests);
+router.get('/panel', requireAuth, requireAnyPermission('panels:open', 'prayers:read'), listPrayerRequestsPanel);
+router.post('/', requireAuth, requirePermission('prayers:create'), createPrayerRequest);
+router.delete('/:id', requireAuth, requirePermission('prayers:delete'), deletePrayerRequest);
 
 export default router;

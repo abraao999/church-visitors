@@ -1,6 +1,7 @@
 import { Router, type Response } from 'express';
 import { Church } from '../models/Church.js';
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth.js';
+import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
 import { normalizeChurchName } from '../utils/church.js';
 
 const router = Router();
@@ -30,7 +31,7 @@ function publicChurch(church: {
   };
 }
 
-router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/', requireAuth, requireAnyPermission('church:read', 'team:read'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const church = await Church.findById(req.auth!.churchId);
     if (!church || !church.active) {
@@ -42,7 +43,7 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =>
   }
 });
 
-router.patch('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.patch('/', requireAuth, requirePermission('church:update'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const church = await Church.findById(req.auth!.churchId);
     if (!church || !church.active) {

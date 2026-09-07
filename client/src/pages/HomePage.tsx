@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { GuestAccessOverview } from '../components/GuestAccessOverview';
+import { useAuth } from '../auth/AuthContext';
+import { hasPermission } from '../utils/permissions';
 import { formatTodayLabel } from '../utils/date';
 import './HomePage.css';
 
@@ -41,6 +43,18 @@ const QUICK_ACTIONS: Array<{
 ];
 
 export function HomePage() {
+  const { user } = useAuth();
+  const canVisitors = hasPermission(user?.permissions, 'visitors:read') || user?.role === 'owner';
+  const canPrayers = hasPermission(user?.permissions, 'prayers:read') || user?.role === 'owner';
+  const canAccesses = hasPermission(user?.permissions, 'guest_accesses:read') || user?.role === 'owner';
+  const canHolyrics = hasPermission(user?.permissions, 'holyrics:read') || user?.role === 'owner';
+  const visibleActions = QUICK_ACTIONS.filter((action) => {
+    if (action.to === '/visitantes') return canVisitors || hasPermission(user?.permissions, 'visitors:create');
+    if (action.to === '/oracao') return canPrayers || hasPermission(user?.permissions, 'prayers:create');
+    if (action.to === '/cultos') return hasPermission(user?.permissions, 'services:read') || user?.role === 'owner';
+    if (action.to === '/paineis') return hasPermission(user?.permissions, 'panels:open') || user?.role === 'owner';
+    return true;
+  });
   const [visitorCount, setVisitorCount] = useState(0);
   const [prayerCount, setPrayerCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -48,16 +62,21 @@ export function HomePage() {
 
   const loadData = useCallback(async () => {
     try {
-      const [v, p] = await Promise.all([api.getVisitorStats(), api.getPrayerRequestStats()]);
-      setVisitorCount(v.count);
-      setPrayerCount(p.count);
+      const tasks: Array<Promise<void>> = [];
+      if (canVisitors) {
+        tasks.push(api.getVisitorStats().then((v) => setVisitorCount(v.count)));
+      }
+      if (canPrayers) {
+        tasks.push(api.getPrayerRequestStats().then((p) => setPrayerCount(p.count)));
+      }
+      await Promise.all(tasks);
       setStatsError('');
     } catch {
       setStatsError('Não foi possível atualizar os números de hoje.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [canVisitors, canPrayers]);
 
   useEffect(() => {
     loadData();
@@ -88,6 +107,7 @@ export function HomePage() {
       ) : null}
 
       <section className="dashboard-stats" aria-label="Resumo de hoje">
+        {canVisitors && (
         <article className="dashboard-stat-card card">
           <span className="dashboard-stat-icon dashboard-stat-icon-blue"><AppIcon name="users" /></span>
           <div>
@@ -96,7 +116,9 @@ export function HomePage() {
             <Link to="/visitantes">Ver visitantes <AppIcon name="arrow" /></Link>
           </div>
         </article>
+        )}
 
+        {canPrayers && (
         <article className="dashboard-stat-card card">
           <span className="dashboard-stat-icon dashboard-stat-icon-yellow"><AppIcon name="prayer" /></span>
           <div>
@@ -105,13 +127,14 @@ export function HomePage() {
             <Link to="/oracao">Ver pedidos <AppIcon name="arrow" /></Link>
           </div>
         </article>
+        )}
       </section>
 
       <div className="dashboard-main-grid">
         <section className="quick-actions-panel card">
           <h2>Ações rápidas</h2>
           <div className="quick-actions-grid">
-            {QUICK_ACTIONS.map((action) => (
+            {visibleActions.map((action) => (
               <Link
                 key={action.to}
                 to={action.to}
@@ -128,6 +151,7 @@ export function HomePage() {
           </div>
         </section>
 
+        {canAccesses && (
         <aside className="online-link-card card">
           <h2>Acessos para convidados</h2>
           <p>Crie, renove e desative links seguros para sua equipe.</p>
@@ -140,10 +164,12 @@ export function HomePage() {
             Isolados por igreja e permissão
           </p>
         </aside>
+        )}
       </div>
 
-      <GuestAccessOverview />
+      {canAccesses && <GuestAccessOverview />}
 
+      {canHolyrics && (
       <section className="holyrics-dashboard-card card">
         <span className="holyrics-dashboard-icon"><AppIcon name="music" /></span>
         <div>
@@ -152,6 +178,7 @@ export function HomePage() {
         </div>
         <Link to="/configuracoes">Configurar</Link>
       </section>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import test from 'node:test';
 import { Church } from './Church.js';
 import { HolyricsSettings } from './HolyricsSettings.js';
 import { GuestAccess } from './GuestAccess.js';
+import { TeamInvitation } from './TeamInvitation.js';
 import { PublicRateLimit } from './PublicRateLimit.js';
 import { PrayerRequest } from './PrayerRequest.js';
 import { Service } from './Service.js';
@@ -74,6 +75,10 @@ test('modelos privados possuem churchId obrigatório e índices compostos de iso
   assert.equal(GuestAccess.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(GuestAccess.schema.indexes(), { publicId: 1 }, { unique: true }));
   assert.ok(hasIndex(GuestAccess.schema.indexes(), { churchId: 1, active: 1 }));
+
+  assert.equal(TeamInvitation.schema.path('churchId').isRequired, true);
+  assert.ok(hasIndex(TeamInvitation.schema.indexes(), { publicId: 1 }, { unique: true }));
+  assert.ok(hasIndex(TeamInvitation.schema.indexes(), { churchId: 1, status: 1, createdAt: -1 }));
 
   assert.ok(
     hasIndex(PublicRateLimit.schema.indexes(), { expiresAt: 1 }, { expireAfterSeconds: 0 })

@@ -25,12 +25,73 @@ export interface Actor {
   name: string;
 }
 
+export type TeamRole =
+  | 'owner'
+  | 'admin'
+  | 'portaria'
+  | 'intercession'
+  | 'louvor'
+  | 'midia';
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
   username?: string;
   churchName: string;
+  role: TeamRole;
+  permissions: string[];
+}
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  username?: string;
+  role: TeamRole;
+  roleLabel: string;
+  permissions: string[];
+  permissionsCustomized: boolean;
+  active: boolean;
+  lastSeenAt?: string;
+  you: boolean;
+  deactivatedAt?: string;
+  permissionsUpdatedAt?: string;
+  permissionsUpdatedByName?: string;
+}
+
+export interface TeamInvitation {
+  id: string;
+  name: string;
+  email?: string;
+  role: TeamRole;
+  roleLabel: string;
+  permissions: string[];
+  permissionsCustomized: boolean;
+  status: 'pending' | 'accepted' | 'cancelled' | 'expired';
+  expiresAt: string;
+  createdAt: string;
+  path?: string;
+}
+
+export interface TeamOverview {
+  churchName: string;
+  stats: { activeMembers: number; pendingInvites: number; roles: number };
+  members: TeamMember[];
+  invitations: TeamInvitation[];
+}
+
+export interface PublicInvitation {
+  valid: true;
+  churchName: string;
+  name: string;
+  email?: string;
+  emailLocked: boolean;
+  role: TeamRole;
+  roleLabel: string;
+  roleSummary: string;
+  areas: string[];
+  expiresAt: string;
 }
 
 export interface ChurchProfile {

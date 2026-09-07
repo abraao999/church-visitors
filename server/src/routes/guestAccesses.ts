@@ -4,6 +4,8 @@ import {
   toActor,
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
+import { requirePermission } from '../middleware/requirePermission.js';
+import { hasAnyPermission } from '../utils/permissions.js';
 import {
   GuestAccess,
   type GuestAccessType,
@@ -65,6 +67,14 @@ function parseFutureDate(value: unknown): Date | null | undefined {
   return date;
 }
 
+function canManageFormAccesses(req: AuthenticatedRequest): boolean {
+  return hasAnyPermission(req.auth?.permissions, [
+    'visitors:create',
+    'prayers:create',
+    'vehicle_notices:create',
+  ]);
+}
+
 function typesFromBody(body: unknown): GuestAccessType[] {
   const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
   return parseGuestAccessTypes(payload.types ?? payload.type);
@@ -80,12 +90,15 @@ function configurationError(res: Response) {
   });
 }
 
-router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/', requireAuth, requirePermission('guest_accesses:read'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const accesses = await GuestAccess.find(withChurch(req.auth!.churchId))
       .sort({ createdAt: -1 })
       .lean();
-    return res.json(accesses.map(serializeAccess));
+    const visible = canManageFormAccesses(req)
+      ? accesses
+      : accesses.filter((access) => isPanelOnlyAccess(resolveGuestAccessTypes(access)));
+    return res.json(visible.map(serializeAccess));
   } catch (error) {
     if (error instanceof Error && error.message.includes('GUEST_ACCESS_SECRET')) {
       return configurationError(res);
@@ -94,7 +107,7 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =>
   }
 });
 
-router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', requireAuth, requirePermission('guest_accesses:create'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (req.body?.churchId !== undefined) {
       return res.status(400).json({ error: 'O identificador da igreja não deve ser enviado.' });
@@ -109,6 +122,9 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
     }
     if (mixesPanelAndFormScopes(types)) {
       return res.status(400).json({ error: MIXED_SCOPES_ERROR });
+    }
+    if (!canManageFormAccesses(req) && !isPanelOnlyAccess(types)) {
+      return res.status(403).json({ error: 'Este acesso só pode criar links de leitura para as TVs.' });
     }
     if (expiresAt === null) {
       return res.status(400).json({ error: 'A validade deve ser uma data futura.' });
@@ -145,7 +161,7 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
   }
 });
 
-router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.put('/:id', requireAuth, requirePermission('guest_accesses:update'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (req.body?.churchId !== undefined) {
       return res.status(400).json({ error: 'O identificador da igreja não deve ser enviado.' });
@@ -172,6 +188,9 @@ router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response)
     if (mixesPanelAndFormScopes(types)) {
       return res.status(400).json({ error: MIXED_SCOPES_ERROR });
     }
+    if (!canManageFormAccesses(req) && !isPanelOnlyAccess(types)) {
+      return res.status(403).json({ error: 'Este acesso só pode alterar links de leitura para as TVs.' });
+    }
 
     access.name = name;
     access.type = types[0];
@@ -187,7 +206,7 @@ router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response)
   }
 });
 
-router.post('/:id/deactivate', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/:id/deactivate', requireAuth, requirePermission('guest_accesses:revoke'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
     if (!filter) return res.status(404).json({ error: 'Acesso não encontrado.' });
@@ -206,7 +225,7 @@ router.post('/:id/deactivate', requireAuth, async (req: AuthenticatedRequest, re
   }
 });
 
-router.post('/:id/reactivate', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/:id/reactivate', requireAuth, requirePermission('guest_accesses:update'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
     if (!filter) return res.status(404).json({ error: 'Acesso não encontrado.' });
@@ -225,7 +244,7 @@ router.post('/:id/reactivate', requireAuth, async (req: AuthenticatedRequest, re
   }
 });
 
-router.post('/:id/renew', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/:id/renew', requireAuth, requirePermission('guest_accesses:update'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
     if (!filter) return res.status(404).json({ error: 'Acesso não encontrado.' });

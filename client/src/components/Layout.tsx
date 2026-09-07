@@ -3,21 +3,9 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon, type AppIconName } from './AppIcon';
 import { ThemeToggle } from './ThemeToggle';
+import { navItemVisible } from '../utils/permissions';
+import { MOBILE_NAV_ITEMS, NAV_ITEMS } from './navItems';
 import './Layout.css';
-
-const NAV_ITEMS = [
-  { to: '/', label: 'Início', short: 'Início', icon: 'home' },
-  { to: '/visitantes', label: 'Visitantes', short: 'Visit.', icon: 'users' },
-  { to: '/oracao', label: 'Oração', short: 'Oração', icon: 'prayer' },
-  { to: '/acessos', label: 'Acessos', short: 'Acessos', icon: 'link' },
-  { to: '/cultos', label: 'Cultos', short: 'Cultos', icon: 'calendar' },
-  { to: '/avisos-veiculos', label: 'Avisos de veículos', short: 'Avisos', icon: 'car' },
-  { to: '/paineis', label: 'Painéis', short: 'Painéis', icon: 'panels' },
-  { to: '/igreja', label: 'Igreja', short: 'Igreja', icon: 'pin' },
-  { to: '/configuracoes', label: 'Holyric', short: 'Holyric', icon: 'music' },
-] as const;
-
-const MOBILE_NAV_ITEMS = NAV_ITEMS.filter((item) => item.to !== '/acessos');
 
 function isActive(pathname: string, to: string) {
   if (to === '/') return pathname === '/';
@@ -48,6 +36,12 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isVisitorsPage = pathname === '/visitantes';
   const brandName = user?.churchName?.trim() || 'Church Visitors';
+  const navItems = NAV_ITEMS.filter((item) =>
+    navItemVisible(item.to, user?.role, user?.permissions)
+  );
+  const mobileNavItems = MOBILE_NAV_ITEMS.filter((item) =>
+    navItemVisible(item.to, user?.role, user?.permissions)
+  );
 
   useEffect(() => {
     document.title = brandName;
@@ -70,7 +64,7 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
 
           <div className="header-right">
             <nav className="nav nav-desktop" aria-label="Menu principal">
-              {NAV_ITEMS.map((item) => (
+              {navItems.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
@@ -127,10 +121,18 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
               <button type="button" onClick={closeMobileMenu} aria-label="Fechar menu">Fechar</button>
             </div>
             <Link to="/oracao" onClick={closeMobileMenu}>Pedidos de oração</Link>
-            <Link to="/acessos" onClick={closeMobileMenu}>Acessos sem login</Link>
-            <Link to="/cultos" onClick={closeMobileMenu}>Calendário de cultos</Link>
-            <Link to="/paineis" onClick={closeMobileMenu}>Painéis</Link>
-            <Link to="/configuracoes" onClick={closeMobileMenu}>Configurações do Holyrics</Link>
+            {navItemVisible('/acessos', user?.role, user?.permissions) && (
+              <Link to="/acessos" onClick={closeMobileMenu}>Acessos sem login</Link>
+            )}
+            {navItemVisible('/cultos', user?.role, user?.permissions) && (
+              <Link to="/cultos" onClick={closeMobileMenu}>Calendário de cultos</Link>
+            )}
+            {navItemVisible('/paineis', user?.role, user?.permissions) && (
+              <Link to="/paineis" onClick={closeMobileMenu}>Painéis</Link>
+            )}
+            {navItemVisible('/configuracoes', user?.role, user?.permissions) && (
+              <Link to="/configuracoes" onClick={closeMobileMenu}>Configurações do Holyrics</Link>
+            )}
             <button type="button" className="mobile-logout" onClick={logout}>Sair da conta</button>
           </nav>
         </div>
@@ -157,7 +159,7 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
         </nav>
       ) : (
         <nav className="nav-mobile" aria-label="Menu inferior">
-          {MOBILE_NAV_ITEMS.map((item) => (
+          {mobileNavItems.map((item) => (
             <Link
               key={item.to}
               to={item.to}

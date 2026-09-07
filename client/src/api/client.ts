@@ -13,10 +13,14 @@ import type {
   HolyricsSyncResponse,
   PrayerRequest,
   PrayerRequestPanelItem,
+  PublicInvitation,
   ServicePanelItem,
   VisitorPanelItem,
   PublicAccessMetadata,
   Service,
+  TeamInvitation,
+  TeamMember,
+  TeamOverview,
   TodayCount,
   UpdateServiceDto,
   VehicleNotice,
@@ -254,6 +258,126 @@ export const api = {
       headers: authHeaders(),
     });
     return handleResponse<ChurchProfile>(response);
+  },
+
+  async getTeam(params?: { q?: string; role?: string; status?: string }): Promise<TeamOverview> {
+    const search = new URLSearchParams();
+    if (params?.q) search.set('q', params.q);
+    if (params?.role) search.set('role', params.role);
+    if (params?.status) search.set('status', params.status);
+    const query = search.toString();
+    const response = await apiFetch(`${API_BASE}/team${query ? `?${query}` : ''}`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<TeamOverview>(response);
+  },
+
+  async createTeamInvitation(data: {
+    name: string;
+    email?: string;
+    role: string;
+    ttlDays: number;
+    permissions?: string[];
+    permissionsCustomized?: boolean;
+  }): Promise<TeamInvitation> {
+    const response = await apiFetch(`${API_BASE}/team/invitations`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<TeamInvitation>(response);
+  },
+
+  async cancelTeamInvitation(id: string): Promise<TeamInvitation> {
+    const response = await apiFetch(`${API_BASE}/team/invitations/${id}/cancel`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    return handleResponse<TeamInvitation>(response);
+  },
+
+  async renewTeamInvitation(id: string, ttlDays?: number): Promise<TeamInvitation> {
+    const response = await apiFetch(`${API_BASE}/team/invitations/${id}/renew`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ ttlDays }),
+    });
+    return handleResponse<TeamInvitation>(response);
+  },
+
+  async getTeamMember(id: string): Promise<TeamMember> {
+    const response = await apiFetch(`${API_BASE}/team/members/${id}`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<TeamMember>(response);
+  },
+
+  async updateTeamMember(
+    id: string,
+    data: { role?: string; permissions?: string[]; permissionsCustomized?: boolean }
+  ): Promise<TeamMember> {
+    const response = await apiFetch(`${API_BASE}/team/members/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<TeamMember>(response);
+  },
+
+  async deactivateTeamMember(id: string): Promise<TeamMember> {
+    const response = await apiFetch(`${API_BASE}/team/members/${id}/deactivate`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    return handleResponse<TeamMember>(response);
+  },
+
+  async reactivateTeamMember(id: string): Promise<TeamMember> {
+    const response = await apiFetch(`${API_BASE}/team/members/${id}/reactivate`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    return handleResponse<TeamMember>(response);
+  },
+
+  async revokeTeamMemberSessions(id: string): Promise<void> {
+    const response = await apiFetch(`${API_BASE}/team/members/${id}/revoke-sessions`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    await handleResponse(response);
+  },
+
+  async getPublicInvitation(token: string): Promise<PublicInvitation> {
+    const response = await apiFetch(`${API_BASE}/public-invitations/${encodeURIComponent(token)}`, {
+      headers: { Accept: 'application/json' },
+    });
+    return handleResponse<PublicInvitation>(response);
+  },
+
+  async acceptPublicInvitation(
+    token: string,
+    data: {
+      name: string;
+      email?: string;
+      username?: string;
+      password: string;
+      confirmPassword: string;
+    }
+  ): Promise<AuthResponse> {
+    const response = await apiFetch(
+      `${API_BASE}/public-invitations/${encodeURIComponent(token)}/accept`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }
+    );
+    return handleResponse<AuthResponse>(response);
   },
 
   async updateChurch(data: {

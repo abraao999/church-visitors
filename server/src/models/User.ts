@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
+import { actorSchema, type IActor } from './Actor.js';
+import { TEAM_ROLES, type Permission, type TeamRole } from '../utils/permissions.js';
 
-export type UserRole = 'owner';
+export type UserRole = TeamRole;
 
 export interface IUser extends Document {
   name: string;
@@ -8,8 +10,15 @@ export interface IUser extends Document {
   username?: string;
   passwordHash?: string;
   churchId: Types.ObjectId;
-  role: UserRole;
-  /** Sobe a cada logout ou troca de senha; invalida JWTs anteriores. */
+  role: TeamRole;
+  permissions: Permission[];
+  permissionsCustomized: boolean;
+  active: boolean;
+  lastSeenAt?: Date;
+  deactivatedAt?: Date;
+  deactivatedBy?: IActor;
+  permissionsUpdatedAt?: Date;
+  permissionsUpdatedBy?: IActor;
   tokenVersion: number;
   createdAt: Date;
   updatedAt: Date;
@@ -22,10 +31,21 @@ const userSchema = new Schema<IUser>(
     username: { type: String, trim: true, lowercase: true, sparse: true, unique: true },
     passwordHash: { type: String },
     churchId: { type: Schema.Types.ObjectId, ref: 'Church', required: true, index: true },
-    role: { type: String, enum: ['owner'], default: 'owner' },
+    role: { type: String, enum: TEAM_ROLES, default: 'owner', required: true, index: true },
+    permissions: { type: [String], default: undefined },
+    permissionsCustomized: { type: Boolean, default: false },
+    active: { type: Boolean, default: true, index: true },
+    lastSeenAt: { type: Date },
+    deactivatedAt: { type: Date },
+    deactivatedBy: { type: actorSchema, required: false },
+    permissionsUpdatedAt: { type: Date },
+    permissionsUpdatedBy: { type: actorSchema, required: false },
     tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
+
+userSchema.index({ churchId: 1, active: 1, createdAt: -1 });
+userSchema.index({ churchId: 1, role: 1 });
 
 export const User = mongoose.model<IUser>('User', userSchema);

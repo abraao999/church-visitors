@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { HolyricsSettings, type HolyricsMode } from '../models/HolyricsSettings.js';
 import { Service } from '../models/Service.js';
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth.js';
+import { requirePermission } from '../middleware/requirePermission.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 import {
   addSongsToHolyricsPlaylist,
@@ -63,7 +64,7 @@ function publicSettings(settings: {
   };
 }
 
-router.get('/settings', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/settings', requireAuth, requirePermission('holyrics:read'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const settings = await getOrCreateSettings(req.auth!.churchId);
     res.json(publicSettings(settings));
@@ -72,7 +73,7 @@ router.get('/settings', requireAuth, async (req: AuthenticatedRequest, res: Resp
   }
 });
 
-router.put('/settings', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.put('/settings', requireAuth, requirePermission('holyrics:configure'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const mode = req.body.mode === 'internet' ? 'internet' : 'local';
     const port = Number(req.body.port);
@@ -126,7 +127,7 @@ router.put('/settings', requireAuth, async (req: AuthenticatedRequest, res: Resp
  * da igreja, e ele precisa do token. Fica num endpoint separado para o token
  * sair apenas nesse momento, e nunca no carregamento da tela de configurações.
  */
-router.get('/local-token', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/local-token', requireAuth, requirePermission('holyrics:sync'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const settings = await getOrCreateSettings(req.auth!.churchId);
 
@@ -145,7 +146,7 @@ router.get('/local-token', requireAuth, async (req: AuthenticatedRequest, res: R
   }
 });
 
-router.post('/test', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/test', requireAuth, requirePermission('holyrics:configure'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const settings = await getOrCreateSettings(req.auth!.churchId);
     if (!settings.token) {
@@ -166,7 +167,7 @@ router.post('/test', requireAuth, async (req: AuthenticatedRequest, res: Respons
   }
 });
 
-router.post('/sync', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/sync', requireAuth, requirePermission('holyrics:sync'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const serviceId = typeof req.body.serviceId === 'string' ? req.body.serviceId : '';
     if (!serviceId) {

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import { Church } from '../models/Church.js';
 import { User, type UserRole } from '../models/User.js';
+import { resolvePermissions, type Permission } from '../utils/permissions.js';
 import { readSessionToken } from '../utils/sessionCookie.js';
 
 export interface AuthContext {
@@ -11,6 +12,7 @@ export interface AuthContext {
   role: UserRole;
   name: string;
   email: string;
+  permissions: Permission[];
   tokenVersion?: number;
 }
 
@@ -98,11 +100,7 @@ export async function requireAuth(
       tv?: number;
     };
 
-    if (
-      !Types.ObjectId.isValid(payload.sub) ||
-      !Types.ObjectId.isValid(payload.churchId) ||
-      payload.role !== 'owner'
-    ) {
+    if (!Types.ObjectId.isValid(payload.sub) || !Types.ObjectId.isValid(payload.churchId)) {
       throw new Error('Token sem contexto de tenant');
     }
 
@@ -112,15 +110,16 @@ export async function requireAuth(
     const user = await User.findOne({
       _id: payload.sub,
       churchId: payload.churchId,
-      role: payload.role,
-    }).select('name email churchId role tokenVersion');
+    }).select(
+      'name email churchId role permissions permissionsCustomized active tokenVersion'
+    );
 
     const tokenVersion = typeof payload.tv === 'number' ? payload.tv : 0;
     if ((user?.tokenVersion ?? 0) !== tokenVersion) {
       throw new Error('Sessão encerrada');
     }
 
-    if (!user?.churchId) {
+    if (!user?.churchId || user.active === false) {
       throw new Error('Usuário sem vínculo ativo');
     }
 
@@ -135,6 +134,7 @@ export async function requireAuth(
       role: user.role,
       name: user.name,
       email: user.email,
+      permissions: resolvePermissions(user),
     };
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Vary', 'Cookie, Authorization');

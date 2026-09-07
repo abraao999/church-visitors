@@ -1,11 +1,16 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import { Layout } from './components/Layout';
+import { PermissionRoute } from './components/PermissionRoute';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { HomePage } from './pages/HomePage';
 import { GuestAccessesPage } from './pages/GuestAccessesPage';
 import { HolyricsSettingsPage } from './pages/HolyricsSettingsPage';
 import { ChurchSettingsPage } from './pages/ChurchSettingsPage';
+import { ForbiddenPage } from './pages/ForbiddenPage';
+import { InviteAcceptPage } from './pages/InviteAcceptPage';
+import { TeamMemberPage } from './pages/TeamMemberPage';
+import { TeamPage } from './pages/TeamPage';
 import { LivePrayerPage } from './pages/LivePrayerPage';
 import { LoginPage } from './pages/LoginPage';
 import { PanelsPage } from './pages/PanelsPage';
@@ -36,24 +41,46 @@ export function App() {
           <Route path="/painel/:token/visitantes" element={<VisitorsPanelPage />} />
           <Route path="/painel/:token/oracao" element={<PrayersPanelPage />} />
           <Route path="/painel/:token/veiculos" element={<VehicleNoticesPanelPage />} />
+          <Route path="/convite/:token" element={<InviteAcceptPage />} />
           <Route path="/live/oracao" element={<Layout />}>
             <Route index element={<LivePrayerPage />} />
           </Route>
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/" element={<HomePage />} />
-              <Route path="/visitantes" element={<VisitorsPage />} />
-              <Route path="/oracao" element={<PrayerRequestsPage />} />
-              <Route path="/acessos" element={<GuestAccessesPage />} />
-              <Route path="/cultos" element={<ServicesPage />} />
-              <Route path="/avisos-veiculos" element={<VehicleNoticesPage />} />
-              <Route path="/igreja" element={<ChurchSettingsPage />} />
-              <Route path="/configuracoes" element={<HolyricsSettingsPage />} />
-              <Route path="/paineis" element={<PanelsPage />} />
-              <Route path="/painel/louvores" element={<HymnsPanelPage />} />
-              <Route path="/painel/visitantes" element={<VisitorsPanelPage />} />
-              <Route path="/painel/oracao" element={<PrayersPanelPage />} />
-              <Route path="/painel/veiculos" element={<VehicleNoticesPanelPage />} />
+              <Route element={<PermissionRoute anyOf={['visitors:read', 'visitors:create']} />}>
+                <Route path="/visitantes" element={<VisitorsPage />} />
+              </Route>
+              <Route element={<PermissionRoute anyOf={['prayers:read', 'prayers:create']} />}>
+                <Route path="/oracao" element={<PrayerRequestsPage />} />
+              </Route>
+              <Route element={<PermissionRoute anyOf={['guest_accesses:read']} />}>
+                <Route path="/acessos" element={<GuestAccessesPage />} />
+              </Route>
+              <Route element={<PermissionRoute anyOf={['services:read']} />}>
+                <Route path="/cultos" element={<ServicesPage />} />
+              </Route>
+              <Route element={<PermissionRoute anyOf={['vehicle_notices:read']} />}>
+                <Route path="/avisos-veiculos" element={<VehicleNoticesPage />} />
+              </Route>
+              <Route element={<PermissionRoute anyOf={['church:read', 'team:read']} />}>
+                <Route path="/igreja" element={<ChurchSettingsPage />} />
+              </Route>
+              <Route element={<PermissionRoute anyOf={['team:read']} />}>
+                <Route path="/igreja/equipe" element={<TeamPage />} />
+                <Route path="/igreja/equipe/:memberId" element={<TeamMemberPage />} />
+              </Route>
+              <Route path="/sem-acesso" element={<ForbiddenPage />} />
+              <Route element={<PermissionRoute anyOf={['holyrics:read', 'holyrics:configure']} />}>
+                <Route path="/configuracoes" element={<HolyricsSettingsPage />} />
+              </Route>
+              <Route element={<PermissionRoute anyOf={['panels:open']} />}>
+                <Route path="/paineis" element={<PanelsPage />} />
+                <Route path="/painel/louvores" element={<HymnsPanelPage />} />
+                <Route path="/painel/visitantes" element={<VisitorsPanelPage />} />
+                <Route path="/painel/oracao" element={<PrayersPanelPage />} />
+                <Route path="/painel/veiculos" element={<VehicleNoticesPanelPage />} />
+              </Route>
             </Route>
           </Route>
 

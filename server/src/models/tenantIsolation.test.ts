@@ -15,6 +15,7 @@ const session: AuthContext = {
   role: 'owner',
   name: 'Responsável',
   email: 'responsavel@example.com',
+  permissions: [],
 };
 
 test('filtro do tenant sempre prevalece sobre valores externos', () => {

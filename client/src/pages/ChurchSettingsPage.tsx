@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
+import { ChurchSectionNav } from '../components/ChurchSectionNav';
+import { hasPermission } from '../utils/permissions';
 import './ChurchSettingsPage.css';
 
 export function ChurchSettingsPage() {
-  const { setChurchName } = useAuth();
+  const { setChurchName, user } = useAuth();
   const [form, setForm] = useState({
     name: '',
     city: '',
@@ -90,12 +93,16 @@ export function ChurchSettingsPage() {
     }
   }
 
+  const canUpdateChurch = hasPermission(user?.permissions, 'church:update') || user?.role === 'owner';
+  const canTeam = hasPermission(user?.permissions, 'team:read') || user?.role === 'owner';
+
   if (loading) {
     return <p className="empty-state">Carregando...</p>;
   }
 
   return (
     <div className="church-settings-page">
+      <ChurchSectionNav />
       <section className="church-settings-hero">
         <div>
           <span className="church-settings-eyebrow">
@@ -140,7 +147,8 @@ export function ChurchSettingsPage() {
             value={form.name}
             onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
             placeholder="Ex.: Igreja Batista Central"
-            required
+            disabled={!canUpdateChurch}
+            required={canUpdateChurch}
             maxLength={120}
             autoComplete="organization"
           />
@@ -156,6 +164,7 @@ export function ChurchSettingsPage() {
               placeholder="Cidade"
               maxLength={100}
               autoComplete="address-level2"
+              disabled={!canUpdateChurch}
             />
           </div>
           <div className="form-group">
@@ -167,6 +176,7 @@ export function ChurchSettingsPage() {
               placeholder="(00) 00000-0000"
               maxLength={40}
               autoComplete="tel"
+              disabled={!canUpdateChurch}
             />
           </div>
         </div>
@@ -180,15 +190,35 @@ export function ChurchSettingsPage() {
             placeholder="Rua, número, bairro"
             maxLength={200}
             autoComplete="street-address"
+            disabled={!canUpdateChurch}
           />
         </div>
 
         <div className="church-settings-actions">
-          <button type="submit" className="btn btn-primary" disabled={saving || !form.name.trim()}>
+          <button type="submit" className="btn btn-primary" disabled={saving || !form.name.trim() || !canUpdateChurch}>
             {saving ? 'Salvando...' : 'Salvar dados'}
           </button>
         </div>
       </form>
+
+      {canTeam && (
+        <section className="card church-settings-form">
+          <div className="church-settings-form-heading">
+            <span>
+              <AppIcon name="users" />
+            </span>
+            <div>
+              <h2>Equipe da igreja</h2>
+              <p>Convide pessoas e escolha o que cada uma pode acessar.</p>
+            </div>
+          </div>
+          <div className="church-settings-actions">
+            <Link to="/igreja/equipe" className="btn btn-primary">
+              Gerenciar equipe
+            </Link>
+          </div>
+        </section>
+      )}
 
       <form className="card church-settings-form" onSubmit={handlePassword}>
         <div className="church-settings-form-heading">

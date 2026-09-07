@@ -6,6 +6,7 @@ import {
   toActor,
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
+import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
 import { fetchVisitorPanel } from '../services/panelData.js';
 import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
 import {
@@ -173,10 +174,10 @@ export async function deleteVisitor(req: AuthenticatedRequest, res: Response) {
   }
 }
 
-router.get('/', requireAuth, listVisitors);
-router.get('/stats', requireAuth, countVisitors);
-router.get('/panel', requireAuth, listVisitorsPanel);
-router.post('/', requireAuth, createVisitors);
-router.delete('/:id', requireAuth, deleteVisitor);
+router.get('/', requireAuth, requirePermission('visitors:read'), listVisitors);
+router.get('/stats', requireAuth, requirePermission('visitors:read'), countVisitors);
+router.get('/panel', requireAuth, requireAnyPermission('panels:open', 'visitors:read'), listVisitorsPanel);
+router.post('/', requireAuth, requirePermission('visitors:create'), createVisitors);
+router.delete('/:id', requireAuth, requirePermission('visitors:delete'), deleteVisitor);
 
 export default router;
