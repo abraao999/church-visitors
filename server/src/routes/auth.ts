@@ -4,14 +4,44 @@ import mongoose, { Types } from 'mongoose';
 import { Church } from '../models/Church.js';
 import { User, type IUser } from '../models/User.js';
 import {
+  isJwtSecretError,
+  JWT_SECRET_HELP,
   requireAuth,
+  revokeAuthTokens,
   signToken,
   type AuthenticatedRequest,
   type AuthContext,
 } from '../middleware/auth.js';
+import { requireAuthRateLimit } from '../middleware/authRateLimit.js';
 import { createChurchSlug, normalizeChurchName } from '../utils/church.js';
+import { readLoginIdentifier } from '../utils/loginIdentifier.js';
+import { clearSessionCookie, setSessionCookie } from '../utils/sessionCookie.js';
 
 const router = Router();
+
+/** Mesma frase para e-mail inválido e para e-mail/usuário já usados. */
+export const REGISTER_GENERIC_ERROR =
+  'Não foi possível criar a conta. Verifique os dados ou tente entrar.';
+
+export const LOGIN_INVALID_ERROR = 'Credenciais inválidas';
+
+/** Conta sem igreja e igreja inativa não devem ser distinguíveis após a senha. */
+export const LOGIN_UNAVAILABLE_ERROR =
+  'Não foi possível entrar agora. Fale com o administrador.';
+
+const BCRYPT_ROUNDS = 10;
+export const MIN_PASSWORD_LENGTH = 8;
+export const PASSWORD_TOO_SHORT = `A senha deve ter ao menos ${MIN_PASSWORD_LENGTH} caracteres`;
+let dummyPasswordHash: string | undefined;
+
+function dummyHash(): string {
+  dummyPasswordHash ??= bcrypt.hashSync('church-visitors-timing-dummy', BCRYPT_ROUNDS);
+  return dummyPasswordHash;
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
 
 function publicUser(
   user: { _id: unknown; name: string; email: string; username?: string },
@@ -26,7 +56,9 @@ function publicUser(
   };
 }
 
-function authResponse(
+function issueSession(
+  req: { secure?: boolean; get?: (name: string) => string | undefined },
+  res: Response,
   user: {
     _id: unknown;
     name: string;
@@ -34,6 +66,7 @@ function authResponse(
     username?: string;
     churchId: Types.ObjectId;
     role: 'owner';
+    tokenVersion?: number;
   },
   churchName: string
 ) {
@@ -43,28 +76,31 @@ function authResponse(
     role: user.role,
     name: user.name,
     email: user.email,
+    tokenVersion: user.tokenVersion ?? 0,
   };
-  return {
-    token: signToken(payload),
-    user: publicUser(user, churchName),
-  };
+  setSessionCookie(req, res, signToken(payload));
+  return { user: publicUser(user, churchName) };
 }
 
-router.post('/register', async (req, res: Response) => {
+export async function registerAccount(
+  req: { body?: Record<string, unknown>; secure?: boolean; get?: (name: string) => string | undefined },
+  res: Response
+) {
   try {
-    if (req.body?.churchId !== undefined) {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+
+    if (body.churchId !== undefined) {
       return res.status(400).json({
         error: 'O identificador da igreja não deve ser enviado.',
       });
     }
 
-    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
-    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
-    const username =
-      typeof req.body.username === 'string' ? req.body.username.trim().toLowerCase() : '';
-    const password = typeof req.body.password === 'string' ? req.body.password : '';
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const username = typeof body.username === 'string' ? body.username.trim().toLowerCase() : '';
+    const password = typeof body.password === 'string' ? body.password : '';
     const churchName = normalizeChurchName(
-      typeof req.body.churchName === 'string' ? req.body.churchName : ''
+      typeof body.churchName === 'string' ? body.churchName : ''
     );
 
     if (!name || !email || !username || !password || !churchName) {
@@ -73,8 +109,8 @@ router.post('/register', async (req, res: Response) => {
       });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'A senha deve ter ao menos 6 caracteres' });
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ error: PASSWORD_TOO_SHORT });
     }
 
     if (!/^[a-z0-9._-]{3,30}$/.test(username)) {
@@ -83,15 +119,17 @@ router.post('/register', async (req, res: Response) => {
       });
     }
 
+    // Hash sempre, inclusive quando o cadastro for recusado: o tempo de resposta
+    // não deve denunciar se o e-mail já existe.
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const existing = await User.findOne({
       $or: [{ email }, { username }],
     });
 
-    if (existing) {
-      return res.status(409).json({ error: 'E-mail ou usuário já cadastrado' });
+    if (!isValidEmail(email) || existing) {
+      return res.status(400).json({ error: REGISTER_GENERIC_ERROR });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
     const session = await mongoose.startSession();
     let user: IUser | undefined;
     let churchId: Types.ObjectId | undefined;
@@ -105,7 +143,7 @@ router.post('/register', async (req, res: Response) => {
         churchId = church._id as Types.ObjectId;
 
         const [createdUser] = await User.create(
-          [{ name, email, username, passwordHash, churchId, role: 'owner' }],
+          [{ name, email, username, passwordHash, churchId, role: 'owner', tokenVersion: 0 }],
           { session }
         );
         user = createdUser;
@@ -118,21 +156,28 @@ router.post('/register', async (req, res: Response) => {
       throw new Error('Cadastro não concluído');
     }
 
-    res.status(201).json(
-      authResponse(user as IUser & { churchId: Types.ObjectId }, churchName)
+    return res.status(201).json(
+      issueSession(req, res, user as IUser & { churchId: Types.ObjectId }, churchName)
     );
   } catch (error) {
     if ((error as { code?: number }).code === 11000) {
-      return res.status(409).json({ error: 'E-mail ou usuário já cadastrado' });
+      return res.status(400).json({ error: REGISTER_GENERIC_ERROR });
     }
-    res.status(500).json({ error: 'Erro ao criar conta' });
+    if (isJwtSecretError(error)) {
+      return res.status(503).json({ error: JWT_SECRET_HELP });
+    }
+    return res.status(500).json({ error: 'Erro ao criar conta' });
   }
-});
+}
 
-router.post('/login', async (req, res: Response) => {
+export async function loginAccount(
+  req: { body?: Record<string, unknown>; secure?: boolean; get?: (name: string) => string | undefined },
+  res: Response
+) {
   try {
-    const login = typeof req.body.login === 'string' ? req.body.login.trim().toLowerCase() : '';
-    const password = typeof req.body.password === 'string' ? req.body.password : '';
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const login = readLoginIdentifier(body);
+    const password = typeof body.password === 'string' ? body.password : '';
 
     if (!login || !password) {
       return res.status(400).json({ error: 'Usuário/e-mail e senha são obrigatórios' });
@@ -142,31 +187,92 @@ router.post('/login', async (req, res: Response) => {
       $or: [{ email: login }, { username: login }],
     });
 
-    if (!user?.passwordHash) {
-      return res.status(401).json({ error: 'Credenciais inválidas' });
-    }
-
-    const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) {
-      return res.status(401).json({ error: 'Credenciais inválidas' });
+    const passwordHash = user?.passwordHash || dummyHash();
+    const ok = await bcrypt.compare(password, passwordHash);
+    if (!user?.passwordHash || !ok) {
+      return res.status(401).json({ error: LOGIN_INVALID_ERROR });
     }
 
     if (!user.churchId) {
-      return res.status(409).json({
-        error: 'Esta conta ainda precisa ser vinculada a uma igreja. Fale com o administrador.',
-      });
+      return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
     }
 
     const church = await Church.findOne({ _id: user.churchId, active: true }).select('name');
     if (!church) {
-      return res.status(403).json({ error: 'O acesso desta igreja está indisponível.' });
+      return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
     }
 
-    res.json(authResponse(user as IUser & { churchId: Types.ObjectId }, church.name));
-  } catch {
-    res.status(500).json({ error: 'Erro ao entrar' });
+    return res.json(issueSession(req, res, user as IUser & { churchId: Types.ObjectId }, church.name));
+  } catch (error) {
+    if (isJwtSecretError(error)) {
+      return res.status(503).json({ error: JWT_SECRET_HELP });
+    }
+    return res.status(500).json({ error: 'Erro ao entrar' });
   }
-});
+}
+
+export async function changePassword(req: AuthenticatedRequest, res: Response) {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : '';
+    const nextPassword = typeof body.newPassword === 'string' ? body.newPassword : '';
+
+    if (!currentPassword || !nextPassword) {
+      return res.status(400).json({ error: 'Informe a senha atual e a nova senha' });
+    }
+
+    if (nextPassword.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ error: PASSWORD_TOO_SHORT });
+    }
+
+    if (currentPassword === nextPassword) {
+      return res.status(400).json({ error: 'A nova senha precisa ser diferente da atual' });
+    }
+
+    const user = await User.findOne({
+      _id: req.auth!.userId,
+      churchId: req.auth!.churchId,
+      role: req.auth!.role,
+    });
+
+    const passwordHash = user?.passwordHash || dummyHash();
+    const ok = await bcrypt.compare(currentPassword, passwordHash);
+    if (!user?.passwordHash || !ok) {
+      return res.status(400).json({ error: 'Senha atual incorreta' });
+    }
+
+    const church = await Church.findOne({ _id: user.churchId, active: true }).select('name');
+    if (!church) {
+      return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
+    }
+
+    user.passwordHash = await bcrypt.hash(nextPassword, BCRYPT_ROUNDS);
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+    await user.save();
+
+    return res.json(issueSession(req, res, user as IUser & { churchId: Types.ObjectId }, church.name));
+  } catch (error) {
+    if (isJwtSecretError(error)) {
+      return res.status(503).json({ error: JWT_SECRET_HELP });
+    }
+    return res.status(500).json({ error: 'Erro ao alterar a senha' });
+  }
+}
+
+export async function logoutAccount(req: AuthenticatedRequest, res: Response) {
+  try {
+    await revokeAuthTokens(req.auth!.userId, req.auth!.churchId);
+    clearSessionCookie(req, res);
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'Erro ao sair' });
+  }
+}
+
+router.post('/register', requireAuthRateLimit('register'), registerAccount);
+router.post('/login', requireAuthRateLimit('login'), loginAccount);
+router.post('/logout', requireAuth, logoutAccount);
+router.post('/password', requireAuth, changePassword);
 
 router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {

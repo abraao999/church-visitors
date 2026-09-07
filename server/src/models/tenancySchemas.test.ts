@@ -34,20 +34,30 @@ test('Church define identidade, estado e timestamps', () => {
   assert.ok(Church.schema.path('updatedAt'));
 });
 
-test('modelos privados possuem churchId e índices compostos de isolamento', () => {
-  assert.ok(User.schema.path('churchId'));
+test('modelos privados possuem churchId obrigatório e índices compostos de isolamento', () => {
+  assert.equal(User.schema.path('churchId').isRequired, true);
   assert.ok(User.schema.path('role'));
 
-  assert.ok(Visitor.schema.path('churchId'));
+  assert.equal(Visitor.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(Visitor.schema.indexes(), { churchId: 1, createdAt: -1 }));
+  assert.ok(
+    hasIndex(Visitor.schema.indexes(), { churchId: 1, requestId: 1 }, { unique: true, sparse: true })
+  );
 
-  assert.ok(PrayerRequest.schema.path('churchId'));
+  assert.equal(PrayerRequest.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(PrayerRequest.schema.indexes(), { churchId: 1, createdAt: -1 }));
+  assert.ok(
+    hasIndex(
+      PrayerRequest.schema.indexes(),
+      { churchId: 1, requestId: 1 },
+      { unique: true, sparse: true }
+    )
+  );
 
-  assert.ok(Service.schema.path('churchId'));
+  assert.equal(Service.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(Service.schema.indexes(), { churchId: 1, date: 1 }));
 
-  assert.ok(HolyricsSettings.schema.path('churchId'));
+  assert.equal(HolyricsSettings.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(HolyricsSettings.schema.indexes(), { churchId: 1 }, { unique: true }));
 
   assert.equal(VehicleNotice.schema.path('churchId').isRequired, true);
@@ -55,6 +65,7 @@ test('modelos privados possuem churchId e índices compostos de isolamento', () 
   assert.ok(
     hasIndex(VehicleNotice.schema.indexes(), { churchId: 1, plateNormalized: 1, createdAt: -1 })
   );
+  assert.equal(hasIndex(VehicleNotice.schema.indexes(), { plateNormalized: 1 }), false);
   assert.ok(hasIndex(VehicleNotice.schema.indexes(), { guestAccessId: 1, createdAt: -1 }));
   assert.ok(
     hasIndex(VehicleNotice.schema.indexes(), { churchId: 1, requestId: 1 }, { unique: true, sparse: true })

@@ -5,11 +5,14 @@ import { AppIcon } from '../components/AppIcon';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { type PublicAccessMetadata, type VehicleNoticeAction } from '../types';
 import {
+  isPanelAccessType,
+  panelMenuPath,
   publicFormPath,
   publicMenuPath,
   resolvePublicTypes,
   typeFromPublicPath,
 } from '../utils/publicAccess';
+import { createRequestId } from '../utils/requestId';
 import { PublicAccessMenu } from './PublicAccessMenu';
 import { PublicVehicleNoticeForm, PublicVehicleSuccess } from './PublicVehicleNotice';
 import './PublicAccessPage.css';
@@ -180,6 +183,7 @@ function PublicVisitorsForm({
   onSuccess: () => void;
   showMenu: boolean;
 }) {
+  const requestId = useRef(createRequestId()).current;
   const nextId = useRef(2);
   const [city, setCity] = useState('');
   const [people, setPeople] = useState<PersonDraft[]>([{ id: 1, name: '' }]);
@@ -247,7 +251,8 @@ function PublicVisitorsForm({
           name: cleanLine(person.name),
           city: sharedCity,
           relationship: 'outro',
-        }))
+        })),
+        requestId
       );
       onSuccess();
     } catch (err) {
@@ -305,11 +310,12 @@ function PublicVisitorsForm({
               autoCapitalize="characters"
               className="public-input-uppercase"
               aria-invalid={Boolean(cityError)}
+              aria-describedby={cityError ? 'public-visit-city-error' : 'public-visit-city-hint'}
             />
             {cityError ? (
-              <p className="public-field-error" role="alert">{cityError}</p>
+              <p id="public-visit-city-error" className="public-field-error" role="alert">{cityError}</p>
             ) : (
-              <p className="public-field-hint">Esta cidade será aplicada a todos os visitantes cadastrados.</p>
+              <p id="public-visit-city-hint" className="public-field-hint">Esta cidade será aplicada a todos os visitantes cadastrados.</p>
             )}
           </div>
         </section>
@@ -324,6 +330,7 @@ function PublicVisitorsForm({
           </div>
 
           {people.map((person, index) => {
+            const nameId = `visitor-name-${person.id}`;
             const fieldError = nameErrors[person.id];
             return (
               <div className="public-person-row" key={person.id}>
@@ -342,9 +349,9 @@ function PublicVisitorsForm({
                   )}
                 </div>
                 <div className={`public-field${fieldError ? ' has-error' : ''}`}>
-                  <label htmlFor={`visitor-name-${person.id}`}>Nome completo *</label>
+                  <label htmlFor={nameId}>Nome completo *</label>
                   <input
-                    id={`visitor-name-${person.id}`}
+                    id={nameId}
                     value={person.name}
                     onChange={(event) => updatePerson(person.id, event.target.value)}
                     placeholder="DIGITE O NOME COMPLETO"
@@ -353,8 +360,13 @@ function PublicVisitorsForm({
                     autoCapitalize="characters"
                     className="public-input-uppercase"
                     aria-invalid={Boolean(fieldError)}
+                    aria-describedby={fieldError ? `${nameId}-error` : undefined}
                   />
-                  {fieldError && <p className="public-field-error" role="alert">{fieldError}</p>}
+                  {fieldError && (
+                    <p id={`${nameId}-error`} className="public-field-error" role="alert">
+                      {fieldError}
+                    </p>
+                  )}
                 </div>
               </div>
             );
@@ -393,7 +405,9 @@ function PublicPrayerForm({
   onSuccess: () => void;
   showMenu: boolean;
 }) {
+  const requestId = useRef(createRequestId()).current;
   const [anonymous, setAnonymous] = useState(false);
+  const [allowProjection, setAllowProjection] = useState(false);
   const [name, setName] = useState('');
   const [request, setRequest] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -409,6 +423,8 @@ function PublicPrayerForm({
         name: anonymous ? '' : name,
         request,
         isAnonymous: anonymous,
+        allowProjection,
+        requestId,
       });
       onSuccess();
     } catch (err) {
@@ -431,12 +447,19 @@ function PublicPrayerForm({
 
       <div className="public-access-permission">
         <AppIcon name="lock" />
-        <p>Seu pedido ficará visível somente para o responsável da igreja.</p>
+        <p>
+          Seu pedido fica com o responsável da igreja. Ele só aparece no telão se você autorizar
+          abaixo.
+        </p>
       </div>
 
       <form className="public-prayer-card card" onSubmit={submit}>
         <div className="public-form-feedback" aria-live="polite">
-          {error && <p role="alert">{error}</p>}
+          {error && (
+            <p id="public-prayer-error" role="alert">
+              {error}
+            </p>
+          )}
         </div>
         <label className="public-anonymous-control">
           <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} />
@@ -444,10 +467,37 @@ function PublicPrayerForm({
           <span><strong>Manter meu nome em sigilo</strong><small>Seu pedido aparecerá como “Anônimo”.</small></span>
         </label>
 
+        <label className="public-anonymous-control">
+          <input
+            type="checkbox"
+            checked={allowProjection}
+            onChange={(event) => setAllowProjection(event.target.checked)}
+          />
+          <span className="public-switch" aria-hidden="true" />
+          <span>
+            <strong>Autorizo exibir no telão</strong>
+            <small>
+              {anonymous
+                ? 'Seu pedido pode ser projetado durante o culto, sem o seu nome.'
+                : 'Seu pedido pode ser projetado durante o culto, com o seu primeiro nome.'}
+            </small>
+          </span>
+        </label>
+
         {!anonymous && (
           <div className="public-field">
             <label htmlFor="public-prayer-name">Nome</label>
-            <input id="public-prayer-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Digite seu nome" maxLength={120} autoComplete="name" required />
+            <input
+              id="public-prayer-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Digite seu nome"
+              maxLength={120}
+              autoComplete="name"
+              required
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'public-prayer-error' : undefined}
+            />
           </div>
         )}
         <div className="public-field">
@@ -455,7 +505,17 @@ function PublicPrayerForm({
             <label htmlFor="public-prayer-request">Pedido de oração</label>
             <span>{request.length}/2000</span>
           </div>
-          <textarea id="public-prayer-request" value={request} onChange={(event) => setRequest(event.target.value)} placeholder="Escreva aqui seu pedido de oração" maxLength={2000} rows={6} required />
+          <textarea
+            id="public-prayer-request"
+            value={request}
+            onChange={(event) => setRequest(event.target.value)}
+            placeholder="Escreva aqui seu pedido de oração"
+            maxLength={2000}
+            rows={6}
+            required
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? 'public-prayer-error' : undefined}
+          />
         </div>
         <button type="submit" className="public-primary-button" disabled={submitting}>
           {!submitting && <AppIcon name="prayer" />}
@@ -525,6 +585,11 @@ export function PublicAccessPage() {
   if (loading) return <PublicLoading />;
   if (!metadata) return <PublicInvalid message={error} retry={load} />;
   if (types.length === 0) return <PublicUnavailable retry={load} />;
+
+  // Link de painel usado no endereço de formulário: manda para os painéis.
+  if (types.some(isPanelAccessType)) {
+    return <Navigate to={panelMenuPath(token)} replace />;
+  }
 
   if (section === 'menu') {
     if (types.length === 1) {

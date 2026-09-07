@@ -1,6 +1,8 @@
 import express from 'express';
-import cors from 'cors';
 import { connectDB } from './config/db.js';
+import { getJwtSecret } from './middleware/auth.js';
+import { createCorsMiddleware, securityHeaders } from './middleware/httpSecurity.js';
+import { getGuestAccessSecret } from './utils/guestToken.js';
 import authRouter from './routes/auth.js';
 import visitorsRouter from './routes/visitors.js';
 import prayerRequestsRouter from './routes/prayerRequests.js';
@@ -17,10 +19,39 @@ export async function ensureDb(): Promise<void> {
   await connectDB(process.env.MONGODB_URI || DEFAULT_MONGODB_URI);
 }
 
+/** Devolve os problemas de configuração dos segredos, sem revelar valores. */
+export function secretConfigurationErrors(): string[] {
+  const problems: string[] = [];
+  for (const check of [getJwtSecret, getGuestAccessSecret]) {
+    try {
+      check();
+    } catch (error) {
+      problems.push(error instanceof Error ? error.message : String(error));
+    }
+  }
+  return problems;
+}
+
 export function createApp() {
   const app = express();
 
-  app.use(cors());
+  // Em ambiente serverless não há startup para abortar: registra o problema
+  // no log para que a causa apareça antes do primeiro login falhar.
+  for (const problem of secretConfigurationErrors()) {
+    console.error(`Configuração inválida: ${problem}`);
+  }
+
+  // Sem isso o proxy da Vercel é o IP de todos os visitantes e o limite dos
+  // formulários públicos vira uma cota única. Fica desligado quando não há
+  // proxy, senão qualquer um poderia falsificar o IP via X-Forwarded-For.
+  const trustProxy = process.env.TRUST_PROXY ?? (process.env.VERCEL === '1' ? '1' : '');
+  if (trustProxy) {
+    const hops = Number(trustProxy);
+    app.set('trust proxy', Number.isInteger(hops) && hops > 0 ? hops : trustProxy);
+  }
+
+  app.use(securityHeaders);
+  app.use(createCorsMiddleware());
   app.use(express.json({ limit: '32kb' }));
 
   app.use(async (_req, res, next) => {

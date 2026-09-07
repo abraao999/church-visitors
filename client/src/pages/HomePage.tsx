@@ -4,7 +4,6 @@ import { api } from '../api/client';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { GuestAccessOverview } from '../components/GuestAccessOverview';
 import { formatTodayLabel } from '../utils/date';
-import type { PrayerRequest, Visitor } from '../types';
 import './HomePage.css';
 
 const QUICK_ACTIONS: Array<{
@@ -42,17 +41,19 @@ const QUICK_ACTIONS: Array<{
 ];
 
 export function HomePage() {
-  const [visitors, setVisitors] = useState<Visitor[]>([]);
-  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const [visitorCount, setVisitorCount] = useState(0);
+  const [prayerCount, setPrayerCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [statsError, setStatsError] = useState('');
 
   const loadData = useCallback(async () => {
     try {
-      const [v, p] = await Promise.all([api.getVisitors(), api.getPrayerRequests()]);
-      setVisitors(v);
-      setPrayers(p);
+      const [v, p] = await Promise.all([api.getVisitorStats(), api.getPrayerRequestStats()]);
+      setVisitorCount(v.count);
+      setPrayerCount(p.count);
+      setStatsError('');
     } catch {
-      // Mantém o dashboard disponível mesmo se os indicadores falharem.
+      setStatsError('Não foi possível atualizar os números de hoje.');
     } finally {
       setLoading(false);
     }
@@ -80,11 +81,17 @@ export function HomePage() {
         </div>
       </header>
 
+      {statsError ? (
+        <p className="error-message" role="alert">
+          {statsError}
+        </p>
+      ) : null}
+
       <section className="dashboard-stats" aria-label="Resumo de hoje">
         <article className="dashboard-stat-card card">
           <span className="dashboard-stat-icon dashboard-stat-icon-blue"><AppIcon name="users" /></span>
           <div>
-            <strong className="dashboard-stat-number">{loading ? '—' : visitors.length}</strong>
+            <strong className="dashboard-stat-number">{loading ? '—' : visitorCount}</strong>
             <p>Visitantes hoje</p>
             <Link to="/visitantes">Ver visitantes <AppIcon name="arrow" /></Link>
           </div>
@@ -93,7 +100,7 @@ export function HomePage() {
         <article className="dashboard-stat-card card">
           <span className="dashboard-stat-icon dashboard-stat-icon-yellow"><AppIcon name="prayer" /></span>
           <div>
-            <strong className="dashboard-stat-number">{loading ? '—' : prayers.length}</strong>
+            <strong className="dashboard-stat-number">{loading ? '—' : prayerCount}</strong>
             <p>Pedidos de oração</p>
             <Link to="/oracao">Ver pedidos <AppIcon name="arrow" /></Link>
           </div>

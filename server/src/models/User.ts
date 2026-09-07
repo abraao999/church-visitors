@@ -7,9 +7,10 @@ export interface IUser extends Document {
   email: string;
   username?: string;
   passwordHash?: string;
-  /** Transitório: será obrigatório depois da migração segura dos dados existentes. */
-  churchId?: Types.ObjectId;
+  churchId: Types.ObjectId;
   role: UserRole;
+  /** Sobe a cada logout ou troca de senha; invalida JWTs anteriores. */
+  tokenVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,8 +21,9 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, trim: true, lowercase: true, unique: true },
     username: { type: String, trim: true, lowercase: true, sparse: true, unique: true },
     passwordHash: { type: String },
-    churchId: { type: Schema.Types.ObjectId, ref: 'Church', index: true },
+    churchId: { type: Schema.Types.ObjectId, ref: 'Church', required: true, index: true },
     role: { type: String, enum: ['owner'], default: 'owner' },
+    tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

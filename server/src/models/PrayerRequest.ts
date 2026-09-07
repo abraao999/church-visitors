@@ -5,20 +5,22 @@ import { guestOriginSchema, type IGuestOrigin } from './GuestOrigin.js';
 export type PrayerSource = 'owner' | 'guest_access' | 'porteiro' | 'live';
 
 export interface IPrayerRequest extends Document {
-  /** Transitório: será obrigatório somente depois da migração controlada. */
-  churchId?: Types.ObjectId;
+  churchId: Types.ObjectId;
   name: string;
   request: string;
   source: PrayerSource;
   isAnonymous: boolean;
+  /** Só vai ao telão com autorização explícita de quem enviou. */
+  allowProjection: boolean;
   createdBy?: IActor;
   guestAccess?: IGuestOrigin;
+  requestId?: string;
   createdAt: Date;
 }
 
 const prayerRequestSchema = new Schema<IPrayerRequest>(
   {
-    churchId: { type: Schema.Types.ObjectId, ref: 'Church' },
+    churchId: { type: Schema.Types.ObjectId, ref: 'Church', required: true },
     name: { type: String, default: '', trim: true, maxlength: 120 },
     request: { type: String, required: true, trim: true, maxlength: 2000 },
     source: {
@@ -27,13 +29,17 @@ const prayerRequestSchema = new Schema<IPrayerRequest>(
       required: true,
     },
     isAnonymous: { type: Boolean, default: false },
+    allowProjection: { type: Boolean, default: false },
     createdBy: { type: actorSchema, required: false },
     guestAccess: { type: guestOriginSchema, required: false },
+    requestId: { type: String, trim: true, maxlength: 64 },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
 
 prayerRequestSchema.index({ churchId: 1, createdAt: -1 });
 prayerRequestSchema.index({ churchId: 1, 'guestAccess.guestAccessId': 1 });
+prayerRequestSchema.index({ churchId: 1, allowProjection: 1, createdAt: -1 });
+prayerRequestSchema.index({ churchId: 1, requestId: 1 }, { unique: true, sparse: true });
 
 export const PrayerRequest = mongoose.model<IPrayerRequest>('PrayerRequest', prayerRequestSchema);

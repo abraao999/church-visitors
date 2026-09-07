@@ -1,23 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { DisplayPanel } from '../../components/DisplayPanel';
-import type { Service } from '../../types';
+import type { ServicePanelItem } from '../../types';
 import { todayLocalISO } from '../../utils/date';
+import { usePanelAccess } from './usePanelAccess';
 
 export function HymnsPanelPage() {
-  const [services, setServices] = useState<Service[]>([]);
+  const { token } = usePanelAccess();
+  const [services, setServices] = useState<ServicePanelItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
-      const data = await api.getServices({ date: todayLocalISO() });
+      const date = todayLocalISO();
+      const data = token
+        ? await api.getPublicPanel<ServicePanelItem[]>(token, 'hymns', date)
+        : await api.getServicesPanel(date);
       setServices(data);
     } catch {
       // painel segue tentando no próximo ciclo
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     load();
@@ -67,11 +72,6 @@ export function HymnsPanelPage() {
                             </>
                           )}
                         </p>
-                        {hymn.addedBy?.name && (
-                          <p className="display-item-author">
-                            Adicionado por {hymn.addedBy.name}
-                          </p>
-                        )}
                       </div>
                     </li>
                   ))}

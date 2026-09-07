@@ -6,27 +6,23 @@ import {
   toActor,
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
+import { fetchHymnPanel } from '../services/panelData.js';
+import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
+import {
+  sendPrivateJson,
+  serializeService,
+  SERVICE_LIST_FIELDS,
+  setPrivateCacheHeaders,
+} from '../utils/publicRecord.js';
+import {
+  MISSING_UPDATED_AT_ERROR,
+  STALE_WRITE_ERROR,
+  parseExpectedUpdatedAt,
+  sameInstant,
+} from '../utils/optimistic.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 
 const router = Router();
-
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function endOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
-
-function parseDateOnly(value: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const date = new Date(`${value}T12:00:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
 
 function normalizeHymns(
   hymns: unknown,
@@ -166,12 +162,31 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =>
       };
     }
 
-    const services = await Service.find(withChurch(req.auth!.churchId, filter)).sort({
-      date: 1,
-      time: 1,
-      createdAt: 1,
-    });
-    res.json(services);
+    const services = await Service.find(withChurch(req.auth!.churchId, filter))
+      .select(SERVICE_LIST_FIELDS)
+      .sort({
+        date: 1,
+        time: 1,
+        createdAt: 1,
+      });
+    return sendPrivateJson(res, services.map(serializeService));
+  } catch {
+    res.status(500).json({ error: 'Erro ao buscar cultos' });
+  }
+});
+
+/** Painel de TV: título, horário e louvores. Sem quem adicionou cada louvor. */
+router.get('/panel', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const dateParam = req.query.date as string | undefined;
+    const date = dateParam ? parseDateOnly(dateParam) : new Date();
+
+    if (!date) {
+      return res.status(400).json({ error: 'Parâmetro date inválido. Use YYYY-MM-DD' });
+    }
+
+    setPrivateCacheHeaders(res);
+    res.json(await fetchHymnPanel(req.auth!.churchId, date));
   } catch {
     res.status(500).json({ error: 'Erro ao buscar cultos' });
   }
@@ -188,7 +203,7 @@ router.get('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response)
     if (!service) {
       return res.status(404).json({ error: 'Culto não encontrado' });
     }
-    res.json(service);
+    return sendPrivateJson(res, serializeService(service));
   } catch {
     res.status(500).json({ error: 'Erro ao buscar culto' });
   }
@@ -217,10 +232,19 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
         }))
       );
 
-      return res.status(201).json({
-        service: created[0],
-        createdCount: created.length,
-      });
+      const first = created[0];
+      if (!first) {
+        return res.status(500).json({ error: 'Erro ao criar culto' });
+      }
+
+      return sendPrivateJson(
+        res,
+        {
+          service: serializeService(first),
+          createdCount: created.length,
+        },
+        201
+      );
     }
 
     const service = await Service.create({
@@ -231,10 +255,14 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
       hymns,
       createdBy: actor,
     });
-    res.status(201).json({
-      service,
-      createdCount: 1,
-    });
+    return sendPrivateJson(
+      res,
+      {
+        service: serializeService(service),
+        createdCount: 1,
+      },
+      201
+    );
   } catch {
     res.status(500).json({ error: 'Erro ao criar culto' });
   }
@@ -258,13 +286,21 @@ router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response)
       return res.status(400).json({ error: payload.error });
     }
 
+    const expectedUpdatedAt = parseExpectedUpdatedAt(req.body?.updatedAt);
+    if (!expectedUpdatedAt) {
+      return res.status(400).json({ error: MISSING_UPDATED_AT_ERROR });
+    }
+    if (!sameInstant(existing.updatedAt, expectedUpdatedAt)) {
+      return res.status(409).json({ error: STALE_WRITE_ERROR });
+    }
+
     existing.title = payload.data.title;
     existing.date = payload.data.date;
     existing.time = payload.data.time;
     existing.hymns = payload.data.hymns;
     await existing.save();
 
-    res.json(existing);
+    return sendPrivateJson(res, serializeService(existing));
   } catch {
     res.status(500).json({ error: 'Erro ao atualizar culto' });
   }

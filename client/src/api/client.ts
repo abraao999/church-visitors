@@ -8,11 +8,16 @@ import type {
   CreateVisitorDto,
   GuestAccess,
   GuestAccessType,
+  HolyricsLocalToken,
   HolyricsSettings,
   HolyricsSyncResponse,
   PrayerRequest,
+  PrayerRequestPanelItem,
+  ServicePanelItem,
+  VisitorPanelItem,
   PublicAccessMetadata,
   Service,
+  TodayCount,
   UpdateServiceDto,
   VehicleNotice,
   VehicleNoticeStats,
@@ -22,15 +27,18 @@ import type {
 } from '../types';
 
 const API_BASE = '/api';
-const TOKEN_KEY = 'church-visitors-token';
+const LEGACY_TOKEN_KEY = 'church-visitors-token';
 
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+export function clearLegacyToken() {
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
 }
 
-export function setToken(token: string | null) {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, { ...init, credentials: 'include' });
+  } catch {
+    throw new Error('Não foi possível conectar. Confira a internet e tente de novo.');
+  }
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -42,10 +50,8 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 function authHeaders(extra?: HeadersInit): HeadersInit {
-  const token = getToken();
   return {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...extra,
   };
 }
@@ -55,7 +61,6 @@ export function todayISO(): string {
 }
 
 export interface AuthResponse {
-  token: string;
   user: AuthUser;
 }
 
@@ -67,7 +72,7 @@ export const api = {
     username: string;
     password: string;
   }): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE}/auth/register`, {
+    const response = await apiFetch(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -76,7 +81,7 @@ export const api = {
   },
 
   async login(data: { login: string; password: string }): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE}/auth/login`, {
+    const response = await apiFetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -85,23 +90,52 @@ export const api = {
   },
 
   async me(): Promise<AuthUser> {
-    const response = await fetch(`${API_BASE}/auth/me`, {
+    const response = await apiFetch(`${API_BASE}/auth/me`, {
       headers: authHeaders(),
     });
     const data = await handleResponse<{ user: AuthUser }>(response);
     return data.user;
   },
 
+  async logout(): Promise<void> {
+    const response = await apiFetch(`${API_BASE}/auth/logout`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    await handleResponse(response);
+  },
+
+  async changePassword(data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<AuthResponse> {
+    const response = await apiFetch(`${API_BASE}/auth/password`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<AuthResponse>(response);
+  },
+
   async getVisitors(date?: string): Promise<Visitor[]> {
     const params = date ? `?date=${date}` : '';
-    const response = await fetch(`${API_BASE}/visitors${params}`, {
+    const response = await apiFetch(`${API_BASE}/visitors${params}`, {
       headers: authHeaders(),
     });
     return handleResponse<Visitor[]>(response);
   },
 
+  async getVisitorStats(date?: string): Promise<TodayCount> {
+    const params = date ? `?date=${date}` : '';
+    const response = await apiFetch(`${API_BASE}/visitors/stats${params}`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<TodayCount>(response);
+  },
+
   async createVisitor(data: CreateVisitorDto): Promise<Visitor | Visitor[]> {
-    const response = await fetch(`${API_BASE}/visitors`, {
+    const response = await apiFetch(`${API_BASE}/visitors`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify(data),
@@ -110,7 +144,7 @@ export const api = {
   },
 
   async deleteVisitor(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE}/visitors/${id}`, {
+    const response = await apiFetch(`${API_BASE}/visitors/${id}`, {
       method: 'DELETE',
       headers: authHeaders(),
     });
@@ -119,14 +153,49 @@ export const api = {
 
   async getPrayerRequests(date?: string): Promise<PrayerRequest[]> {
     const params = date ? `?date=${date}` : '';
-    const response = await fetch(`${API_BASE}/prayer-requests${params}`, {
+    const response = await apiFetch(`${API_BASE}/prayer-requests${params}`, {
       headers: authHeaders(),
     });
     return handleResponse<PrayerRequest[]>(response);
   },
 
+  async getPrayerRequestStats(date?: string): Promise<TodayCount> {
+    const params = date ? `?date=${date}` : '';
+    const response = await apiFetch(`${API_BASE}/prayer-requests/stats${params}`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<TodayCount>(response);
+  },
+
+  async getPrayerRequestsPanel(date?: string): Promise<PrayerRequestPanelItem[]> {
+    const params = date ? `?date=${date}` : '';
+    const response = await apiFetch(`${API_BASE}/prayer-requests/panel${params}`, {
+      headers: authHeaders(),
+      cache: 'no-store',
+    });
+    return handleResponse<PrayerRequestPanelItem[]>(response);
+  },
+
+  async getVisitorsPanel(date?: string): Promise<VisitorPanelItem[]> {
+    const params = date ? `?date=${date}` : '';
+    const response = await apiFetch(`${API_BASE}/visitors/panel${params}`, {
+      headers: authHeaders(),
+      cache: 'no-store',
+    });
+    return handleResponse<VisitorPanelItem[]>(response);
+  },
+
+  async getServicesPanel(date?: string): Promise<ServicePanelItem[]> {
+    const params = date ? `?date=${date}` : '';
+    const response = await apiFetch(`${API_BASE}/services/panel${params}`, {
+      headers: authHeaders(),
+      cache: 'no-store',
+    });
+    return handleResponse<ServicePanelItem[]>(response);
+  },
+
   async createPrayerRequest(data: CreatePrayerDto): Promise<PrayerRequest> {
-    const response = await fetch(`${API_BASE}/prayer-requests`, {
+    const response = await apiFetch(`${API_BASE}/prayer-requests`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify(data),
@@ -135,7 +204,7 @@ export const api = {
   },
 
   async deletePrayerRequest(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE}/prayer-requests/${id}`, {
+    const response = await apiFetch(`${API_BASE}/prayer-requests/${id}`, {
       method: 'DELETE',
       headers: authHeaders(),
     });
@@ -148,14 +217,14 @@ export const api = {
     if (params?.from) search.set('from', params.from);
     if (params?.to) search.set('to', params.to);
     const query = search.toString();
-    const response = await fetch(`${API_BASE}/services${query ? `?${query}` : ''}`, {
+    const response = await apiFetch(`${API_BASE}/services${query ? `?${query}` : ''}`, {
       headers: authHeaders(),
     });
     return handleResponse<Service[]>(response);
   },
 
   async createService(data: CreateServiceDto): Promise<CreateServiceResponse> {
-    const response = await fetch(`${API_BASE}/services`, {
+    const response = await apiFetch(`${API_BASE}/services`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify(data),
@@ -164,7 +233,7 @@ export const api = {
   },
 
   async updateService(id: string, data: UpdateServiceDto): Promise<Service> {
-    const response = await fetch(`${API_BASE}/services/${id}`, {
+    const response = await apiFetch(`${API_BASE}/services/${id}`, {
       method: 'PUT',
       headers: authHeaders(),
       body: JSON.stringify(data),
@@ -173,7 +242,7 @@ export const api = {
   },
 
   async deleteService(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE}/services/${id}`, {
+    const response = await apiFetch(`${API_BASE}/services/${id}`, {
       method: 'DELETE',
       headers: authHeaders(),
     });
@@ -181,7 +250,7 @@ export const api = {
   },
 
   async getChurch(): Promise<ChurchProfile> {
-    const response = await fetch(`${API_BASE}/church`, {
+    const response = await apiFetch(`${API_BASE}/church`, {
       headers: authHeaders(),
     });
     return handleResponse<ChurchProfile>(response);
@@ -193,7 +262,7 @@ export const api = {
     phone?: string;
     address?: string;
   }): Promise<ChurchProfile> {
-    const response = await fetch(`${API_BASE}/church`, {
+    const response = await apiFetch(`${API_BASE}/church`, {
       method: 'PATCH',
       headers: authHeaders(),
       body: JSON.stringify(data),
@@ -202,16 +271,16 @@ export const api = {
   },
 
   async getHolyricsSettings(): Promise<HolyricsSettings> {
-    const response = await fetch(`${API_BASE}/holyrics/settings`, {
+    const response = await apiFetch(`${API_BASE}/holyrics/settings`, {
       headers: authHeaders(),
     });
     return handleResponse<HolyricsSettings>(response);
   },
 
   async saveHolyricsSettings(
-    data: Pick<HolyricsSettings, 'mode' | 'host' | 'port' | 'token' | 'apiKey'>
+    data: Pick<HolyricsSettings, 'mode' | 'host' | 'port'> & { token?: string; apiKey?: string }
   ): Promise<HolyricsSettings> {
-    const response = await fetch(`${API_BASE}/holyrics/settings`, {
+    const response = await apiFetch(`${API_BASE}/holyrics/settings`, {
       method: 'PUT',
       headers: authHeaders(),
       body: JSON.stringify(data),
@@ -219,8 +288,15 @@ export const api = {
     return handleResponse<HolyricsSettings>(response);
   },
 
+  async getHolyricsLocalToken(): Promise<HolyricsLocalToken> {
+    const response = await apiFetch(`${API_BASE}/holyrics/local-token`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<HolyricsLocalToken>(response);
+  },
+
   async testHolyrics(): Promise<{ ok: boolean; message: string; songsCount?: number }> {
-    const response = await fetch(`${API_BASE}/holyrics/test`, {
+    const response = await apiFetch(`${API_BASE}/holyrics/test`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({}),
@@ -229,7 +305,7 @@ export const api = {
   },
 
   async syncHolyrics(serviceId: string): Promise<HolyricsSyncResponse> {
-    const response = await fetch(`${API_BASE}/holyrics/sync`, {
+    const response = await apiFetch(`${API_BASE}/holyrics/sync`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({ serviceId }),
@@ -238,7 +314,7 @@ export const api = {
   },
 
   async getGuestAccesses(): Promise<GuestAccess[]> {
-    const response = await fetch(`${API_BASE}/guest-accesses`, {
+    const response = await apiFetch(`${API_BASE}/guest-accesses`, {
       headers: authHeaders(),
     });
     return handleResponse<GuestAccess[]>(response);
@@ -250,7 +326,7 @@ export const api = {
     types?: GuestAccessType[];
     expiresAt?: string;
   }): Promise<GuestAccess> {
-    const response = await fetch(`${API_BASE}/guest-accesses`, {
+    const response = await apiFetch(`${API_BASE}/guest-accesses`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify(data),
@@ -262,7 +338,7 @@ export const api = {
     id: string,
     data: { name: string; expiresAt?: string; types?: GuestAccessType[] }
   ): Promise<GuestAccess> {
-    const response = await fetch(`${API_BASE}/guest-accesses/${id}`, {
+    const response = await apiFetch(`${API_BASE}/guest-accesses/${id}`, {
       method: 'PUT',
       headers: authHeaders(),
       body: JSON.stringify(data),
@@ -271,7 +347,7 @@ export const api = {
   },
 
   async deactivateGuestAccess(id: string): Promise<GuestAccess> {
-    const response = await fetch(`${API_BASE}/guest-accesses/${id}/deactivate`, {
+    const response = await apiFetch(`${API_BASE}/guest-accesses/${id}/deactivate`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({}),
@@ -280,7 +356,7 @@ export const api = {
   },
 
   async reactivateGuestAccess(id: string): Promise<GuestAccess> {
-    const response = await fetch(`${API_BASE}/guest-accesses/${id}/reactivate`, {
+    const response = await apiFetch(`${API_BASE}/guest-accesses/${id}/reactivate`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({}),
@@ -289,7 +365,7 @@ export const api = {
   },
 
   async renewGuestAccess(id: string): Promise<GuestAccess> {
-    const response = await fetch(`${API_BASE}/guest-accesses/${id}/renew`, {
+    const response = await apiFetch(`${API_BASE}/guest-accesses/${id}/renew`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({}),
@@ -298,22 +374,33 @@ export const api = {
   },
 
   async getPublicAccess(token: string): Promise<PublicAccessMetadata> {
-    const response = await fetch(`${API_BASE}/public-access/${encodeURIComponent(token)}`, {
+    const response = await apiFetch(`${API_BASE}/public-access/${encodeURIComponent(token)}`, {
       headers: { Accept: 'application/json' },
     });
     return handleResponse<PublicAccessMetadata>(response);
   },
 
+  /** Painéis abertos por link de leitura, sem sessão de responsável. */
+  async getPublicPanel<T>(token: string, panel: string, date?: string): Promise<T> {
+    const params = date ? `?date=${date}` : '';
+    const response = await apiFetch(
+      `${API_BASE}/public-access/${encodeURIComponent(token)}/panels/${panel}${params}`,
+      { headers: { Accept: 'application/json' }, cache: 'no-store' }
+    );
+    return handleResponse<T>(response);
+  },
+
   async submitPublicVisitors(
     token: string,
-    visitors: CreateVisitorDto['visitors']
+    visitors: CreateVisitorDto['visitors'],
+    requestId?: string
   ): Promise<{ success: true; message: string }> {
-    const response = await fetch(
+    const response = await apiFetch(
       `${API_BASE}/public-access/${encodeURIComponent(token)}/visitors`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitors }),
+        body: JSON.stringify({ visitors, requestId }),
       }
     );
     return handleResponse(response);
@@ -321,9 +408,11 @@ export const api = {
 
   async submitPublicPrayer(
     token: string,
-    data: Pick<CreatePrayerDto, 'name' | 'request' | 'isAnonymous'>
+    data: Pick<CreatePrayerDto, 'name' | 'request' | 'isAnonymous' | 'allowProjection'> & {
+      requestId?: string;
+    }
   ): Promise<{ success: true; message: string }> {
-    const response = await fetch(
+    const response = await apiFetch(
       `${API_BASE}/public-access/${encodeURIComponent(token)}/prayer-requests`,
       {
         method: 'POST',
@@ -338,7 +427,7 @@ export const api = {
     token: string,
     data: CreateVehicleNoticeDto
   ): Promise<{ success: true; message: string }> {
-    const response = await fetch(
+    const response = await apiFetch(
       `${API_BASE}/public-access/${encodeURIComponent(token)}/vehicle-notices`,
       {
         method: 'POST',
@@ -359,14 +448,14 @@ export const api = {
     if (params?.status) search.set('status', params.status);
     if (params?.plate) search.set('plate', params.plate);
     const query = search.toString();
-    const response = await fetch(`${API_BASE}/vehicle-notices${query ? `?${query}` : ''}`, {
+    const response = await apiFetch(`${API_BASE}/vehicle-notices${query ? `?${query}` : ''}`, {
       headers: authHeaders(),
     });
     return handleResponse<VehicleNotice[]>(response);
   },
 
   async getVehicleNoticesPanel(): Promise<VehiclePanelNotice[]> {
-    const response = await fetch(`${API_BASE}/vehicle-notices/panel`, {
+    const response = await apiFetch(`${API_BASE}/vehicle-notices/panel`, {
       headers: authHeaders(),
       cache: 'no-store',
     });
@@ -375,7 +464,7 @@ export const api = {
 
   async getVehicleNoticeStats(date?: string): Promise<VehicleNoticeStats> {
     const params = date ? `?date=${date}` : '';
-    const response = await fetch(`${API_BASE}/vehicle-notices/stats${params}`, {
+    const response = await apiFetch(`${API_BASE}/vehicle-notices/stats${params}`, {
       headers: authHeaders(),
     });
     return handleResponse<VehicleNoticeStats>(response);
@@ -383,12 +472,13 @@ export const api = {
 
   async updateVehicleNoticeStatus(
     id: string,
-    status: VehicleNoticeStatus
+    status: VehicleNoticeStatus,
+    updatedAt: string
   ): Promise<VehicleNotice> {
-    const response = await fetch(`${API_BASE}/vehicle-notices/${id}/status`, {
+    const response = await apiFetch(`${API_BASE}/vehicle-notices/${id}/status`, {
       method: 'PATCH',
       headers: authHeaders(),
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, updatedAt }),
     });
     return handleResponse<VehicleNotice>(response);
   },

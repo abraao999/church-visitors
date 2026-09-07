@@ -10,6 +10,7 @@ import { LivePrayerPage } from './pages/LivePrayerPage';
 import { LoginPage } from './pages/LoginPage';
 import { PanelsPage } from './pages/PanelsPage';
 import { HymnsPanelPage } from './pages/panels/HymnsPanelPage';
+import { PanelAccessMenu } from './pages/panels/PanelAccessMenu';
 import { PrayersPanelPage } from './pages/panels/PrayersPanelPage';
 import { VehicleNoticesPanelPage } from './pages/panels/VehicleNoticesPanelPage';
 import { VisitorsPanelPage } from './pages/panels/VisitorsPanelPage';
@@ -29,6 +30,12 @@ export function App() {
           <Route path="/acesso/:token/visitantes" element={<PublicAccessPage />} />
           <Route path="/acesso/:token/oracao" element={<PublicAccessPage />} />
           <Route path="/acesso/:token/veiculos" element={<PublicAccessPage />} />
+          {/* Painéis por link de leitura: abrem na TV sem sessão de responsável. */}
+          <Route path="/painel/:token" element={<PanelAccessMenu />} />
+          <Route path="/painel/:token/louvores" element={<HymnsPanelPage />} />
+          <Route path="/painel/:token/visitantes" element={<VisitorsPanelPage />} />
+          <Route path="/painel/:token/oracao" element={<PrayersPanelPage />} />
+          <Route path="/painel/:token/veiculos" element={<VehicleNoticesPanelPage />} />
           <Route path="/live/oracao" element={<Layout />}>
             <Route index element={<LivePrayerPage />} />
           </Route>

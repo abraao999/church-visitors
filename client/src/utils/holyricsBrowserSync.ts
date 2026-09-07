@@ -1,4 +1,9 @@
-import type { HolyricsSettings, HolyricsSyncResponse, HolyricsSyncResultItem, Service } from '../types';
+import type {
+  HolyricsLocalToken,
+  HolyricsSyncResponse,
+  HolyricsSyncResultItem,
+  Service,
+} from '../types';
 
 interface HolyricsSong {
   id: string;
@@ -48,13 +53,13 @@ function pickBestSongMatch(
 }
 
 async function holyricsLocalRequest<T>(
-  settings: HolyricsSettings,
+  connection: HolyricsLocalToken,
   action: string,
   body: Record<string, unknown>
 ): Promise<T> {
-  const host = settings.host.trim() || '127.0.0.1';
-  const port = settings.port || 8091;
-  const url = `http://${host}:${port}/api/${action}?token=${encodeURIComponent(settings.token)}`;
+  const host = connection.host.trim() || '127.0.0.1';
+  const port = connection.port || 8091;
+  const url = `http://${host}:${port}/api/${action}?token=${encodeURIComponent(connection.token)}`;
 
   let response: Response;
   try {
@@ -72,7 +77,9 @@ async function holyricsLocalRequest<T>(
 
   const json = await response.json().catch(() => ({}));
   if (!response.ok || (json.status && json.status !== 'ok')) {
-    throw new Error(json.error || json.message || `Holyrics HTTP ${response.status}`);
+    throw new Error(
+      'O Holyrics recusou a requisição. Confira o token e tente de novo.'
+    );
   }
 
   return (json.data ?? json) as T;
@@ -81,12 +88,9 @@ async function holyricsLocalRequest<T>(
 /** Sync direto do navegador → Holyrics local (útil com app na Vercel). */
 export async function syncServiceToHolyricsBrowser(
   service: Service,
-  settings: HolyricsSettings
+  connection: HolyricsLocalToken
 ): Promise<HolyricsSyncResponse> {
-  if (settings.mode !== 'local') {
-    throw new Error('Sync pelo navegador só está disponível no modo local');
-  }
-  if (!settings.token) {
+  if (!connection.token) {
     throw new Error('Configure o token do Holyrics primeiro');
   }
   if (!service.hymns.length) {
@@ -99,7 +103,7 @@ export async function syncServiceToHolyricsBrowser(
   for (const hymn of service.hymns) {
     try {
       const query = [hymn.title, hymn.artist].filter(Boolean).join(' ');
-      const songs = await holyricsLocalRequest<HolyricsSong[]>(settings, 'SearchLyrics', {
+      const songs = await holyricsLocalRequest<HolyricsSong[]>(connection, 'SearchLyrics', {
         text: query || hymn.title,
         title: true,
         artist: true,
@@ -138,7 +142,7 @@ export async function syncServiceToHolyricsBrowser(
 
   const uniqueIds = [...new Set(idsToAdd)];
   if (uniqueIds.length > 0) {
-    await holyricsLocalRequest(settings, 'AddLyricsToPlaylist', {
+    await holyricsLocalRequest(connection, 'AddLyricsToPlaylist', {
       ids: uniqueIds,
       media_playlist: false,
     });

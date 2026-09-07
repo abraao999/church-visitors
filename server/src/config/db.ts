@@ -3,8 +3,16 @@ import mongoose from 'mongoose';
 
 const ATLAS_DB_NAME = 'church-visitors';
 
+/** Só troca o DNS do processo quando pedido: na Vercel o resolver nativo já funciona. */
+export function shouldOverrideAtlasDns(
+  uri: string,
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  return uri.startsWith('mongodb+srv://') && env.MONGODB_DNS_OVERRIDE === '1';
+}
+
 function configureDnsForAtlas(uri: string): void {
-  if (uri.startsWith('mongodb+srv://')) {
+  if (shouldOverrideAtlasDns(uri)) {
     // Alguns provedores/redes no Windows bloqueiam consultas SRV no DNS local.
     dns.setServers(['8.8.8.8', '1.1.1.1']);
   }

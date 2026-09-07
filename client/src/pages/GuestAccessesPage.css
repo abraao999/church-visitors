@@ -35,6 +35,13 @@
   border-radius: 12px;
 }
 
+.guest-access-heading-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .guest-access-heading .app-icon,
 .page-eyebrow .app-icon {
   width: 20px;
@@ -470,6 +477,11 @@
 
   .guest-access-heading .btn {
     width: 100%;
+  }
+
+  .guest-access-heading-actions {
+    width: 100%;
+    flex-direction: column;
   }
 
   .guest-access-card-main {

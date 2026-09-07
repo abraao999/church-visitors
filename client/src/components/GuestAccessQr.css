@@ -1,0 +1,24 @@
+.guest-qr-local-warning {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 16rem;
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.guest-qr-local-warning .app-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 0.1rem;
+}
+
+.guest-qr-compact .guest-qr-local-warning {
+  max-width: 100%;
+}

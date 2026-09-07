@@ -1,4 +1,46 @@
 import type { HolyricsMode } from '../models/HolyricsSettings.js';
+import { HolyricsHostError, normalizeHolyricsHost } from './holyricsHost.js';
+
+/** O modo local costuma estar em rede lenta; sem teto a função fica pendurada. */
+const REQUEST_TIMEOUT_MS = 10_000;
+
+export const HOLYRICS_LOCAL_UNREACHABLE =
+  'Não foi possível conectar ao Holyrics neste computador. Confirme que o Holyrics está aberto e a API Server ativa.';
+export const HOLYRICS_INTERNET_UNREACHABLE =
+  'Não foi possível conectar à API internet do Holyrics.';
+export const HOLYRICS_REJECTED =
+  'O Holyrics recusou a requisição. Confira o token e tente de novo.';
+export const HOLYRICS_INVALID_RESPONSE = 'O Holyrics devolveu uma resposta inválida.';
+export const HOLYRICS_GENERIC_FAILURE =
+  'Não foi possível falar com o Holyrics agora. Confira se ele está aberto e tente de novo.';
+
+const PUBLIC_HOLYRICS_ERRORS = new Set([
+  'Token do Holyrics não configurado',
+  'API Key do Holyrics é obrigatória no modo internet',
+  HOLYRICS_LOCAL_UNREACHABLE,
+  HOLYRICS_INTERNET_UNREACHABLE,
+  HOLYRICS_REJECTED,
+  HOLYRICS_INVALID_RESPONSE,
+]);
+
+/** Mensagem segura para o navegador: sem URL, sem texto do fetch e sem corpo interno. */
+export function holyricsPublicError(error: unknown): string {
+  if (error instanceof HolyricsHostError) return error.message;
+  if (error instanceof Error && PUBLIC_HOLYRICS_ERRORS.has(error.message)) {
+    return error.message;
+  }
+  return HOLYRICS_GENERIC_FAILURE;
+}
+
+function holyricsFailureCode(error: unknown): string {
+  if (!(error instanceof Error)) return 'unknown';
+  const cause = error.cause;
+  if (cause && typeof cause === 'object' && cause !== null && 'code' in cause) {
+    const code = (cause as { code?: unknown }).code;
+    if (typeof code === 'string' && code) return `${error.name}:${code}`;
+  }
+  return error.name || 'Error';
+}
 
 export interface HolyricsConnection {
   mode: HolyricsMode;
@@ -23,7 +65,8 @@ interface HolyricsResponse<T> {
 }
 
 function localBaseUrl(conn: HolyricsConnection): string {
-  const host = conn.host.trim() || '127.0.0.1';
+  // Revalida na hora de montar a URL: protege registros já salvos no banco.
+  const host = normalizeHolyricsHost(conn.host || '127.0.0.1');
   const port = conn.port || 8091;
   return `http://${host}:${port}`;
 }
@@ -64,35 +107,39 @@ export async function holyricsRequest<T>(
       method: 'POST',
       headers,
       body: JSON.stringify(body),
+      // Sem isso um redirecionamento da resposta levaria a requisição para
+      // outro endereço, contornando a validação do host.
+      redirect: 'error',
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    // Não registra URL nem message: a URL local carrega o token, e o fetch
+    // costuma repetir host/IP (oráculo de SSRF).
+    console.error('Holyrics indisponível', {
+      mode: conn.mode,
+      action,
+      code: holyricsFailureCode(error),
+    });
     if (conn.mode === 'local') {
-      throw new Error(
-        `Não foi possível conectar ao Holyrics em ${localBaseUrl(conn)}. ` +
-          'Confirme que o Holyrics está aberto, a API Server ativa, e que este servidor alcança o PC da igreja. ' +
-          `(${message})`
-      );
+      throw new Error(HOLYRICS_LOCAL_UNREACHABLE);
     }
-    throw new Error(`Falha ao conectar na API internet do Holyrics (${message})`);
+    throw new Error(HOLYRICS_INTERNET_UNREACHABLE);
   }
 
   const text = await response.text();
-  let json: HolyricsResponse<T> | null = null;
+  let json: HolyricsResponse<T> | null;
   try {
     json = text ? (JSON.parse(text) as HolyricsResponse<T>) : null;
   } catch {
-    throw new Error(`Resposta inválida do Holyrics (HTTP ${response.status})`);
+    throw new Error(HOLYRICS_INVALID_RESPONSE);
   }
 
   if (!response.ok) {
-    throw new Error(
-      json?.error || json?.message || `Holyrics retornou HTTP ${response.status}`
-    );
+    throw new Error(HOLYRICS_REJECTED);
   }
 
   if (json?.status && json.status !== 'ok') {
-    throw new Error(json.error || json.message || 'Holyrics retornou status de erro');
+    throw new Error(HOLYRICS_REJECTED);
   }
 
   return (json?.data ?? json) as T;

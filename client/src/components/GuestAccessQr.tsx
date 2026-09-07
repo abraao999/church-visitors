@@ -1,17 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
 import { useTheme } from '../theme/ThemeContext';
+import type { GuestAccessType } from '../types';
+import { accessEntryPath } from '../utils/publicAccess';
+import { resolvePublicOrigin } from '../utils/publicOrigin';
 import { AppIcon } from './AppIcon';
+import './GuestAccessQr.css';
 
 interface Props {
   token: string;
   name: string;
+  types?: GuestAccessType[];
   size?: number;
   compact?: boolean;
 }
 
-export function guestAccessUrl(token: string): string {
-  return `${window.location.origin}/acesso/${token}`;
+function currentPublicOrigin() {
+  return resolvePublicOrigin(
+    window.location.origin,
+    import.meta.env.VITE_PUBLIC_ORIGIN
+  );
+}
+
+export function guestAccessUrl(token: string, types: GuestAccessType[] = []): string {
+  return `${currentPublicOrigin().origin}${accessEntryPath(token, types)}`;
 }
 
 function safeFilename(name: string): string {
@@ -24,17 +36,24 @@ function safeFilename(name: string): string {
   return `qr-${normalized || 'acesso'}.png`;
 }
 
-export function GuestAccessQr({ token, name, size = 240, compact = false }: Props) {
+export function GuestAccessQr({ token, name, types = [], size = 240, compact = false }: Props) {
   const { isDark } = useTheme();
   const [dataUrl, setDataUrl] = useState('');
   const [error, setError] = useState(false);
+  const link = useMemo(
+    () => guestAccessUrl(token, types),
+    // types muda de identidade a cada render do pai; a chave real é o conteúdo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [token, types.join(',')]
+  );
+  const localOrigin = currentPublicOrigin().local;
 
   useEffect(() => {
     let cancelled = false;
     setDataUrl('');
     setError(false);
 
-    QRCode.toDataURL(guestAccessUrl(token), {
+    QRCode.toDataURL(link, {
       width: size,
       margin: 2,
       errorCorrectionLevel: 'M',
@@ -52,10 +71,10 @@ export function GuestAccessQr({ token, name, size = 240, compact = false }: Prop
     return () => {
       cancelled = true;
     };
-  }, [isDark, size, token]);
+  }, [isDark, size, link]);
 
   function download() {
-    if (!dataUrl) return;
+    if (!dataUrl || localOrigin) return;
     const anchor = document.createElement('a');
     anchor.href = dataUrl;
     anchor.download = safeFilename(name);
@@ -71,8 +90,20 @@ export function GuestAccessQr({ token, name, size = 240, compact = false }: Prop
           {error ? 'QR Code indisponível' : 'Gerando QR Code...'}
         </div>
       )}
+      {localOrigin && (
+        <p className="guest-qr-local-warning" role="status">
+          <AppIcon name="info" />
+          Este link só funciona neste computador. Não imprima nem compartilhe o QR Code
+          até abrir o sistema no endereço público da igreja.
+        </p>
+      )}
       {!compact && (
-        <button type="button" className="guest-action-button" onClick={download} disabled={!dataUrl}>
+        <button
+          type="button"
+          className="guest-action-button"
+          onClick={download}
+          disabled={!dataUrl || localOrigin}
+        >
           <AppIcon name="download" />
           Baixar QR Code
         </button>

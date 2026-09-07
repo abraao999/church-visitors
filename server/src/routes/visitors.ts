@@ -6,27 +6,17 @@ import {
   toActor,
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
+import { fetchVisitorPanel } from '../services/panelData.js';
+import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
+import {
+  sendPrivateJson,
+  serializeVisitor,
+  setPrivateCacheHeaders,
+  VISITOR_LIST_FIELDS,
+} from '../utils/publicRecord.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 
 const router = Router();
-
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function endOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
-
-function parseDateOnly(value: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const date = new Date(`${value}T12:00:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
 
 function isRelationship(value: string): value is Relationship {
   return RELATIONSHIPS.includes(value as Relationship);
@@ -76,6 +66,27 @@ function normalizeVisitors(body: Record<string, unknown>): { data: VisitorInput[
   return { data };
 }
 
+export async function countVisitors(req: AuthenticatedRequest, res: Response) {
+  try {
+    const dateParam = req.query.date as string | undefined;
+    const date = dateParam ? parseDateOnly(dateParam) : new Date();
+
+    if (!date) {
+      return res.status(400).json({ error: 'Parâmetro date inválido. Use YYYY-MM-DD' });
+    }
+
+    const count = await Visitor.countDocuments(
+      withChurch(req.auth!.churchId, {
+        visitDate: { $gte: startOfDay(date), $lte: endOfDay(date) },
+      })
+    );
+
+    return sendPrivateJson(res, { count });
+  } catch {
+    res.status(500).json({ error: 'Erro ao contar visitantes' });
+  }
+}
+
 export async function listVisitors(req: AuthenticatedRequest, res: Response) {
   try {
     const dateParam = req.query.date as string | undefined;
@@ -85,11 +96,32 @@ export async function listVisitors(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ error: 'Parâmetro date inválido. Use YYYY-MM-DD' });
     }
 
-    const visitors = await Visitor.find(withChurch(req.auth!.churchId, {
-      visitDate: { $gte: startOfDay(date), $lte: endOfDay(date) },
-    })).sort({ createdAt: -1 });
+    const visitors = await Visitor.find(
+      withChurch(req.auth!.churchId, {
+        visitDate: { $gte: startOfDay(date), $lte: endOfDay(date) },
+      })
+    )
+      .select(VISITOR_LIST_FIELDS)
+      .sort({ createdAt: -1 });
 
-    res.json(visitors);
+    return sendPrivateJson(res, visitors.map(serializeVisitor));
+  } catch {
+    res.status(500).json({ error: 'Erro ao buscar visitantes' });
+  }
+}
+
+/** Painel de TV: só nome, cidade e horário. Sem parentesco nem quem registrou. */
+export async function listVisitorsPanel(req: AuthenticatedRequest, res: Response) {
+  try {
+    const dateParam = req.query.date as string | undefined;
+    const date = dateParam ? parseDateOnly(dateParam) : new Date();
+
+    if (!date) {
+      return res.status(400).json({ error: 'Parâmetro date inválido. Use YYYY-MM-DD' });
+    }
+
+    setPrivateCacheHeaders(res);
+    res.json(await fetchVisitorPanel(req.auth!.churchId, date));
   } catch {
     res.status(500).json({ error: 'Erro ao buscar visitantes' });
   }
@@ -117,7 +149,8 @@ export async function createVisitors(req: AuthenticatedRequest, res: Response) {
       }))
     );
 
-    res.status(201).json(created.length === 1 ? created[0] : created);
+    const payload = created.map(serializeVisitor);
+    return sendPrivateJson(res, payload.length === 1 ? payload[0] : payload, 201);
   } catch {
     res.status(500).json({ error: 'Erro ao registrar visitante' });
   }
@@ -141,6 +174,8 @@ export async function deleteVisitor(req: AuthenticatedRequest, res: Response) {
 }
 
 router.get('/', requireAuth, listVisitors);
+router.get('/stats', requireAuth, countVisitors);
+router.get('/panel', requireAuth, listVisitorsPanel);
 router.post('/', requireAuth, createVisitors);
 router.delete('/:id', requireAuth, deleteVisitor);
 

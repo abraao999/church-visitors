@@ -10,7 +10,12 @@ import {
   type IGuestAccess,
 } from '../models/GuestAccess.js';
 import { createGuestPublicId, createGuestToken } from '../utils/guestToken.js';
-import { parseGuestAccessTypes, resolveGuestAccessTypes } from '../utils/guestAccessTypes.js';
+import {
+  isPanelOnlyAccess,
+  mixesPanelAndFormScopes,
+  parseGuestAccessTypes,
+  resolveGuestAccessTypes,
+} from '../utils/guestAccessTypes.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 
 const router = Router();
@@ -35,6 +40,7 @@ function serializeAccess(access: Pick<
     name: access.name,
     type: types[0] || access.type,
     types,
+    panel: isPanelOnlyAccess(types),
     specific: types.length === 1,
     active: access.active,
     expiresAt: access.expiresAt,
@@ -63,6 +69,9 @@ function typesFromBody(body: unknown): GuestAccessType[] {
   const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
   return parseGuestAccessTypes(payload.types ?? payload.type);
 }
+
+const MIXED_SCOPES_ERROR =
+  'Um mesmo link não pode juntar painel de TV e formulários. Crie um acesso separado para o painel.';
 
 function configurationError(res: Response) {
   return res.status(503).json({
@@ -97,6 +106,9 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
 
     if (!name || types.length === 0) {
       return res.status(400).json({ error: 'Informe um nome e pelo menos uma opção autorizada.' });
+    }
+    if (mixesPanelAndFormScopes(types)) {
+      return res.status(400).json({ error: MIXED_SCOPES_ERROR });
     }
     if (expiresAt === null) {
       return res.status(400).json({ error: 'A validade deve ser uma data futura.' });
@@ -156,6 +168,9 @@ router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response)
     const types = requestedTypes.length > 0 ? requestedTypes : resolveGuestAccessTypes(access);
     if (types.length === 0) {
       return res.status(400).json({ error: 'Selecione pelo menos uma opção autorizada.' });
+    }
+    if (mixesPanelAndFormScopes(types)) {
+      return res.status(400).json({ error: MIXED_SCOPES_ERROR });
     }
 
     access.name = name;

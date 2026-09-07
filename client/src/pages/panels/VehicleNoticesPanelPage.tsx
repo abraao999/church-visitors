@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../api/client';
-import { useAuth } from '../../auth/AuthContext';
 import { AppIcon, type AppIconName } from '../../components/AppIcon';
 import { formatPanelDayMonth, formatPanelWeekday } from '../../utils/date';
 import {
@@ -13,6 +12,7 @@ import {
   vehiclePanelPageCount,
   type VehiclePanelNotice,
 } from '../../utils/vehicleNoticesTv';
+import { usePanelAccess } from './usePanelAccess';
 import './VehicleNoticesPanelPage.css';
 
 const ACTION_ICONS: Record<string, AppIconName> = {
@@ -24,8 +24,7 @@ const ACTION_ICONS: Record<string, AppIconName> = {
 };
 
 export function VehicleNoticesPanelPage() {
-  const { user } = useAuth();
-  const brandName = user?.churchName?.trim() || 'Church Visitors';
+  const { token, churchName: brandName } = usePanelAccess();
   const [notices, setNotices] = useState<VehiclePanelNotice[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -40,7 +39,9 @@ export function VehicleNoticesPanelPage() {
   const load = useCallback(async () => {
     if (document.visibilityState === 'hidden' && hasLoadedRef.current) return;
     try {
-      const data = await api.getVehicleNoticesPanel();
+      const data = token
+        ? await api.getPublicPanel<VehiclePanelNotice[]>(token, 'vehicle-notices')
+        : await api.getVehicleNoticesPanel();
       const previous = knownIdsRef.current;
       const ids = data.map((item) => item.id);
       const announcement = describeVehiclePanelChanges(
@@ -57,7 +58,7 @@ export function VehicleNoticesPanelPage() {
       hasLoadedRef.current = true;
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
-      if (/login|autoriz|sessão|sessao/i.test(message) && !hasLoadedRef.current) {
+      if (/login|autoriz|sessão|sessao|acesso|válido|valido/i.test(message) && !hasLoadedRef.current) {
         setForbidden(true);
       } else if (hasLoadedRef.current) {
         setReconnecting(true);
@@ -67,7 +68,7 @@ export function VehicleNoticesPanelPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     load();

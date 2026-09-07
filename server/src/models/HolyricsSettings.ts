@@ -3,8 +3,7 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 export type HolyricsMode = 'local' | 'internet';
 
 export interface IHolyricsSettings extends Document {
-  /** Transitório: será obrigatório somente depois da migração controlada. */
-  churchId?: Types.ObjectId;
+  churchId: Types.ObjectId;
   mode: HolyricsMode;
   host: string;
   port: number;
@@ -15,7 +14,7 @@ export interface IHolyricsSettings extends Document {
 
 const holyricsSettingsSchema = new Schema<IHolyricsSettings>(
   {
-    churchId: { type: Schema.Types.ObjectId, ref: 'Church' },
+    churchId: { type: Schema.Types.ObjectId, ref: 'Church', required: true, unique: true },
     mode: { type: String, enum: ['local', 'internet'], default: 'local' },
     host: { type: String, default: '127.0.0.1', trim: true },
     port: { type: Number, default: 8091 },
@@ -23,14 +22,6 @@ const holyricsSettingsSchema = new Schema<IHolyricsSettings>(
     apiKey: { type: String, default: '', trim: true },
   },
   { timestamps: { createdAt: false, updatedAt: true } }
-);
-
-holyricsSettingsSchema.index(
-  { churchId: 1 },
-  {
-    unique: true,
-    partialFilterExpression: { churchId: { $type: 'objectId' } },
-  }
 );
 
 export const HolyricsSettings = mongoose.model<IHolyricsSettings>(

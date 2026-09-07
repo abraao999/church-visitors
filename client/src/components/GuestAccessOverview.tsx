@@ -21,8 +21,10 @@ function accessTypes(access: GuestAccess): GuestAccessType[] {
   return access.types?.length ? access.types : access.type ? [access.type] : [];
 }
 
+/** Só o portal de formulários: acesso de painel é ferramenta da TV. */
 function isPortal(access: GuestAccess): boolean {
-  return accessTypes(access).length > 1;
+  const types = accessTypes(access);
+  return types.length > 1 && !types.includes('panels:read');
 }
 
 function labelDate(value?: string): string {
@@ -77,7 +79,7 @@ export function GuestAccessOverview() {
   async function copy(access: GuestAccess) {
     setError('');
     try {
-      await navigator.clipboard.writeText(guestAccessUrl(access.token));
+      await navigator.clipboard.writeText(guestAccessUrl(access.token, accessTypes(access)));
       setFeedback(`Link de “${access.name}” copiado.`);
     } catch {
       setError('Não foi possível copiar o link automaticamente.');
@@ -107,7 +109,12 @@ export function GuestAccessOverview() {
           <p className="access-overview-loading">Carregando...</p>
         ) : portal ? (
           <div className="access-overview-content">
-            <GuestAccessQr token={portal.token} name={portal.name} size={168} />
+            <GuestAccessQr
+              token={portal.token}
+              name={portal.name}
+              types={accessTypes(portal)}
+              size={168}
+            />
             <div className="access-overview-info">
               <div className="access-overview-card-header">
                 <div>

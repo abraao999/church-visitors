@@ -16,6 +16,14 @@ export function ChurchSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
 
   useEffect(() => {
     api
@@ -54,6 +62,31 @@ export function ChurchSettingsPage() {
       setError(err instanceof Error ? err.message : 'Erro ao salvar');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handlePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('A confirmação não coincide com a nova senha.');
+      return;
+    }
+
+    setPasswordSaving(true);
+    try {
+      await api.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordSuccess('Senha alterada. As outras sessões foram encerradas.');
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : 'Erro ao alterar a senha');
+    } finally {
+      setPasswordSaving(false);
     }
   }
 
@@ -153,6 +186,83 @@ export function ChurchSettingsPage() {
         <div className="church-settings-actions">
           <button type="submit" className="btn btn-primary" disabled={saving || !form.name.trim()}>
             {saving ? 'Salvando...' : 'Salvar dados'}
+          </button>
+        </div>
+      </form>
+
+      <form className="card church-settings-form" onSubmit={handlePassword}>
+        <div className="church-settings-form-heading">
+          <span>
+            <AppIcon name="lock" />
+          </span>
+          <div>
+            <h2>Senha da conta</h2>
+            <p>A nova senha precisa ter pelo menos 8 caracteres. As outras sessões saem na hora.</p>
+          </div>
+        </div>
+
+        <div className="church-settings-feedback" aria-live="polite">
+          {passwordError && (
+            <p className="error-message" role="alert">
+              {passwordError}
+            </p>
+          )}
+          {passwordSuccess && (
+            <p className="success-message">
+              <AppIcon name="check" />
+              {passwordSuccess}
+            </p>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="current-password">Senha atual</label>
+          <input
+            id="current-password"
+            type="password"
+            value={passwordForm.currentPassword}
+            onChange={(e) =>
+              setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))
+            }
+            required
+            autoComplete="current-password"
+          />
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="new-password">Nova senha</label>
+            <input
+              id="new-password"
+              type="password"
+              value={passwordForm.newPassword}
+              onChange={(e) =>
+                setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))
+              }
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="confirm-password">Confirmar nova senha</label>
+            <input
+              id="confirm-password"
+              type="password"
+              value={passwordForm.confirmPassword}
+              onChange={(e) =>
+                setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))
+              }
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+          </div>
+        </div>
+
+        <div className="church-settings-actions">
+          <button type="submit" className="btn btn-primary" disabled={passwordSaving}>
+            {passwordSaving ? 'Salvando...' : 'Alterar senha'}
           </button>
         </div>
       </form>

@@ -74,6 +74,7 @@ export function HymnsForm({ service, onSuccess, onCancel }: Props) {
         date: service.date.split('T')[0] ?? service.date,
         time: service.time || undefined,
         hymns: validHymns,
+        updatedAt: service.updatedAt,
       });
       onSuccess();
     } catch (err) {

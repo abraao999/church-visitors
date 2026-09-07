@@ -5,10 +5,12 @@ import { requireAuth, type AuthenticatedRequest } from '../middleware/auth.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 import {
   addSongsToHolyricsPlaylist,
+  holyricsPublicError,
   searchHolyricsSong,
   testHolyricsConnection,
   type HolyricsConnection,
 } from '../services/holyricsClient.js';
+import { HolyricsHostError, normalizeHolyricsHost } from '../services/holyricsHost.js';
 
 const router = Router();
 
@@ -42,6 +44,7 @@ function toConnection(settings: {
   };
 }
 
+/** Nunca devolve token nem apiKey: o navegador só precisa saber se já existem. */
 function publicSettings(settings: {
   mode: HolyricsMode;
   host: string;
@@ -54,8 +57,6 @@ function publicSettings(settings: {
     mode: settings.mode,
     host: settings.host,
     port: settings.port,
-    token: settings.token,
-    apiKey: settings.apiKey,
     hasToken: Boolean(settings.token),
     hasApiKey: Boolean(settings.apiKey),
     updatedAt: settings.updatedAt,
@@ -74,34 +75,73 @@ router.get('/settings', requireAuth, async (req: AuthenticatedRequest, res: Resp
 router.put('/settings', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const mode = req.body.mode === 'internet' ? 'internet' : 'local';
-    const host = typeof req.body.host === 'string' ? req.body.host.trim() : '127.0.0.1';
     const port = Number(req.body.port);
     const token = typeof req.body.token === 'string' ? req.body.token.trim() : '';
     const apiKey = typeof req.body.apiKey === 'string' ? req.body.apiKey.trim() : '';
 
-    if (!token) {
-      return res.status(400).json({ error: 'Token do Holyrics é obrigatório' });
+    let host: string;
+    try {
+      host = normalizeHolyricsHost(req.body.host ?? '127.0.0.1');
+    } catch (error) {
+      if (error instanceof HolyricsHostError) {
+        return res.status(400).json({ error: error.message });
+      }
+      throw error;
     }
 
-    if (mode === 'local' && (!host || !Number.isFinite(port) || port <= 0)) {
+    if (mode === 'local' && (!Number.isFinite(port) || port <= 0)) {
       return res.status(400).json({ error: 'Host e porta válidos são obrigatórios no modo local' });
     }
 
-    if (mode === 'internet' && !apiKey) {
+    const settings = await getOrCreateSettings(req.auth!.churchId);
+
+    // O navegador não recebe mais os segredos, então campo vazio significa
+    // "manter o que já está salvo" em vez de apagar.
+    const nextToken = token || settings.token;
+    const nextApiKey = apiKey || settings.apiKey;
+
+    if (!nextToken) {
+      return res.status(400).json({ error: 'Token do Holyrics é obrigatório' });
+    }
+
+    if (mode === 'internet' && !nextApiKey) {
       return res.status(400).json({ error: 'API Key é obrigatória no modo internet' });
     }
 
-    const settings = await getOrCreateSettings(req.auth!.churchId);
     settings.mode = mode;
-    settings.host = host || '127.0.0.1';
+    settings.host = host;
     settings.port = Number.isFinite(port) && port > 0 ? port : 8091;
-    settings.token = token;
-    settings.apiKey = apiKey;
+    settings.token = nextToken;
+    settings.apiKey = nextApiKey;
     await settings.save();
 
     res.json(publicSettings(settings));
   } catch {
     res.status(500).json({ error: 'Erro ao salvar configurações do Holyrics' });
+  }
+});
+
+/**
+ * O sync pelo navegador é o único caminho quando o servidor não alcança a rede
+ * da igreja, e ele precisa do token. Fica num endpoint separado para o token
+ * sair apenas nesse momento, e nunca no carregamento da tela de configurações.
+ */
+router.get('/local-token', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const settings = await getOrCreateSettings(req.auth!.churchId);
+
+    if (settings.mode !== 'local') {
+      return res.status(409).json({ error: 'Este token só é usado no modo local' });
+    }
+
+    if (!settings.token) {
+      return res.status(400).json({ error: 'Configure o token do Holyrics antes de sincronizar' });
+    }
+
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ host: settings.host, port: settings.port, token: settings.token });
+  } catch {
+    res.status(500).json({ error: 'Erro ao carregar o token do Holyrics' });
   }
 });
 
@@ -121,7 +161,7 @@ router.post('/test', requireAuth, async (req: AuthenticatedRequest, res: Respons
   } catch (error) {
     res.status(400).json({
       ok: false,
-      error: error instanceof Error ? error.message : 'Falha no teste de conexão',
+      error: holyricsPublicError(error),
     });
   }
 });
@@ -192,7 +232,7 @@ router.post('/sync', requireAuth, async (req: AuthenticatedRequest, res: Respons
           title: hymn.title,
           artist: hymn.artist,
           status: 'error',
-          message: error instanceof Error ? error.message : 'Erro ao buscar música',
+          message: holyricsPublicError(error),
         });
       }
     }
@@ -220,7 +260,7 @@ router.post('/sync', requireAuth, async (req: AuthenticatedRequest, res: Respons
     });
   } catch (error) {
     res.status(400).json({
-      error: error instanceof Error ? error.message : 'Erro ao sincronizar com Holyrics',
+      error: holyricsPublicError(error),
     });
   }
 });

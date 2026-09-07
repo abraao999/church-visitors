@@ -13,6 +13,9 @@ export function HolyricsSettingsPage() {
     token: '',
     apiKey: '',
   });
+  // O servidor não devolve mais token nem apiKey: os campos são só de escrita e
+  // ficam vazios quando o segredo já está salvo.
+  const [stored, setStored] = useState({ hasToken: false, hasApiKey: false });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -20,18 +23,22 @@ export function HolyricsSettingsPage() {
   const [success, setSuccess] = useState('');
   const [testMessage, setTestMessage] = useState('');
 
+  function applySettings(settings: HolyricsSettings) {
+    setForm((prev) => ({
+      ...prev,
+      mode: settings.mode || 'local',
+      host: settings.host || '127.0.0.1',
+      port: settings.port || 8091,
+      token: '',
+      apiKey: '',
+    }));
+    setStored({ hasToken: settings.hasToken, hasApiKey: settings.hasApiKey });
+  }
+
   useEffect(() => {
     api
       .getHolyricsSettings()
-      .then((settings: HolyricsSettings) => {
-        setForm({
-          mode: settings.mode || 'local',
-          host: settings.host || '127.0.0.1',
-          port: settings.port || 8091,
-          token: settings.token || '',
-          apiKey: settings.apiKey || '',
-        });
-      })
+      .then(applySettings)
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Erro ao carregar configurações');
       })
@@ -44,14 +51,7 @@ export function HolyricsSettingsPage() {
     setSuccess('');
     setSaving(true);
     try {
-      const saved = await api.saveHolyricsSettings(form);
-      setForm({
-        mode: saved.mode,
-        host: saved.host,
-        port: saved.port,
-        token: saved.token,
-        apiKey: saved.apiKey,
-      });
+      applySettings(await api.saveHolyricsSettings(form));
       setSuccess('Configurações salvas');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao salvar');
@@ -65,7 +65,7 @@ export function HolyricsSettingsPage() {
     setTestMessage('');
     setTesting(true);
     try {
-      await api.saveHolyricsSettings(form);
+      applySettings(await api.saveHolyricsSettings(form));
       const result = await api.testHolyrics();
       setTestMessage(result.message);
     } catch (err) {
@@ -176,8 +176,14 @@ export function HolyricsSettingsPage() {
                   id="apiKey"
                   value={form.apiKey}
                   onChange={(e) => setForm((prev) => ({ ...prev, apiKey: e.target.value }))}
-                  placeholder="Cole a API Key do Holyrics"
-                  required
+                  placeholder={
+                    stored.hasApiKey
+                      ? 'Chave já salva — preencha só para trocar'
+                      : 'Cole a API Key do Holyrics'
+                  }
+                  autoComplete="off"
+                  spellCheck={false}
+                  required={!stored.hasApiKey}
                 />
               </div>
               <p className="hint">Use a chave exibida na tela API Server do Holyrics.</p>
@@ -190,10 +196,21 @@ export function HolyricsSettingsPage() {
               id="token"
               value={form.token}
               onChange={(e) => setForm((prev) => ({ ...prev, token: e.target.value }))}
-              placeholder="Cole o token criado em Gerenciar permissões"
-              required
+              placeholder={
+                stored.hasToken
+                  ? 'Token já salvo — preencha só para trocar'
+                  : 'Cole o token criado em Gerenciar permissões'
+              }
+              autoComplete="off"
+              spellCheck={false}
+              required={!stored.hasToken}
             />
-            <small><AppIcon name="lock" /> O token é usado somente para acessar o Holyrics.</small>
+            <small>
+              <AppIcon name="lock" />{' '}
+              {stored.hasToken
+                ? 'Token salvo. Ele não é exibido de volta; deixe em branco para manter.'
+                : 'O token é usado somente para acessar o Holyrics.'}
+            </small>
           </div>
 
           <div className="holyrics-actions">

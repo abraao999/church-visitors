@@ -426,6 +426,7 @@ describe('avisos de veículos — isolamento multi-tenant', () => {
       status: string;
       source: string;
       archived: boolean;
+      updatedAt: Date;
       save: () => Promise<unknown>;
     } = {
       _id: noticeA,
@@ -438,6 +439,7 @@ describe('avisos de veículos — isolamento multi-tenant', () => {
       status: 'resolved',
       source: 'guest_access',
       archived: false,
+      updatedAt: new Date('2026-09-07T12:00:00.000Z'),
       save: async function save() {
         return this;
       },
@@ -449,18 +451,41 @@ describe('avisos de veículos — isolamento multi-tenant', () => {
     await updateVehicleNoticeStatus(
       authReq(churchA, userA, {
         params: { id: String(noticeA) },
-        body: { status: 'pending' },
+        body: { status: 'pending', updatedAt: '2026-09-07T12:00:00.000Z' },
       }),
       res
     );
     assert.equal(state.statusCode, 200);
+
+    noticeDoc.status = 'resolved';
+    const skip = mockRes();
+    await updateVehicleNoticeStatus(
+      authReq(churchA, userA, {
+        params: { id: String(noticeA) },
+        body: { status: 'announced', updatedAt: '2026-09-07T12:00:00.000Z' },
+      }),
+      skip.res
+    );
+    assert.equal(skip.state.statusCode, 400);
+
+    noticeDoc.status = 'pending';
+    noticeDoc.updatedAt = new Date('2026-09-07T12:00:01.000Z');
+    const stale = mockRes();
+    await updateVehicleNoticeStatus(
+      authReq(churchA, userA, {
+        params: { id: String(noticeA) },
+        body: { status: 'announced', updatedAt: '2026-09-07T12:00:00.000Z' },
+      }),
+      stale.res
+    );
+    assert.equal(stale.state.statusCode, 409);
 
     noticeDoc.status = 'pending';
     const bad = mockRes();
     await updateVehicleNoticeStatus(
       authReq(churchA, userA, {
         params: { id: String(noticeA) },
-        body: { status: 'pending' },
+        body: { status: 'pending', updatedAt: '2026-09-07T12:00:01.000Z' },
       }),
       bad.res
     );
@@ -504,7 +529,7 @@ describe('avisos de veículos — isolamento multi-tenant', () => {
 
     assert.equal(state.statusCode, 200);
     assert.equal(state.headers['Cache-Control'], 'private, no-store');
-    assert.equal(state.headers.Vary, 'Authorization');
+    assert.equal(state.headers.Vary, 'Cookie, Authorization');
     assert.equal(String((receivedFilter as { churchId: Types.ObjectId }).churchId), String(churchA));
     assert.equal((receivedFilter as { archived: boolean }).archived, false);
     assert.deepEqual((receivedFilter as { status: { $in: string[] } }).status.$in, [

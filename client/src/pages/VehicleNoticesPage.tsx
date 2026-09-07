@@ -86,11 +86,23 @@ export function VehicleNoticesPage() {
     return () => window.clearInterval(poll);
   }, [load]);
 
-  async function setStatus(id: string, status: VehicleNoticeStatus) {
+  async function setStatus(
+    id: string,
+    status: VehicleNoticeStatus,
+    currentStatus: VehicleNoticeStatus,
+    updatedAt: string
+  ) {
+    if (status === 'pending' && currentStatus !== 'pending') {
+      const from = currentStatus === 'resolved' ? 'resolvido' : 'anunciado';
+      if (!window.confirm(`Reabrir este aviso ${from}? Ele volta a aparecer como pendente.`)) {
+        return;
+      }
+    }
+
     setBusyId(id);
     setActionError('');
     try {
-      await api.updateVehicleNoticeStatus(id, status);
+      await api.updateVehicleNoticeStatus(id, status, updatedAt);
       await load();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Não foi possível atualizar o aviso.');
@@ -262,7 +274,7 @@ export function VehicleNoticesPage() {
                         type="button"
                         className="btn btn-primary"
                         disabled={busyId === notice.id}
-                        onClick={() => setStatus(notice.id, 'announced')}
+                        onClick={() => setStatus(notice.id, 'announced', notice.status, notice.updatedAt)}
                       >
                         Marcar como anunciado
                       </button>
@@ -270,7 +282,7 @@ export function VehicleNoticesPage() {
                         type="button"
                         className="btn btn-secondary"
                         disabled={busyId === notice.id}
-                        onClick={() => setStatus(notice.id, 'resolved')}
+                        onClick={() => setStatus(notice.id, 'resolved', notice.status, notice.updatedAt)}
                       >
                         Resolver
                       </button>
@@ -282,7 +294,7 @@ export function VehicleNoticesPage() {
                         type="button"
                         className="btn btn-primary"
                         disabled={busyId === notice.id}
-                        onClick={() => setStatus(notice.id, 'resolved')}
+                        onClick={() => setStatus(notice.id, 'resolved', notice.status, notice.updatedAt)}
                       >
                         Resolver
                       </button>
@@ -290,7 +302,7 @@ export function VehicleNoticesPage() {
                         type="button"
                         className="btn btn-secondary"
                         disabled={busyId === notice.id}
-                        onClick={() => setStatus(notice.id, 'pending')}
+                        onClick={() => setStatus(notice.id, 'pending', notice.status, notice.updatedAt)}
                       >
                         Reabrir
                       </button>
@@ -301,7 +313,7 @@ export function VehicleNoticesPage() {
                       type="button"
                       className="btn btn-secondary"
                       disabled={busyId === notice.id}
-                      onClick={() => setStatus(notice.id, 'pending')}
+                      onClick={() => setStatus(notice.id, 'pending', notice.status, notice.updatedAt)}
                     >
                       Reabrir aviso
                     </button>

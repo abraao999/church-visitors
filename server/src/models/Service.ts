@@ -9,8 +9,7 @@ export interface IHymn {
 }
 
 export interface IService extends Document {
-  /** Transitório: será obrigatório somente depois da migração controlada. */
-  churchId?: Types.ObjectId;
+  churchId: Types.ObjectId;
   title: string;
   date: Date;
   time?: string;
@@ -32,7 +31,7 @@ const hymnSchema = new Schema<IHymn>(
 
 const serviceSchema = new Schema<IService>(
   {
-    churchId: { type: Schema.Types.ObjectId, ref: 'Church' },
+    churchId: { type: Schema.Types.ObjectId, ref: 'Church', required: true },
     title: { type: String, required: true, trim: true },
     date: { type: Date, required: true },
     time: { type: String, trim: true, default: '' },

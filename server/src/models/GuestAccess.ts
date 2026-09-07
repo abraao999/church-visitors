@@ -5,8 +5,24 @@ export const GUEST_ACCESS_TYPES = [
   'visitors:create',
   'prayers:create',
   'vehicle_notices:create',
+  'panels:read',
 ] as const;
 export type GuestAccessType = (typeof GUEST_ACCESS_TYPES)[number];
+
+/** Permissões de envio, entregues a quem visita a igreja. */
+export const GUEST_ACCESS_FORM_TYPES = [
+  'visitors:create',
+  'prayers:create',
+  'vehicle_notices:create',
+] as const;
+
+/**
+ * Leitura para as TVs. Fica separada das permissões de envio: um link de
+ * painel nunca deve ir para a mão do visitante, nem o contrário.
+ */
+export function isPanelGuestAccessType(type: GuestAccessType): boolean {
+  return type === 'panels:read';
+}
 
 export interface IGuestAccess extends Document {
   churchId: Types.ObjectId;

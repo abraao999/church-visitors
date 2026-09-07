@@ -51,7 +51,6 @@ const vehicleNoticeSchema = new Schema<IVehicleNotice>(
       uppercase: true,
       trim: true,
       maxlength: 7,
-      index: true,
     },
     vehicleModel: { type: String, required: true, trim: true, maxlength: 120 },
     requestedAction: {

@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { api, getToken, setToken } from '../api/client';
+import { api, clearLegacyToken } from '../api/client';
 import type { AuthUser } from '../types';
 
 interface AuthContextValue {
@@ -21,7 +21,7 @@ interface AuthContextValue {
     username: string;
     password: string;
   }) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setChurchName: (churchName: string) => void;
 }
@@ -33,17 +33,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
+    clearLegacyToken();
     api
       .me()
       .then(setUser)
       .catch(() => {
-        setToken(null);
         setUser(null);
       })
       .finally(() => setLoading(false));
@@ -51,7 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (loginValue: string, password: string) => {
     const result = await api.login({ login: loginValue, password });
-    setToken(result.token);
     setUser(result.user);
   }, []);
 
@@ -64,15 +57,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: string;
     }) => {
       const result = await api.register(data);
-      setToken(result.token);
       setUser(result.user);
     },
     []
   );
 
-  const logout = useCallback(() => {
-    setToken(null);
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await api.logout();
+    } catch {
+      // Mesmo offline, a tela volta ao login.
+    } finally {
+      setUser(null);
+    }
   }, []);
 
   const refreshUser = useCallback(async () => {

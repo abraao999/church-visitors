@@ -12,6 +12,7 @@ export function PrayerForm({ onSuccess, compact = false }: Props) {
   const [name, setName] = useState('');
   const [request, setRequest] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [allowProjection, setAllowProjection] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -27,10 +28,12 @@ export function PrayerForm({ onSuccess, compact = false }: Props) {
         name: isAnonymous ? '' : name,
         request,
         isAnonymous,
+        allowProjection,
       });
       setName('');
       setRequest('');
       setIsAnonymous(false);
+      setAllowProjection(false);
       setSuccess('Pedido de oração registrado.');
       onSuccess?.();
     } catch (err) {
@@ -53,7 +56,11 @@ export function PrayerForm({ onSuccess, compact = false }: Props) {
       )}
 
       <div className="prayer-feedback" aria-live="polite">
-        {error && <p className="error-message" role="alert">{error}</p>}
+        {error && (
+          <p id="prayer-form-error" className="error-message" role="alert">
+            {error}
+          </p>
+        )}
         {success && <p className="success-message"><AppIcon name="check" />{success}</p>}
       </div>
 
@@ -72,6 +79,21 @@ export function PrayerForm({ onSuccess, compact = false }: Props) {
         </label>
       </div>
 
+      <div className="anonymous-option">
+        <label className="anonymous-switch">
+          <input
+            type="checkbox"
+            checked={allowProjection}
+            onChange={(e) => setAllowProjection(e.target.checked)}
+          />
+          <span className="anonymous-switch-control" aria-hidden="true" />
+          <span>
+            <strong>A pessoa autorizou exibir no telão</strong>
+            <small>Sem isso o pedido não aparece no painel de TV.</small>
+          </span>
+        </label>
+      </div>
+
       {!isAnonymous && (
         <div className="form-group prayer-field">
           <label htmlFor="prayerName">Nome</label>
@@ -82,6 +104,8 @@ export function PrayerForm({ onSuccess, compact = false }: Props) {
             placeholder="Digite o nome da pessoa"
             required={!isAnonymous}
             autoComplete="name"
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? 'prayer-form-error' : undefined}
           />
         </div>
       )}
@@ -98,6 +122,8 @@ export function PrayerForm({ onSuccess, compact = false }: Props) {
           placeholder="Escreva aqui o pedido de oração"
           required
           rows={5}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? 'prayer-form-error' : undefined}
         />
       </div>
 

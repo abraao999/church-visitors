@@ -5,26 +5,37 @@ import {
   toActor,
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
+import { fetchPrayerPanel } from '../services/panelData.js';
+import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
+import {
+  PRAYER_LIST_FIELDS,
+  sendPrivateJson,
+  serializePrayerRequest,
+  setPrivateCacheHeaders,
+} from '../utils/publicRecord.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 
 const router = Router();
 
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+export async function countPrayerRequests(req: AuthenticatedRequest, res: Response) {
+  try {
+    const dateParam = req.query.date as string | undefined;
+    const date = dateParam ? parseDateOnly(dateParam) : new Date();
 
-function endOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
+    if (!date) {
+      return res.status(400).json({ error: 'Parâmetro date inválido. Use YYYY-MM-DD' });
+    }
 
-function parseDateOnly(value: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const date = new Date(`${value}T12:00:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
+    const count = await PrayerRequest.countDocuments(
+      withChurch(req.auth!.churchId, {
+        createdAt: { $gte: startOfDay(date), $lte: endOfDay(date) },
+      })
+    );
+
+    return sendPrivateJson(res, { count });
+  } catch {
+    res.status(500).json({ error: 'Erro ao contar pedidos de oração' });
+  }
 }
 
 export async function listPrayerRequests(req: AuthenticatedRequest, res: Response) {
@@ -36,11 +47,35 @@ export async function listPrayerRequests(req: AuthenticatedRequest, res: Respons
       return res.status(400).json({ error: 'Parâmetro date inválido. Use YYYY-MM-DD' });
     }
 
-    const requests = await PrayerRequest.find(withChurch(req.auth!.churchId, {
-      createdAt: { $gte: startOfDay(date), $lte: endOfDay(date) },
-    })).sort({ createdAt: -1 });
+    const requests = await PrayerRequest.find(
+      withChurch(req.auth!.churchId, {
+        createdAt: { $gte: startOfDay(date), $lte: endOfDay(date) },
+      })
+    )
+      .select(PRAYER_LIST_FIELDS)
+      .sort({ createdAt: -1 });
 
-    res.json(requests);
+    return sendPrivateJson(res, requests.map(serializePrayerRequest));
+  } catch {
+    res.status(500).json({ error: 'Erro ao buscar pedidos de oração' });
+  }
+}
+
+/**
+ * Painel de TV: devolve somente pedidos autorizados e apenas os campos que
+ * aparecem na projeção. Quem registrou e qual acesso originou ficam de fora.
+ */
+export async function listPrayerRequestsPanel(req: AuthenticatedRequest, res: Response) {
+  try {
+    const dateParam = req.query.date as string | undefined;
+    const date = dateParam ? parseDateOnly(dateParam) : new Date();
+
+    if (!date) {
+      return res.status(400).json({ error: 'Parâmetro date inválido. Use YYYY-MM-DD' });
+    }
+
+    setPrivateCacheHeaders(res);
+    res.json(await fetchPrayerPanel(req.auth!.churchId, date));
   } catch {
     res.status(500).json({ error: 'Erro ao buscar pedidos de oração' });
   }
@@ -69,10 +104,11 @@ export async function createPrayerRequest(req: AuthenticatedRequest, res: Respon
       request,
       source: 'owner',
       isAnonymous: anonymous,
+      allowProjection: body.allowProjection === true,
       createdBy: toActor(req.auth!),
     });
 
-    res.status(201).json(prayerRequest);
+    return sendPrivateJson(res, serializePrayerRequest(prayerRequest), 201);
   } catch {
     res.status(500).json({ error: 'Erro ao registrar pedido de oração' });
   }
@@ -96,6 +132,8 @@ export async function deletePrayerRequest(req: AuthenticatedRequest, res: Respon
 }
 
 router.get('/', requireAuth, listPrayerRequests);
+router.get('/stats', requireAuth, countPrayerRequests);
+router.get('/panel', requireAuth, listPrayerRequestsPanel);
 router.post('/', requireAuth, createPrayerRequest);
 router.delete('/:id', requireAuth, deletePrayerRequest);
 

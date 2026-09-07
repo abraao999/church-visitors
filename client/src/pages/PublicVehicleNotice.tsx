@@ -10,6 +10,7 @@ import {
   type VehicleNoticeAction,
 } from '../types';
 import { isValidVehiclePlate, maskVehiclePlateInput } from '../utils/vehiclePlate';
+import { createRequestId } from '../utils/requestId';
 import './PublicVehicleNotice.css';
 import './PublicAccessMenu.css';
 
@@ -20,13 +21,6 @@ const ACTION_ICONS: Record<VehicleNoticeAction, AppIconName> = {
   reposition_vehicle: 'parking',
   other: 'chat',
 };
-
-function createRequestId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID().replace(/-/g, '').slice(0, 24);
-  }
-  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
-}
 
 function VehicleBrand({
   churchName,

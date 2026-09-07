@@ -10,36 +10,26 @@ import {
   isVehicleNoticeStatus,
   type VehicleNoticeStatus,
 } from '../models/VehicleNotice.js';
+import { fetchVehicleNoticePanel } from '../services/panelData.js';
+import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
+import { sendPrivateJson, setPrivateCacheHeaders } from '../utils/publicRecord.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
-import { serializeVehiclePanelNotice } from '../utils/vehicleNoticePanel.js';
 import { parseVehiclePlate } from '../utils/vehiclePlate.js';
 import { Types } from 'mongoose';
+import {
+  MISSING_UPDATED_AT_ERROR,
+  STALE_WRITE_ERROR,
+  parseExpectedUpdatedAt,
+  sameInstant,
+} from '../utils/optimistic.js';
 
 const router = Router();
 
 const ALLOWED_TRANSITIONS: Record<VehicleNoticeStatus, VehicleNoticeStatus[]> = {
   pending: ['announced', 'resolved'],
   announced: ['resolved', 'pending'],
-  resolved: ['pending', 'announced'],
+  resolved: ['pending'],
 };
-
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function endOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
-
-function parseDateOnly(value: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const date = new Date(`${value}T12:00:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
 
 function serializeNotice(notice: {
   _id: unknown;
@@ -113,7 +103,7 @@ export async function listVehicleNotices(req: AuthenticatedRequest, res: Respons
       createdAt: -1,
     });
 
-    return res.json(notices.map(serializeNotice));
+    return sendPrivateJson(res, notices.map(serializeNotice));
   } catch {
     return res.status(500).json({ error: 'Erro ao buscar avisos de veículos' });
   }
@@ -121,18 +111,10 @@ export async function listVehicleNotices(req: AuthenticatedRequest, res: Respons
 
 export async function listVehicleNoticesPanel(req: AuthenticatedRequest, res: Response) {
   try {
-    const notices = await VehicleNotice.find(
-      withChurch(req.auth!.churchId, {
-        archived: false,
-        status: { $in: ['pending', 'announced'] },
-      })
-    )
-      .select('plate vehicleModel requestedAction otherDescription')
-      .sort({ createdAt: -1 });
+    const notices = await fetchVehicleNoticePanel(req.auth!.churchId);
 
-    res.setHeader('Cache-Control', 'private, no-store');
-    res.setHeader('Vary', 'Authorization');
-    return res.json(notices.map(serializeVehiclePanelNotice));
+    setPrivateCacheHeaders(res);
+    return res.json(notices);
   } catch {
     return res.status(500).json({ error: 'Erro ao carregar o painel de veículos' });
   }
@@ -179,6 +161,14 @@ export async function updateVehicleNoticeStatus(req: AuthenticatedRequest, res: 
     const notice = await VehicleNotice.findOne({ ...filter, archived: false });
     if (!notice) {
       return res.status(404).json({ error: 'Aviso não encontrado' });
+    }
+
+    const expectedUpdatedAt = parseExpectedUpdatedAt(req.body?.updatedAt);
+    if (!expectedUpdatedAt) {
+      return res.status(400).json({ error: MISSING_UPDATED_AT_ERROR });
+    }
+    if (!sameInstant(notice.updatedAt, expectedUpdatedAt)) {
+      return res.status(409).json({ error: STALE_WRITE_ERROR });
     }
 
     const allowed = ALLOWED_TRANSITIONS[notice.status];

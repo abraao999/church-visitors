@@ -1,23 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { DisplayPanel } from '../../components/DisplayPanel';
-import type { PrayerRequest } from '../../types';
+import type { PrayerRequestPanelItem } from '../../types';
 import { todayLocalISO } from '../../utils/date';
+import { usePanelAccess } from './usePanelAccess';
 
 export function PrayersPanelPage() {
-  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const { token } = usePanelAccess();
+  const [prayers, setPrayers] = useState<PrayerRequestPanelItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
-      const data = await api.getPrayerRequests(todayLocalISO());
+      const date = todayLocalISO();
+      const data = token
+        ? await api.getPublicPanel<PrayerRequestPanelItem[]>(token, 'prayers', date)
+        : await api.getPrayerRequestsPanel(date);
       setPrayers(data);
     } catch {
       // painel segue tentando no próximo ciclo
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     load();
@@ -28,40 +33,22 @@ export function PrayersPanelPage() {
   return (
     <DisplayPanel
       title="Pedidos de oração"
-      subtitle="Pedidos recebidos hoje"
+      subtitle="Pedidos autorizados a aparecer no telão"
       count={prayers.length}
       loading={loading}
     >
       {prayers.length === 0 ? (
-        <p className="display-empty">Nenhum pedido de oração ainda.</p>
+        <p className="display-empty">Nenhum pedido autorizado para o telão ainda.</p>
       ) : (
         <ul className="display-list">
           {prayers.map((item) => (
             <li key={item._id} className="display-item">
               <div className="display-item-heading-row">
                 <h2 className="display-item-title">
-                  {item.isAnonymous ? 'Anônimo' : item.name}
+                  {item.isAnonymous || !item.name ? 'Anônimo' : item.name}
                 </h2>
-                <span className={`badge badge-${item.source}`}>
-                  {item.source === 'guest_access'
-                    ? 'Acesso de oração'
-                    : item.source === 'owner'
-                      ? 'Responsável'
-                      : item.source === 'live'
-                        ? 'Live (legado)'
-                        : 'Portaria (legado)'}
-                </span>
               </div>
               <p className="display-item-body">{item.request}</p>
-              <p className="display-item-author">
-                {item.source === 'guest_access'
-                  ? `Enviado pelo acesso ${item.guestAccess?.name ?? 'de oração'}`
-                  : item.createdBy?.name
-                    ? `Registrado por ${item.createdBy.name}`
-                    : item.source === 'live'
-                      ? 'Enviado pelo link público antigo'
-                      : 'Registro anterior da portaria'}
-              </p>
             </li>
           ))}
         </ul>

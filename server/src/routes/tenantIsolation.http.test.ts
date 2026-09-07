@@ -9,10 +9,12 @@ import {
 } from '../middleware/guestAccess.js';
 import {
   createPrayerRequest,
+  countPrayerRequests,
   deletePrayerRequest,
   listPrayerRequests,
 } from './prayerRequests.js';
 import {
+  countVisitors,
   createVisitors,
   deleteVisitor,
   listVisitors,
@@ -78,7 +80,8 @@ function mockRes() {
   const state: {
     statusCode: number;
     body: unknown;
-  } = { statusCode: 200, body: undefined };
+    headers: Record<string, string>;
+  } = { statusCode: 200, body: undefined, headers: {} };
 
   const res = {
     status(code: number) {
@@ -89,7 +92,8 @@ function mockRes() {
       state.body = payload;
       return res;
     },
-    setHeader() {
+    setHeader(name: string, value: string) {
+      state.headers[name] = value;
       return res;
     },
   } as unknown as Response;
@@ -102,20 +106,62 @@ describe('isolamento entre igrejas nas rotas privadas', () => {
     let receivedFilter: Record<string, unknown> | undefined;
     stubMethod(Visitor, 'find', (filter: Record<string, unknown>) => {
       receivedFilter = filter;
-      return {
-        sort: async () => [{ _id: '1', name: 'Visitante A', churchId: churchA }],
+      const chain = {
+        select() {
+          return chain;
+        },
+        sort: async () => [
+          {
+            _id: '1',
+            name: 'Visitante A',
+            relationship: 'outro',
+            city: 'SP',
+            churchId: churchA,
+            createdBy: { userId: userA, churchId: churchA, name: 'Responsável' },
+          },
+        ],
       };
+      return chain;
     });
 
     const { res, state } = mockRes();
     await listVisitors(authReq(churchA, userA), res);
 
     assert.equal(state.statusCode, 200);
+    assert.equal(state.headers['Cache-Control'], 'private, no-store');
+    assert.equal(state.headers['Vary'], 'Cookie, Authorization');
     assert.equal(String((receivedFilter as { churchId: Types.ObjectId }).churchId), String(churchA));
+
+    const listed = state.body as Array<Record<string, unknown>>;
+    assert.equal(listed[0].name, 'Visitante A');
+    assert.equal('churchId' in listed[0], false);
+    assert.deepEqual(listed[0].createdBy, { name: 'Responsável' });
     assert.deepEqual(
       withChurch(String(churchB), { churchId: churchA }).churchId.toHexString(),
       String(churchB)
     );
+  });
+
+  test('contagens da home filtram pela igreja da sessão', async () => {
+    let visitorFilter: Record<string, unknown> | undefined;
+    stubMethod(Visitor, 'countDocuments', async (filter: Record<string, unknown>) => {
+      visitorFilter = filter;
+      return 4;
+    });
+    const visitors = mockRes();
+    await countVisitors(authReq(churchA, userA), visitors.res);
+    assert.deepEqual(visitors.state.body, { count: 4 });
+    assert.equal(String((visitorFilter as { churchId: Types.ObjectId }).churchId), String(churchA));
+
+    let prayerFilter: Record<string, unknown> | undefined;
+    stubMethod(PrayerRequest, 'countDocuments', async (filter: Record<string, unknown>) => {
+      prayerFilter = filter;
+      return 2;
+    });
+    const prayers = mockRes();
+    await countPrayerRequests(authReq(churchB, userB), prayers.res);
+    assert.deepEqual(prayers.state.body, { count: 2 });
+    assert.equal(String((prayerFilter as { churchId: Types.ObjectId }).churchId), String(churchB));
   });
 
   test('exclusão de visitante de outra igreja responde 404', async () => {
@@ -152,13 +198,22 @@ describe('isolamento entre igrejas nas rotas privadas', () => {
     assert.equal(state.statusCode, 201);
     assert.equal(String(inserted[0].churchId), String(churchA));
     assert.equal(inserted[0].source, 'owner');
+    assert.equal('churchId' in (state.body as Record<string, unknown>), false);
   });
 
   test('pedidos de oração e exclusão respeitam o tenant', async () => {
     let listFilter: Record<string, unknown> | undefined;
     stubMethod(PrayerRequest, 'find', (filter: Record<string, unknown>) => {
       listFilter = filter;
-      return { sort: async () => [] };
+      const chain = {
+        select() {
+          return chain;
+        },
+        async sort() {
+          return [];
+        },
+      };
+      return chain;
     });
 
     const list = mockRes();
@@ -184,6 +239,8 @@ describe('isolamento entre igrejas nas rotas privadas', () => {
       create.res
     );
     assert.equal(create.state.statusCode, 201);
+    assert.equal('churchId' in (create.state.body as Record<string, unknown>), false);
+    assert.equal('userId' in ((create.state.body as { createdBy?: object }).createdBy ?? {}), false);
 
     stubMethod(PrayerRequest, 'findOneAndDelete', async () => null);
     const remove = mockRes();

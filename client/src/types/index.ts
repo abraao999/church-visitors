@@ -20,9 +20,8 @@ export const RELATIONSHIP_LABELS: Record<Relationship, string> = Object.fromEntr
   RELATIONSHIPS.map((r) => [r.value, r.label])
 ) as Record<Relationship, string>;
 
+/** Nome de quem registrou. Ids internos não saem da API. */
 export interface Actor {
-  userId: string;
-  churchId?: string;
   name: string;
 }
 
@@ -47,12 +46,12 @@ export interface ChurchProfile {
 export type GuestAccessType =
   | 'visitors:create'
   | 'prayers:create'
-  | 'vehicle_notices:create';
+  | 'vehicle_notices:create'
+  | 'panels:read';
 
+/** Nome do acesso que originou o registro. Sem o id interno do link. */
 export interface GuestOrigin {
-  guestAccessId: string;
   name: string;
-  type: GuestAccessType;
 }
 
 export interface GuestAccess {
@@ -60,6 +59,8 @@ export interface GuestAccess {
   name: string;
   type: GuestAccessType;
   types: GuestAccessType[];
+  /** Acesso de leitura para as TVs, em vez de formulário de visitante. */
+  panel?: boolean;
   specific?: boolean;
   active: boolean;
   expiresAt?: string;
@@ -95,6 +96,7 @@ export interface PrayerRequest {
   request: string;
   source: 'owner' | 'guest_access' | 'porteiro' | 'live';
   isAnonymous: boolean;
+  allowProjection: boolean;
   createdBy?: Actor;
   guestAccess?: GuestOrigin;
   createdAt: string;
@@ -113,6 +115,32 @@ export interface CreatePrayerDto {
   request: string;
   source?: 'owner';
   isAnonymous: boolean;
+  allowProjection?: boolean;
+}
+
+/** Recorte enviado ao painel de TV: sem nome completo e sem quem registrou. */
+export interface PrayerRequestPanelItem {
+  _id: string;
+  name: string;
+  request: string;
+  isAnonymous: boolean;
+  createdAt: string;
+}
+
+/** Recorte do painel de visitantes: sem parentesco e sem quem registrou. */
+export interface VisitorPanelItem {
+  _id: string;
+  name: string;
+  city: string;
+  visitDate: string;
+  createdAt: string;
+}
+
+export interface ServicePanelItem {
+  _id: string;
+  title: string;
+  time: string;
+  hymns: Array<{ title: string; artist: string; performedBy: string }>;
 }
 
 export interface Hymn {
@@ -151,6 +179,7 @@ export interface UpdateServiceDto {
   date: string;
   time?: string;
   hymns: Hymn[];
+  updatedAt: string;
 }
 
 export type HolyricsMode = 'local' | 'internet';
@@ -159,11 +188,16 @@ export interface HolyricsSettings {
   mode: HolyricsMode;
   host: string;
   port: number;
-  token: string;
-  apiKey: string;
   hasToken: boolean;
   hasApiKey: boolean;
   updatedAt?: string;
+}
+
+/** Token do modo local, buscado só na hora do sync pelo navegador. */
+export interface HolyricsLocalToken {
+  host: string;
+  port: number;
+  token: string;
 }
 
 export interface HolyricsSyncResultItem {
@@ -216,6 +250,10 @@ export interface VehicleNotice {
   resolvedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TodayCount {
+  count: number;
 }
 
 export interface VehicleNoticeStats {

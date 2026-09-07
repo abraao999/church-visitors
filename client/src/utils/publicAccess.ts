@@ -38,7 +38,47 @@ export const OPTION_LABELS: Record<GuestAccessType, string> = {
   'visitors:create': 'Cadastro de visitantes',
   'prayers:create': 'Pedidos de oração',
   'vehicle_notices:create': 'Avisos de veículos',
+  'panels:read': 'Painéis para TV (somente leitura)',
 };
+
+export type PanelPath = 'louvores' | 'visitantes' | 'oracao' | 'veiculos';
+
+export const PANEL_OPTIONS: Array<{
+  path: PanelPath;
+  title: string;
+  description: string;
+  icon: 'music' | 'users' | 'prayer' | 'car';
+  tone: 'visitors' | 'prayer' | 'vehicle';
+}> = [
+  {
+    path: 'visitantes',
+    title: 'Visitantes de hoje',
+    description: 'Quem chegou ao culto.',
+    icon: 'users',
+    tone: 'visitors',
+  },
+  {
+    path: 'oracao',
+    title: 'Pedidos de oração',
+    description: 'Somente os pedidos autorizados.',
+    icon: 'prayer',
+    tone: 'prayer',
+  },
+  {
+    path: 'louvores',
+    title: 'Louvores',
+    description: 'Hinos do culto de hoje.',
+    icon: 'music',
+    tone: 'prayer',
+  },
+  {
+    path: 'veiculos',
+    title: 'Avisos de veículos',
+    description: 'Placas que precisam de atenção.',
+    icon: 'car',
+    tone: 'vehicle',
+  },
+];
 
 export function publicFormPath(token: string, type: GuestAccessType): string {
   const option = PUBLIC_ACCESS_OPTIONS.find((item) => item.type === type);
@@ -47,6 +87,23 @@ export function publicFormPath(token: string, type: GuestAccessType): string {
 
 export function publicMenuPath(token: string): string {
   return `/acesso/${token}`;
+}
+
+export function panelPath(token: string, path: PanelPath): string {
+  return `/painel/${token}/${path}`;
+}
+
+export function panelMenuPath(token: string): string {
+  return `/painel/${token}`;
+}
+
+/** Um acesso é de painel ou de formulário, nunca os dois no mesmo link. */
+export function isPanelAccessType(type: GuestAccessType): boolean {
+  return type === 'panels:read';
+}
+
+export function accessEntryPath(token: string, types: GuestAccessType[]): string {
+  return types.some(isPanelAccessType) ? panelMenuPath(token) : publicMenuPath(token);
 }
 
 export function typeFromPublicPath(pathname: string): GuestAccessType | 'menu' | null {

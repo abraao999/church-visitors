@@ -47,6 +47,10 @@
   padding: 1.5rem;
 }
 
+.church-settings-page > .church-settings-form + .church-settings-form {
+  margin-top: 1.25rem;
+}
+
 .church-settings-form-heading {
   display: flex;
   align-items: flex-start;

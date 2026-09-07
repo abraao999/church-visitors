@@ -2,13 +2,21 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import app, { ensureDb } from './app.js';
+import app, { ensureDb, secretConfigurationErrors } from './app.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 async function start() {
   try {
+    const problems = secretConfigurationErrors();
+    if (problems.length > 0) {
+      console.error('Configuração inválida, servidor não iniciado:');
+      for (const problem of problems) console.error(`  - ${problem}`);
+      console.error('Defina os segredos no arquivo server/.env antes de subir o servidor.');
+      process.exit(1);
+    }
+
     await ensureDb();
 
     // Hospedagem Node clássica (não Vercel): serve o frontend buildado

@@ -92,6 +92,7 @@ export function ServiceForm({ selectedDate, editing, onSuccess, onCancel }: Prop
           date,
           time: time.trim() || undefined,
           hymns: editing.hymns ?? [],
+          updatedAt: editing.updatedAt,
         });
         onSuccess();
       } else {

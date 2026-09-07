@@ -7,11 +7,13 @@ import type { GuestAccess, GuestAccessType } from '../types';
 import { OPTION_LABELS } from '../utils/publicAccess';
 import './GuestAccessesPage.css';
 
-const ALL_OPTIONS: GuestAccessType[] = [
+const FORM_OPTIONS: GuestAccessType[] = [
   'visitors:create',
   'prayers:create',
   'vehicle_notices:create',
 ];
+
+const PANEL_OPTION: GuestAccessType = 'panels:read';
 
 function dateTimeLocalValue(value?: string): string {
   if (!value) return '';
@@ -32,8 +34,12 @@ function accessTypes(access: GuestAccess): GuestAccessType[] {
   return access.types?.length ? access.types : access.type ? [access.type] : [];
 }
 
+function isPanel(access: GuestAccess): boolean {
+  return accessTypes(access).includes(PANEL_OPTION);
+}
+
 function isPortal(access: GuestAccess): boolean {
-  return accessTypes(access).length > 1;
+  return !isPanel(access) && accessTypes(access).length > 1;
 }
 
 function accessStatus(access: GuestAccess): { label: string; className: string } {
@@ -55,7 +61,7 @@ export function GuestAccessesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<GuestAccess | null>(null);
   const [name, setName] = useState('');
-  const [types, setTypes] = useState<GuestAccessType[]>([...ALL_OPTIONS]);
+  const [types, setTypes] = useState<GuestAccessType[]>([...FORM_OPTIONS]);
   const [expiresAt, setExpiresAt] = useState('');
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState('');
@@ -77,16 +83,29 @@ export function GuestAccessesPage() {
     loadAccesses();
   }, [loadAccesses]);
 
+  const panelSelected = types.includes(PANEL_OPTION);
+
+  /**
+   * Painel e formulário não convivem no mesmo link: marcar um lado limpa o
+   * outro, para o link do telão nunca chegar à mão do visitante.
+   */
   function toggleType(type: GuestAccessType) {
-    setTypes((current) =>
-      current.includes(type) ? current.filter((item) => item !== type) : [...current, type]
-    );
+    setTypes((current) => {
+      if (current.includes(type)) return current.filter((item) => item !== type);
+      if (type === PANEL_OPTION) return [PANEL_OPTION];
+      return [...current.filter((item) => item !== PANEL_OPTION), type];
+    });
   }
 
-  function openCreate(asPortal = true, single?: GuestAccessType) {
+  function openCreate(mode: 'portal' | 'panel' = 'portal') {
     setEditing(null);
-    setTypes(asPortal ? [...ALL_OPTIONS] : single ? [single] : [...ALL_OPTIONS]);
-    setName(asPortal || !single ? 'Portal público da igreja' : OPTION_LABELS[single]);
+    if (mode === 'panel') {
+      setTypes([PANEL_OPTION]);
+      setName('Painéis da TV');
+    } else {
+      setTypes([...FORM_OPTIONS]);
+      setName('Portal público da igreja');
+    }
     setExpiresAt('');
     setError('');
     setFeedback('');
@@ -157,6 +176,14 @@ export function GuestAccessesPage() {
     ) {
       return;
     }
+    if (
+      action === 'reactivate' &&
+      !window.confirm(
+        `Reativar “${access.name}”? Os QR Codes e links atuais voltam a funcionar.`
+      )
+    ) {
+      return;
+    }
 
     setBusyId(access.id);
     setError('');
@@ -186,7 +213,7 @@ export function GuestAccessesPage() {
   async function copyAccess(access: GuestAccess) {
     setError('');
     try {
-      await copyText(guestAccessUrl(access.token));
+      await copyText(guestAccessUrl(access.token, accessTypes(access)));
       setFeedback(`Link de “${access.name}” copiado.`);
     } catch {
       setError('Não foi possível copiar. Selecione o endereço e copie manualmente.');
@@ -199,11 +226,18 @@ export function GuestAccessesPage() {
         <div>
           <span className="page-eyebrow"><AppIcon name="lock" /> Compartilhamento seguro</span>
           <h1>Acessos sem login</h1>
-          <p>Crie um portal público com um QR Code ou mantenha acessos específicos já existentes.</p>
+          <p>
+            Crie um portal público para os visitantes ou um acesso de leitura para as TVs da igreja.
+          </p>
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => openCreate(true)}>
-          <AppIcon name="plus" /> Criar portal público
-        </button>
+        <div className="guest-access-heading-actions">
+          <button type="button" className="btn btn-primary" onClick={() => openCreate('portal')}>
+            <AppIcon name="plus" /> Criar portal público
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={() => openCreate('panel')}>
+            <AppIcon name="panels" /> Criar acesso de painel
+          </button>
+        </div>
       </header>
 
       <div className="guest-access-notice">
@@ -272,8 +306,8 @@ export function GuestAccessesPage() {
             </div>
           </div>
           <fieldset className="guest-access-options">
-            <legend>Opções autorizadas</legend>
-            {ALL_OPTIONS.map((type) => (
+            <legend>Formulários que o visitante pode enviar</legend>
+            {FORM_OPTIONS.map((type) => (
               <label key={type} className="guest-access-option">
                 <input
                   type="checkbox"
@@ -283,6 +317,23 @@ export function GuestAccessesPage() {
                 <span>{OPTION_LABELS[type]}</span>
               </label>
             ))}
+          </fieldset>
+
+          <fieldset className="guest-access-options">
+            <legend>Ou exibição nas TVs</legend>
+            <label className="guest-access-option">
+              <input
+                type="checkbox"
+                checked={panelSelected}
+                onChange={() => toggleType(PANEL_OPTION)}
+              />
+              <span>{OPTION_LABELS[PANEL_OPTION]}</span>
+            </label>
+            <small>
+              {panelSelected
+                ? 'Este link só exibe painéis. Use no computador da TV, não com visitantes.'
+                : 'Um mesmo link não pode juntar painel e formulários.'}
+            </small>
           </fieldset>
           <button type="submit" className="btn btn-primary" disabled={saving || types.length === 0}>
             <AppIcon name="check" />{' '}
@@ -299,7 +350,7 @@ export function GuestAccessesPage() {
           <h2>Nenhum acesso criado</h2>
           <p>Crie o portal público da igreja. Nada será ativado sem a sua confirmação.</p>
           <div>
-            <button type="button" className="btn btn-primary" onClick={() => openCreate(true)}>
+            <button type="button" className="btn btn-primary" onClick={() => openCreate('portal')}>
               Criar portal público
             </button>
           </div>
@@ -309,16 +360,19 @@ export function GuestAccessesPage() {
           {accesses.map((access) => {
             const status = accessStatus(access);
             const currentTypes = accessTypes(access);
+            const panel = isPanel(access);
             const portal = isPortal(access);
-            const link = guestAccessUrl(access.token);
+            const link = guestAccessUrl(access.token, currentTypes);
             return (
               <article className="guest-access-card card" key={access.id}>
                 <div className="guest-access-card-main">
-                  <div className={`guest-access-type-icon ${portal ? '' : currentTypes[0] === 'prayers:create' ? 'prayer' : ''}`}>
-                    <AppIcon name={portal ? 'qr' : currentTypes[0] === 'prayers:create' ? 'prayer' : currentTypes[0] === 'vehicle_notices:create' ? 'car' : 'users'} />
+                  <div className={`guest-access-type-icon ${panel || portal ? '' : currentTypes[0] === 'prayers:create' ? 'prayer' : ''}`}>
+                    <AppIcon name={panel ? 'panels' : portal ? 'qr' : currentTypes[0] === 'prayers:create' ? 'prayer' : currentTypes[0] === 'vehicle_notices:create' ? 'car' : 'users'} />
                   </div>
                   <div className="guest-access-card-title">
-                    <span>{portal ? 'Portal público' : 'Acesso específico'}</span>
+                    <span>
+                      {panel ? 'Acesso de painel' : portal ? 'Portal público' : 'Acesso específico'}
+                    </span>
                     <h2>{access.name}</h2>
                     <p>
                       {currentTypes.map((type) => OPTION_LABELS[type]).join(' · ')} · Igreja:{' '}
@@ -329,9 +383,11 @@ export function GuestAccessesPage() {
                 </div>
 
                 <div className="guest-access-card-content">
-                  <GuestAccessQr token={access.token} name={access.name} />
+                  <GuestAccessQr token={access.token} name={access.name} types={currentTypes} />
                   <div className="guest-access-details">
-                    <label htmlFor={`link-${access.id}`}>Link do acesso</label>
+                    <label htmlFor={`link-${access.id}`}>
+                      {panel ? 'Link para abrir na TV' : 'Link do acesso'}
+                    </label>
                     <input
                       id={`link-${access.id}`}
                       value={link}

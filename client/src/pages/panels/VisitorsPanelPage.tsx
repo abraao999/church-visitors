@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../api/client';
-import { useAuth } from '../../auth/AuthContext';
 import { AppIcon } from '../../components/AppIcon';
-import type { Visitor } from '../../types';
+import type { VisitorPanelItem } from '../../types';
 import {
   formatClockTime,
   formatPanelDayMonth,
   formatPanelWeekday,
   todayLocalISO,
 } from '../../utils/date';
+import { usePanelAccess } from './usePanelAccess';
 import './VisitorsPanelPage.css';
 
 const POLL_MS = 15_000;
@@ -22,20 +22,20 @@ interface VisitorGroup {
   id: string;
   city: string;
   arrivedAt: string;
-  members: Visitor[];
+  members: VisitorPanelItem[];
 }
 
-function sortByNewest(visitors: Visitor[]): Visitor[] {
+function sortByNewest(visitors: VisitorPanelItem[]): VisitorPanelItem[] {
   return [...visitors].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
 
-function batchStamp(visitor: Visitor): number {
+function batchStamp(visitor: VisitorPanelItem): number {
   return new Date(visitor.visitDate || visitor.createdAt).getTime();
 }
 
-function groupVisitors(visitors: Visitor[]): VisitorGroup[] {
+function groupVisitors(visitors: VisitorPanelItem[]): VisitorGroup[] {
   const sorted = sortByNewest(visitors);
   const groups: VisitorGroup[] = [];
 
@@ -90,9 +90,8 @@ function pageSizeFor(groupCount: number): number {
 }
 
 export function VisitorsPanelPage() {
-  const { user } = useAuth();
-  const brandName = user?.churchName?.trim() || 'Church Visitors';
-  const [visitors, setVisitors] = useState<Visitor[]>([]);
+  const { token, churchName: brandName } = usePanelAccess();
+  const [visitors, setVisitors] = useState<VisitorPanelItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(() => new Date());
   const [pageIndex, setPageIndex] = useState(0);
@@ -134,7 +133,11 @@ export function VisitorsPanelPage() {
 
   const load = useCallback(async () => {
     try {
-      const data = sortByNewest(await api.getVisitors(todayLocalISO()));
+      const date = todayLocalISO();
+      const fetched = token
+        ? await api.getPublicPanel<VisitorPanelItem[]>(token, 'visitors', date)
+        : await api.getVisitorsPanel(date);
+      const data = sortByNewest(fetched);
       const ids = data.map((visitor) => visitor._id);
 
       if (knownIdsRef.current === null) {
@@ -154,7 +157,7 @@ export function VisitorsPanelPage() {
     } finally {
       setLoading(false);
     }
-  }, [markAsNew]);
+  }, [markAsNew, token]);
 
   useEffect(() => {
     load();

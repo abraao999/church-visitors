@@ -137,8 +137,9 @@ export function ServicesPage() {
         return;
       } catch (serverError) {
         const settings = await api.getHolyricsSettings();
-        if (settings.mode === 'local' && settings.token) {
-          const result = await syncServiceToHolyricsBrowser(service, settings);
+        if (settings.mode === 'local' && settings.hasToken) {
+          const connection = await api.getHolyricsLocalToken();
+          const result = await syncServiceToHolyricsBrowser(service, connection);
           setSyncResult(result);
           return;
         }

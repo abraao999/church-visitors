@@ -4,15 +4,19 @@ import {
   type GuestAccessType,
 } from '../models/GuestAccess.js';
 import { Church } from '../models/Church.js';
-import { PublicRateLimit } from '../models/PublicRateLimit.js';
 import { guestAccessHasScope, resolveGuestAccessTypes } from '../utils/guestAccessTypes.js';
-import {
-  opaqueRateLimitKey,
-  parseGuestToken,
-  verifyGuestTokenSignature,
-} from '../utils/guestToken.js';
+import { getGuestAccessSecret, parseGuestToken, verifyGuestTokenSignature } from '../utils/guestToken.js';
+import { clientIp, consumeRateLimit, sendRateLimited } from '../utils/rateLimit.js';
 
-const RATE_WINDOW_MS = 15 * 60 * 1000;
+/**
+ * Teto por IP aplicado antes de validar o token, só para barrar varredura de
+ * links. Precisa ser alto para não punir uma igreja inteira atrás do mesmo IP.
+ */
+const PROBE_LIMIT = 300;
+
+/** Limite de uso legítimo, contado por igreja para que uma não afete a outra. */
+const READ_LIMIT = 120;
+const WRITE_LIMIT = 40;
 
 export interface GuestAccessContext {
   churchId: string;
@@ -27,26 +31,6 @@ export interface GuestAccessRequest extends Request {
   guestAccess?: GuestAccessContext;
 }
 
-async function consumeRateLimit(
-  kind: 'ip' | 'access',
-  identity: string,
-  limit: number
-): Promise<boolean> {
-  const now = Date.now();
-  const windowStart = Math.floor(now / RATE_WINDOW_MS) * RATE_WINDOW_MS;
-  const bucketId = opaqueRateLimitKey(kind, identity, windowStart);
-  const bucket = await PublicRateLimit.findOneAndUpdate(
-    { _id: bucketId },
-    {
-      $inc: { count: 1 },
-      $setOnInsert: { expiresAt: new Date(windowStart + RATE_WINDOW_MS * 2) },
-    },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
-  );
-
-  return Boolean(bucket && bucket.count <= limit);
-}
-
 function rejectInvalid(res: Response) {
   return res.status(404).json({
     valid: false,
@@ -57,11 +41,11 @@ function rejectInvalid(res: Response) {
 export function requireGuestAccess(requiredScope?: GuestAccessType) {
   return async (req: GuestAccessRequest, res: Response, next: NextFunction) => {
     try {
-      const ip = req.ip || req.socket.remoteAddress || 'desconhecido';
-      const requestLimit = req.method === 'GET' ? 120 : 40;
-      if (!(await consumeRateLimit('ip', ip, requestLimit))) {
-        res.setHeader('Retry-After', String(RATE_WINDOW_MS / 1000));
-        return res.status(429).json({
+      const ip = clientIp(req);
+      const requestLimit = req.method === 'GET' ? READ_LIMIT : WRITE_LIMIT;
+      const secret = getGuestAccessSecret();
+      if (!(await consumeRateLimit(secret, 'ip', ip, PROBE_LIMIT))) {
+        return sendRateLimited(res, {
           valid: false,
           error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
         });
@@ -107,9 +91,16 @@ export function requireGuestAccess(requiredScope?: GuestAccessType) {
         });
       }
 
-      if (!(await consumeRateLimit('access', String(access._id), requestLimit))) {
-        res.setHeader('Retry-After', String(RATE_WINDOW_MS / 1000));
-        return res.status(429).json({
+      const churchKey = `${String(access.churchId)}|${ip}`;
+      if (!(await consumeRateLimit(secret, 'church-ip', churchKey, requestLimit))) {
+        return sendRateLimited(res, {
+          valid: false,
+          error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+        });
+      }
+
+      if (!(await consumeRateLimit(secret, 'access', String(access._id), requestLimit))) {
+        return sendRateLimited(res, {
           valid: false,
           error: 'Este acesso recebeu muitos envios. Aguarde alguns minutos.',
         });

@@ -61,8 +61,13 @@ export function verifyGuestTokenSignature(
   }
 }
 
-export function opaqueRateLimitKey(kind: string, identity: string, windowStart: number): string {
-  return createHmac('sha256', getGuestAccessSecret())
+export function opaqueRateLimitKey(
+  kind: string,
+  identity: string,
+  windowStart: number,
+  secret = getGuestAccessSecret()
+): string {
+  return createHmac('sha256', secret)
     .update(`${kind}:${identity}:${windowStart}`)
     .digest('hex');
 }

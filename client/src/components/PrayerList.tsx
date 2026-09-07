@@ -48,7 +48,8 @@ export function PrayerList({ requests, onDelete }: Props) {
               </div>
               <p className="private-record-body">{item.request}</p>
               <p className="private-record-origin">
-                <AppIcon name="clock" /> {formatTime(item.createdAt)} · {originLabel(item)}
+                <AppIcon name="clock" /> {formatTime(item.createdAt)} · {originLabel(item)} ·{' '}
+                {item.allowProjection ? 'Autorizado para o telão' : 'Não vai ao telão'}
               </p>
             </div>
             <button

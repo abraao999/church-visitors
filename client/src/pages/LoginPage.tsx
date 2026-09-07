@@ -111,7 +111,11 @@ export function LoginPage() {
             </button>
           </div>
 
-          {error && <p className="error-message auth-error" role="alert">{error}</p>}
+          {error && (
+            <p id="auth-form-error" className="error-message auth-error" role="alert">
+              {error}
+            </p>
+          )}
 
           <form onSubmit={handleSubmit} className="auth-form">
             {mode === 'register' && (
@@ -126,6 +130,8 @@ export function LoginPage() {
                     required
                     maxLength={120}
                     autoComplete="organization"
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? 'auth-form-error' : undefined}
                   />
                 </div>
                 <div className="form-group auth-field">
@@ -137,6 +143,8 @@ export function LoginPage() {
                     placeholder="Digite seu nome"
                     required
                     autoComplete="name"
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? 'auth-form-error' : undefined}
                   />
                 </div>
                 <div className="form-group auth-field">
@@ -149,6 +157,8 @@ export function LoginPage() {
                     placeholder="seu@email.com"
                     required
                     autoComplete="email"
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? 'auth-form-error' : undefined}
                   />
                 </div>
                 <div className="form-group auth-field">
@@ -160,6 +170,8 @@ export function LoginPage() {
                     placeholder="Escolha um usuário"
                     required
                     autoComplete="username"
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? 'auth-form-error' : undefined}
                   />
                 </div>
               </>
@@ -175,6 +187,8 @@ export function LoginPage() {
                   placeholder="Digite seu usuário ou e-mail"
                   required
                   autoComplete="username"
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? 'auth-form-error' : undefined}
                 />
               </div>
             )}
@@ -188,10 +202,21 @@ export function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Digite sua senha"
                 required
-                minLength={6}
+                minLength={mode === 'register' ? 8 : 6}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                aria-invalid={Boolean(error)}
+                aria-describedby={
+                  [
+                    error ? 'auth-form-error' : '',
+                    mode === 'register' ? 'auth-password-hint' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || undefined
+                }
               />
-              {mode === 'register' && <small>Use pelo menos 6 caracteres.</small>}
+              {mode === 'register' && (
+                <small id="auth-password-hint">Use pelo menos 8 caracteres.</small>
+              )}
             </div>
 
             <button type="submit" className="btn btn-primary auth-submit" disabled={submitting}>

@@ -1,4 +1,8 @@
-import { GUEST_ACCESS_TYPES, type GuestAccessType } from '../models/GuestAccess.js';
+import {
+  GUEST_ACCESS_TYPES,
+  isPanelGuestAccessType,
+  type GuestAccessType,
+} from '../models/GuestAccess.js';
 
 export function isGuestAccessType(value: unknown): value is GuestAccessType {
   return GUEST_ACCESS_TYPES.includes(value as GuestAccessType);
@@ -39,4 +43,17 @@ export function guestAccessHasScope(
   scope: GuestAccessType
 ): boolean {
   return resolveGuestAccessTypes(access).includes(scope);
+}
+
+/**
+ * Um mesmo link não pode servir formulário de visitante e painel de TV: o de
+ * painel fica exposto num computador da igreja e o de formulário circula entre
+ * visitantes. Misturar transformaria um vazamento de link em vazamento de dados.
+ */
+export function mixesPanelAndFormScopes(types: GuestAccessType[]): boolean {
+  return types.some(isPanelGuestAccessType) && types.some((type) => !isPanelGuestAccessType(type));
+}
+
+export function isPanelOnlyAccess(types: GuestAccessType[]): boolean {
+  return types.length > 0 && types.every(isPanelGuestAccessType);
 }
