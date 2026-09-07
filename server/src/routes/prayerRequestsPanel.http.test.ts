@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
-import { afterEach, describe, test } from 'node:test';
+import { afterEach, beforeEach, describe, test } from 'node:test';
 import type { Response } from 'express';
 import { Types } from 'mongoose';
 import { listPrayerRequestsPanel } from './prayerRequests.js';
+import { Church } from '../models/Church.js';
 import { PrayerRequest } from '../models/PrayerRequest.js';
+import { Service } from '../models/Service.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 process.env.GUEST_ACCESS_SECRET = 'teste-guest-painel-oracao-chave-longa-987654';
@@ -86,7 +88,32 @@ function stubFind(records: unknown[]) {
   };
 }
 
+const activeServiceId = new Types.ObjectId();
+
+function stubActiveService() {
+  const now = new Date();
+  stubMethod(Church, 'findById', () => ({
+    select: async () => ({ timezone: 'America/Sao_Paulo' }),
+  }));
+  stubMethod(Service, 'updateOne', async () => ({ modifiedCount: 0 }));
+  stubMethod(Service, 'find', async () => [
+    {
+      _id: activeServiceId,
+      churchId: churchA,
+      title: 'Culto da noite',
+      date: now,
+      time: '19:00',
+      scheduledStartAt: new Date(now.getTime() - 5 * 60_000),
+      durationMinutes: 120,
+      activationLeadMinutes: 30,
+      hymns: [],
+    },
+  ]);
+}
+
 describe('painel de TV — pedidos de oração', () => {
+  beforeEach(stubActiveService);
+
   test('só projeta pedidos autorizados da igreja da sessão', async () => {
     const captured = stubFind([]);
     const { res, state } = mockRes();
@@ -94,9 +121,14 @@ describe('painel de TV — pedidos de oração', () => {
     await listPrayerRequestsPanel(panelReq(), res);
 
     assert.equal(state.statusCode, 200);
-    const filter = captured.filter() as { churchId: Types.ObjectId; allowProjection: boolean };
+    const filter = captured.filter() as {
+      churchId: Types.ObjectId;
+      allowProjection: boolean;
+      serviceId: Types.ObjectId;
+    };
     assert.equal(String(filter.churchId), String(churchA));
     assert.equal(filter.allowProjection, true);
+    assert.equal(String(filter.serviceId), String(activeServiceId));
   });
 
   test('não carrega quem registrou nem o acesso de origem', async () => {

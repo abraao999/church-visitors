@@ -21,6 +21,8 @@ import { VehicleNoticesPanelPage } from './pages/panels/VehicleNoticesPanelPage'
 import { VisitorsPanelPage } from './pages/panels/VisitorsPanelPage';
 import { PrayerRequestsPage } from './pages/PrayerRequestsPage';
 import { PublicAccessPage } from './pages/PublicAccessPage';
+import { RecurrenceSeriesPage } from './pages/RecurrenceSeriesPage';
+import { ServiceOccurrencePage } from './pages/ServiceOccurrencePage';
 import { ServicesPage } from './pages/ServicesPage';
 import { VehicleNoticesPage } from './pages/VehicleNoticesPage';
 import { VisitorsPage } from './pages/VisitorsPage';
@@ -59,6 +61,8 @@ export function App() {
               </Route>
               <Route element={<PermissionRoute anyOf={['services:read']} />}>
                 <Route path="/cultos" element={<ServicesPage />} />
+                <Route path="/cultos/serie/:seriesId" element={<RecurrenceSeriesPage />} />
+                <Route path="/cultos/:serviceId" element={<ServiceOccurrencePage />} />
               </Route>
               <Route element={<PermissionRoute anyOf={['vehicle_notices:read']} />}>
                 <Route path="/avisos-veiculos" element={<VehicleNoticesPage />} />

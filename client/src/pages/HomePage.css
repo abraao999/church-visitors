@@ -7,6 +7,31 @@
   margin: 0 auto;
 }
 
+.home-active-service {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border-color: color-mix(in srgb, var(--success, var(--primary)) 40%, var(--border));
+}
+
+.home-active-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--success, var(--primary));
+}
+
+.home-active-service strong,
+.home-active-service p {
+  display: block;
+}
+
+.home-active-service p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 .dashboard-heading {
   display: flex;
   align-items: flex-start;

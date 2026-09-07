@@ -148,6 +148,7 @@ export interface Visitor {
   source?: 'owner' | 'guest_access';
   createdBy?: Actor;
   guestAccess?: GuestOrigin;
+  serviceId?: string;
   createdAt: string;
 }
 
@@ -160,6 +161,7 @@ export interface PrayerRequest {
   allowProjection: boolean;
   createdBy?: Actor;
   guestAccess?: GuestOrigin;
+  serviceId?: string;
   createdAt: string;
 }
 
@@ -169,6 +171,7 @@ export interface CreateVisitorDto {
     city: string;
     relationship?: Relationship;
   }>;
+  serviceId?: string;
 }
 
 export interface CreatePrayerDto {
@@ -177,6 +180,7 @@ export interface CreatePrayerDto {
   source?: 'owner';
   isAnonymous: boolean;
   allowProjection?: boolean;
+  serviceId?: string;
 }
 
 /** Recorte enviado ao painel de TV: sem nome completo e sem quem registrou. */
@@ -211,36 +215,124 @@ export interface Hymn {
   addedBy?: Actor;
 }
 
+export type ServiceStatus =
+  | 'scheduled'
+  | 'reception_open'
+  | 'in_progress'
+  | 'closed'
+  | 'cancelled';
+
+export type RecurrenceFrequency = 'weekly' | 'biweekly';
+
 export interface Service {
   _id: string;
   title: string;
   date: string;
+  dateKey?: string;
   time?: string;
   hymns: Hymn[];
   createdBy?: Actor;
   createdAt: string;
   updatedAt: string;
+  recurrenceSeriesId?: string;
+  scheduledStartAt?: string;
+  receptionStartsAt?: string;
+  endsAt?: string;
+  plannedEndsAt?: string;
+  durationMinutes?: number;
+  activationLeadMinutes?: number;
+  cancelledAt?: string;
+  closedAt?: string;
+  extendedUntil?: string;
+  openedAt?: string;
+  autoOpenedAt?: string;
+  status?: ServiceStatus;
+  statusLabel?: string;
+  now?: string;
+  series?: RecurrenceSeries | null;
+  counts?: {
+    visitors: number;
+    prayers: number;
+    pendingNotices: number;
+    hymns: number;
+  };
+}
+
+export interface RecurrenceSeries {
+  id: string;
+  title: string;
+  frequency: RecurrenceFrequency;
+  frequencyLabel: string;
+  weekday: number;
+  startDate: string;
+  endDate: string;
+  time: string;
+  durationMinutes: number;
+  activationLeadMinutes: number;
+  active: boolean;
+  occurrenceCount?: number;
+}
+
+export interface ServicePreview {
+  firstOccurrenceLabel?: string;
+  receptionTime?: string;
+  startTime?: string;
+  endTime?: string;
+  repeatLabel?: string;
+  count?: number;
+  error?: string;
 }
 
 export interface CreateServiceDto {
   title: string;
   date: string;
   time?: string;
+  durationMinutes?: number;
   hymns?: Hymn[];
   recurring?: boolean;
+  frequency?: RecurrenceFrequency;
+  weekday?: number;
+  endDate?: string;
+  requestId?: string;
 }
 
 export interface CreateServiceResponse {
   service: Service;
   createdCount: number;
+  seriesId?: string;
 }
 
 export interface UpdateServiceDto {
   title: string;
   date: string;
   time?: string;
+  durationMinutes?: number;
   hymns: Hymn[];
   updatedAt: string;
+  editScope?: 'this' | 'thisAndFuture';
+}
+
+export interface ActiveServiceResponse {
+  now: string;
+  service: Service | null;
+}
+
+export interface RecurrenceSeriesResponse {
+  now: string;
+  series: RecurrenceSeries;
+  occurrences: Service[];
+}
+
+export interface ServiceActivity {
+  visitors: Visitor[];
+  prayers: PrayerRequest[];
+  notices: Array<{
+    id: string;
+    plate: string;
+    requestedAction: string;
+    status: string;
+    createdAt: string;
+  }>;
 }
 
 export type HolyricsMode = 'local' | 'internet';

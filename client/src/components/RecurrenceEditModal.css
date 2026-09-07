@@ -1,0 +1,123 @@
+.recurrence-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: color-mix(in srgb, #020617 55%, transparent);
+}
+
+.recurrence-modal {
+  width: min(520px, 100%);
+  padding: 1.6rem 1.5rem 1.3rem;
+  text-align: center;
+}
+
+.recurrence-modal-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 0.8rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.recurrence-modal h2 {
+  font-size: 1.35rem;
+}
+
+.recurrence-modal > p {
+  margin: 0.35rem 0 1rem;
+  color: var(--text-muted);
+}
+
+.recurrence-modal-service {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 12px;
+  background: var(--surface-muted);
+  text-align: left;
+}
+
+.recurrence-modal-service strong,
+.recurrence-modal-service span {
+  display: block;
+}
+
+.recurrence-modal-service span {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.recurrence-modal-question {
+  margin-bottom: 0.7rem;
+  font-weight: 700;
+}
+
+.recurrence-scope-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.recurrence-scope {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: left;
+}
+
+.recurrence-scope:hover,
+.recurrence-scope:focus-visible {
+  border-color: var(--primary);
+}
+
+.recurrence-scope-radio {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin-top: 0.15rem;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+}
+
+.recurrence-scope strong,
+.recurrence-scope small {
+  display: block;
+}
+
+.recurrence-scope small {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.recurrence-cancel-link {
+  margin: 0.9rem 0 0.7rem;
+  color: var(--primary);
+}
+
+@media (max-width: 640px) {
+  .recurrence-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .recurrence-modal {
+    width: 100%;
+    border-radius: 18px 18px 0 0;
+  }
+}

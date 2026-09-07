@@ -16,6 +16,7 @@ export interface IVisitor extends Document {
   guestAccess?: IGuestOrigin;
   /** Idempotência do formulário público; só o primeiro visitante do lote leva o valor. */
   requestId?: string;
+  serviceId?: Types.ObjectId;
   createdAt: Date;
 }
 
@@ -30,6 +31,7 @@ const visitorSchema = new Schema<IVisitor>(
     createdBy: { type: actorSchema, required: false },
     guestAccess: { type: guestOriginSchema, required: false },
     requestId: { type: String, trim: true, maxlength: 64 },
+    serviceId: { type: Schema.Types.ObjectId, ref: 'Service' },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
@@ -37,6 +39,7 @@ const visitorSchema = new Schema<IVisitor>(
 visitorSchema.index({ churchId: 1, createdAt: -1 });
 visitorSchema.index({ churchId: 1, 'guestAccess.guestAccessId': 1 });
 visitorSchema.index({ churchId: 1, requestId: 1 }, { unique: true, sparse: true });
+visitorSchema.index({ churchId: 1, serviceId: 1, createdAt: -1 });
 
 export { RELATIONSHIPS, type Relationship };
 export const Visitor = mongoose.model<IVisitor>('Visitor', visitorSchema);

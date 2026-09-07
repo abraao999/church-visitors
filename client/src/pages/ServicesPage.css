@@ -218,6 +218,26 @@
   height: 14px;
 }
 
+.service-status-badge {
+  display: inline-flex;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.service-status-scheduled { color: var(--primary); background: var(--primary-soft); }
+.service-status-reception_open,
+.service-status-in_progress { color: var(--success, var(--primary)); background: var(--primary-soft); }
+.service-status-closed { color: var(--text-muted); background: var(--surface-muted); }
+.service-status-cancelled { color: var(--danger); background: var(--danger-soft); }
+
+.service-series-link {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 .service-hymns {
   display: flex;
   flex-direction: column;

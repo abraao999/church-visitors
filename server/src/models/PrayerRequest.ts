@@ -15,6 +15,7 @@ export interface IPrayerRequest extends Document {
   createdBy?: IActor;
   guestAccess?: IGuestOrigin;
   requestId?: string;
+  serviceId?: Types.ObjectId;
   createdAt: Date;
 }
 
@@ -33,6 +34,7 @@ const prayerRequestSchema = new Schema<IPrayerRequest>(
     createdBy: { type: actorSchema, required: false },
     guestAccess: { type: guestOriginSchema, required: false },
     requestId: { type: String, trim: true, maxlength: 64 },
+    serviceId: { type: Schema.Types.ObjectId, ref: 'Service' },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
@@ -41,5 +43,6 @@ prayerRequestSchema.index({ churchId: 1, createdAt: -1 });
 prayerRequestSchema.index({ churchId: 1, 'guestAccess.guestAccessId': 1 });
 prayerRequestSchema.index({ churchId: 1, allowProjection: 1, createdAt: -1 });
 prayerRequestSchema.index({ churchId: 1, requestId: 1 }, { unique: true, sparse: true });
+prayerRequestSchema.index({ churchId: 1, serviceId: 1, createdAt: -1 });
 
 export const PrayerRequest = mongoose.model<IPrayerRequest>('PrayerRequest', prayerRequestSchema);

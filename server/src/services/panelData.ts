@@ -1,8 +1,7 @@
 import { PrayerRequest } from '../models/PrayerRequest.js';
-import { Service } from '../models/Service.js';
 import { VehicleNotice } from '../models/VehicleNotice.js';
 import { Visitor } from '../models/Visitor.js';
-import { endOfDay, startOfDay } from '../utils/dayRange.js';
+import { resolveActiveService } from './activeService.js';
 import { withChurch } from '../utils/tenant.js';
 import {
   serializeVehiclePanelNotice,
@@ -13,6 +12,9 @@ import {
  * Consultas dos painéis de TV. Painel com login e painel por link de leitura
  * passam pelos mesmos recortes, senão os dois divergem no que vai à projeção.
  * Nada aqui devolve quem registrou, telefone, parentesco ou observação interna.
+ *
+ * Com culto ativo: só registros daquela ocorrência.
+ * Sem culto ativo: estado vazio amigável — não mistura o dia civil inteiro.
  */
 
 export interface VisitorPanelItem {
@@ -46,13 +48,12 @@ export interface ServicePanelItem {
 
 export async function fetchVisitorPanel(
   churchId: string,
-  date: Date
+  _date: Date
 ): Promise<VisitorPanelItem[]> {
-  const visitors = await Visitor.find(
-    withChurch(churchId, {
-      visitDate: { $gte: startOfDay(date), $lte: endOfDay(date) },
-    })
-  )
+  const active = await resolveActiveService(churchId);
+  if (!active) return [];
+
+  const visitors = await Visitor.find(withChurch(churchId, { serviceId: active._id }))
     .select('name city visitDate createdAt')
     .sort({ createdAt: -1 });
 
@@ -72,12 +73,15 @@ function firstName(name: string): string {
 
 export async function fetchPrayerPanel(
   churchId: string,
-  date: Date
+  _date: Date
 ): Promise<PrayerPanelItem[]> {
+  const active = await resolveActiveService(churchId);
+  if (!active) return [];
+
   const requests = await PrayerRequest.find(
     withChurch(churchId, {
       allowProjection: true,
-      createdAt: { $gte: startOfDay(date), $lte: endOfDay(date) },
+      serviceId: active._id,
     })
   )
     .select('name request isAnonymous createdAt')
@@ -94,34 +98,35 @@ export async function fetchPrayerPanel(
 
 export async function fetchHymnPanel(
   churchId: string,
-  date: Date
+  _date: Date
 ): Promise<ServicePanelItem[]> {
-  const services = await Service.find(
-    withChurch(churchId, {
-      date: { $gte: startOfDay(date), $lte: endOfDay(date) },
-    })
-  )
-    .select('title time hymns.title hymns.artist hymns.performedBy')
-    .sort({ date: 1, time: 1 });
+  const active = await resolveActiveService(churchId);
+  if (!active) return [];
 
-  return services.map((service) => ({
-    _id: String(service._id),
-    title: service.title,
-    time: service.time ?? '',
-    hymns: service.hymns.map((hymn) => ({
-      title: hymn.title,
-      artist: hymn.artist,
-      performedBy: hymn.performedBy,
-    })),
-  }));
+  return [
+    {
+      _id: String(active._id),
+      title: active.title,
+      time: active.time ?? '',
+      hymns: active.hymns.map((hymn) => ({
+        title: hymn.title,
+        artist: hymn.artist,
+        performedBy: hymn.performedBy,
+      })),
+    },
+  ];
 }
 
 export async function fetchVehicleNoticePanel(
   churchId: string
 ): Promise<VehiclePanelNotice[]> {
+  const active = await resolveActiveService(churchId);
+  if (!active) return [];
+
   const notices = await VehicleNotice.find(
     withChurch(churchId, {
       archived: false,
+      serviceId: active._id,
       status: { $in: ['pending', 'announced'] },
     })
   )

@@ -7,7 +7,9 @@ import {
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
 import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
+import { resolveLinkedServiceId } from '../services/activeService.js';
 import { fetchVisitorPanel } from '../services/panelData.js';
+import { hasPermission } from '../utils/permissions.js';
 import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
 import {
   sendPrivateJson,
@@ -138,6 +140,13 @@ export async function createVisitors(req: AuthenticatedRequest, res: Response) {
 
     const createdBy = toActor(req.auth!);
     const visitDate = new Date();
+    const body = req.body && typeof req.body === 'object' ? (req.body as Record<string, unknown>) : {};
+    const linked = await resolveLinkedServiceId(req.auth!.churchId, body.serviceId, {
+      allowChoose: hasPermission(req.auth!.permissions, 'services:read'),
+    });
+    if (linked.error) {
+      return res.status(400).json({ error: linked.error });
+    }
     const created = await Visitor.insertMany(
       normalized.data.map((person) => ({
         churchId: req.auth!.churchId,
@@ -147,6 +156,7 @@ export async function createVisitors(req: AuthenticatedRequest, res: Response) {
         visitDate,
         source: 'owner',
         createdBy,
+        ...(linked.serviceId ? { serviceId: linked.serviceId } : {}),
       }))
     );
 

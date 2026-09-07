@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api/client';
 import { AppIcon } from './AppIcon';
+import { ServiceLinkField } from './ServiceLinkField';
 import './PrayerForm.css';
 
 interface Props {
@@ -16,6 +17,7 @@ export function PrayerForm({ onSuccess, compact = false }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [serviceId, setServiceId] = useState<string | undefined>();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,6 +31,7 @@ export function PrayerForm({ onSuccess, compact = false }: Props) {
         request,
         isAnonymous,
         allowProjection,
+        serviceId,
       });
       setName('');
       setRequest('');
@@ -63,6 +66,8 @@ export function PrayerForm({ onSuccess, compact = false }: Props) {
         )}
         {success && <p className="success-message"><AppIcon name="check" />{success}</p>}
       </div>
+
+      <ServiceLinkField value={serviceId} onChange={setServiceId} />
 
       <div className="anonymous-option">
         <label className="anonymous-switch">

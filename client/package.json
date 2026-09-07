@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test src/utils/publicOrigin.test.ts src/utils/permissions.test.ts"
+    "test": "node --experimental-strip-types --test src/utils/publicOrigin.test.ts src/utils/permissions.test.ts src/components/navItems.test.ts src/utils/serviceSchedule.test.ts"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",

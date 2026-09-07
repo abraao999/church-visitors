@@ -17,6 +17,10 @@ import type {
   ServicePanelItem,
   VisitorPanelItem,
   PublicAccessMetadata,
+  ActiveServiceResponse,
+  RecurrenceSeriesResponse,
+  ServiceActivity,
+  ServicePreview,
   Service,
   TeamInvitation,
   TeamMember,
@@ -234,6 +238,76 @@ export const api = {
       body: JSON.stringify(data),
     });
     return handleResponse<CreateServiceResponse>(response);
+  },
+
+  async previewService(data: CreateServiceDto): Promise<ServicePreview> {
+    const response = await apiFetch(`${API_BASE}/services/preview`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<ServicePreview>(response);
+  },
+
+  async getActiveService(): Promise<ActiveServiceResponse> {
+    const response = await apiFetch(`${API_BASE}/services/active`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<ActiveServiceResponse>(response);
+  },
+
+  async getService(id: string): Promise<Service> {
+    const response = await apiFetch(`${API_BASE}/services/${id}`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<Service>(response);
+  },
+
+  async getRecurrenceSeries(id: string): Promise<RecurrenceSeriesResponse> {
+    const response = await apiFetch(`${API_BASE}/services/series/${id}`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<RecurrenceSeriesResponse>(response);
+  },
+
+  async getServiceActivity(id: string): Promise<ServiceActivity> {
+    const response = await apiFetch(`${API_BASE}/services/${id}/activity`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<ServiceActivity>(response);
+  },
+
+  async openService(id: string): Promise<Service> {
+    const response = await apiFetch(`${API_BASE}/services/${id}/open`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    return handleResponse<Service>(response);
+  },
+
+  async closeService(id: string): Promise<Service> {
+    const response = await apiFetch(`${API_BASE}/services/${id}/close`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    return handleResponse<Service>(response);
+  },
+
+  async extendService(id: string, minutes: 30 | 60): Promise<Service> {
+    const response = await apiFetch(`${API_BASE}/services/${id}/extend`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ minutes }),
+    });
+    return handleResponse<Service>(response);
+  },
+
+  async cancelServiceOccurrence(id: string): Promise<Service> {
+    const response = await apiFetch(`${API_BASE}/services/${id}/cancel`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    return handleResponse<Service>(response);
   },
 
   async updateService(id: string, data: UpdateServiceDto): Promise<Service> {

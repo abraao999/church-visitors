@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { HymnsForm } from '../components/HymnsForm';
 import { AppIcon } from '../components/AppIcon';
 import { MonthCalendar } from '../components/MonthCalendar';
+import { RecurrenceEditModal } from '../components/RecurrenceEditModal';
 import { ServiceForm } from '../components/ServiceForm';
 import type { HolyricsSyncResponse, Service } from '../types';
 import { syncServiceToHolyricsBrowser } from '../utils/holyricsBrowserSync';
+import { statusClass } from '../utils/serviceSchedule';
 import './ServicesPage.css';
 
 type Panel =
   | { type: 'none' }
   | { type: 'create' }
-  | { type: 'edit'; service: Service }
+  | { type: 'edit'; service: Service; editScope?: 'this' | 'thisAndFuture' }
   | { type: 'hymns'; service: Service };
 
 function pad(n: number) {
@@ -45,6 +47,7 @@ function serviceDateKey(dateStr: string) {
 }
 
 export function ServicesPage() {
+  const navigate = useNavigate();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -55,6 +58,7 @@ export function ServicesPage() {
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<HolyricsSyncResponse | null>(null);
   const [syncError, setSyncError] = useState('');
+  const [scopeFor, setScopeFor] = useState<Service | null>(null);
 
   const loadServices = useCallback(async () => {
     const { from, to } = monthRange(year, month);
@@ -106,11 +110,14 @@ export function ServicesPage() {
     loadServices();
   }
 
-  function handleServiceSuccess(service?: Service, createdCount = 1) {
+  function handleServiceSuccess(service?: Service, createdCount = 1, seriesId?: string) {
     loadServices();
+    if (seriesId) {
+      navigate(`/cultos/serie/${seriesId}`);
+      return;
+    }
     if (service) {
       if (createdCount > 1) {
-        // Série recorrente: volta para a lista; hinos são por ocorrência.
         closePanel();
         return;
       }
@@ -118,6 +125,14 @@ export function ServicesPage() {
       return;
     }
     closePanel();
+  }
+
+  function requestEdit(service: Service) {
+    if (service.recurrenceSeriesId) {
+      setScopeFor(service);
+      return;
+    }
+    setPanel({ type: 'edit', service });
   }
 
   function handleHymnsSuccess() {
@@ -209,8 +224,20 @@ export function ServicesPage() {
                     <div className="service-item-main">
                       <div className="service-item-title-row">
                         <span className="service-item-icon"><AppIcon name="calendar" /></span>
-                        <strong>{service.title}</strong>
+                        <strong>
+                          <Link to={`/cultos/${service._id}`}>{service.title}</Link>
+                        </strong>
                         {service.time && <span className="service-time"><AppIcon name="clock" />{service.time}</span>}
+                        {service.statusLabel && (
+                          <span className={`service-status-badge ${statusClass(service.status)}`}>
+                            {service.statusLabel}
+                          </span>
+                        )}
+                        {service.recurrenceSeriesId && (
+                          <Link className="service-series-link" to={`/cultos/serie/${service.recurrenceSeriesId}`}>
+                            Ver série
+                          </Link>
+                        )}
                       </div>
 
                       {service.hymns.length === 0 ? (
@@ -262,7 +289,7 @@ export function ServicesPage() {
                       <button
                         type="button"
                         className="btn btn-secondary"
-                        onClick={() => setPanel({ type: 'edit', service })}
+                        onClick={() => requestEdit(service)}
                       >
                         <AppIcon name="edit" /> Editar culto
                       </button>
@@ -330,8 +357,25 @@ export function ServicesPage() {
             <ServiceForm
               selectedDate={selectedDate}
               editing={panel.type === 'edit' ? panel.service : null}
+              editScope={panel.type === 'edit' ? panel.editScope : 'this'}
               onSuccess={handleServiceSuccess}
               onCancel={closePanel}
+            />
+          )}
+
+          {scopeFor && (
+            <RecurrenceEditModal
+              service={scopeFor}
+              onChoose={(scope) => {
+                setPanel({ type: 'edit', service: scopeFor, editScope: scope });
+                setScopeFor(null);
+              }}
+              onCancelOccurrence={async () => {
+                await api.cancelServiceOccurrence(scopeFor._id);
+                setScopeFor(null);
+                loadServices();
+              }}
+              onClose={() => setScopeFor(null)}
             />
           )}
 

@@ -5,7 +5,9 @@ import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { GuestAccessOverview } from '../components/GuestAccessOverview';
 import { useAuth } from '../auth/AuthContext';
 import { hasPermission } from '../utils/permissions';
+import type { Service } from '../types';
 import { formatTodayLabel } from '../utils/date';
+import { countdownLabel } from '../utils/serviceSchedule';
 import './HomePage.css';
 
 const QUICK_ACTIONS: Array<{
@@ -59,6 +61,8 @@ export function HomePage() {
   const [prayerCount, setPrayerCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [statsError, setStatsError] = useState('');
+  const [activeService, setActiveService] = useState<Service | null>(null);
+  const canServices = hasPermission(user?.permissions, 'services:read') || user?.role === 'owner';
 
   const loadData = useCallback(async () => {
     try {
@@ -70,13 +74,21 @@ export function HomePage() {
         tasks.push(api.getPrayerRequestStats().then((p) => setPrayerCount(p.count)));
       }
       await Promise.all(tasks);
+      if (canServices) {
+        try {
+          const data = await api.getActiveService();
+          setActiveService(data.service);
+        } catch {
+          setActiveService(null);
+        }
+      }
       setStatsError('');
     } catch {
       setStatsError('Não foi possível atualizar os números de hoje.');
     } finally {
       setLoading(false);
     }
-  }, [canVisitors, canPrayers]);
+  }, [canVisitors, canPrayers, canServices]);
 
   useEffect(() => {
     loadData();
@@ -99,6 +111,22 @@ export function HomePage() {
           <span>{formattedDate}</span>
         </div>
       </header>
+
+      {activeService && (
+        <Link to={`/cultos/${activeService._id}`} className="card home-active-service">
+          <span className="home-active-dot" />
+          <div>
+            <strong>{activeService.statusLabel || 'Culto ativo'}</strong>
+            <p>
+              {activeService.title}
+              {activeService.status === 'reception_open' && activeService.scheduledStartAt
+                ? ` · começa em ${countdownLabel(activeService.scheduledStartAt, activeService.now) || 'instantes'}`
+                : ''}
+            </p>
+          </div>
+          <AppIcon name="arrow" />
+        </Link>
+      )}
 
       {statsError ? (
         <p className="error-message" role="alert">

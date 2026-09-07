@@ -6,7 +6,9 @@ import {
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
 import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
+import { resolveLinkedServiceId } from '../services/activeService.js';
 import { fetchPrayerPanel } from '../services/panelData.js';
+import { hasPermission } from '../utils/permissions.js';
 import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
 import {
   PRAYER_LIST_FIELDS,
@@ -99,6 +101,13 @@ export async function createPrayerRequest(req: AuthenticatedRequest, res: Respon
       return res.status(400).json({ error: 'Informe o nome ou marque como anônimo' });
     }
 
+    const linked = await resolveLinkedServiceId(req.auth!.churchId, body.serviceId, {
+      allowChoose: hasPermission(req.auth!.permissions, 'services:read'),
+    });
+    if (linked.error) {
+      return res.status(400).json({ error: linked.error });
+    }
+
     const prayerRequest = await PrayerRequest.create({
       churchId: req.auth!.churchId,
       name: anonymous ? '' : name,
@@ -107,6 +116,7 @@ export async function createPrayerRequest(req: AuthenticatedRequest, res: Respon
       isAnonymous: anonymous,
       allowProjection: body.allowProjection === true,
       createdBy: toActor(req.auth!),
+      ...(linked.serviceId ? { serviceId: linked.serviceId } : {}),
     });
 
     return sendPrivateJson(res, serializePrayerRequest(prayerRequest), 201);

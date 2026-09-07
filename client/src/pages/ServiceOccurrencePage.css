@@ -1,0 +1,70 @@
+.occurrence-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.occurrence-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.occurrence-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.occurrence-timer {
+  min-width: min(320px, 100%);
+  padding: 1rem 1.1rem;
+}
+
+.occurrence-timer strong {
+  display: block;
+  color: var(--success, var(--primary));
+  font-size: 1.15rem;
+}
+
+.occurrence-timer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.8rem;
+}
+
+.occurrence-activity li,
+.occurrence-access {
+  display: flex;
+  gap: 0.7rem;
+}
+
+.occurrence-activity time {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.occurrence-hint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.occurrence-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (max-width: 840px) {
+  .occurrence-header {
+    flex-direction: column;
+  }
+}

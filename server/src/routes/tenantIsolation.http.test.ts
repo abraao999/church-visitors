@@ -55,6 +55,14 @@ afterEach(() => {
   while (stubs.length) stubs.pop()?.restore();
 });
 
+function stubScheduleLookup() {
+  stubMethod(Service, 'find', async () => []);
+  stubMethod(Service, 'updateOne', async () => ({ modifiedCount: 0 }));
+  stubMethod(Church, 'findById', () => ({
+    select: async () => ({ timezone: 'America/Sao_Paulo' }),
+  }));
+}
+
 function authReq(
   churchId: Types.ObjectId,
   userId: Types.ObjectId,
@@ -178,6 +186,7 @@ describe('isolamento entre igrejas nas rotas privadas', () => {
   });
 
   test('criação de visitante grava churchId da sessão, não do body', async () => {
+    stubScheduleLookup();
     let inserted: Array<Record<string, unknown>> = [];
     stubMethod(Visitor, 'insertMany', async (docs: Array<Record<string, unknown>>) => {
       inserted = docs;
@@ -202,6 +211,7 @@ describe('isolamento entre igrejas nas rotas privadas', () => {
   });
 
   test('pedidos de oração e exclusão respeitam o tenant', async () => {
+    stubScheduleLookup();
     let listFilter: Record<string, unknown> | undefined;
     stubMethod(PrayerRequest, 'find', (filter: Record<string, unknown>) => {
       listFilter = filter;

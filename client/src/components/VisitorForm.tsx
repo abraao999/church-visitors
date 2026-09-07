@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from 'react';
 import { api } from '../api/client';
 import { AppIcon } from './AppIcon';
+import { ServiceLinkField } from './ServiceLinkField';
 import './VisitorForm.css';
 
 interface Props {
@@ -32,6 +33,7 @@ export function VisitorForm({ onSuccess }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [serviceId, setServiceId] = useState<string | undefined>();
 
   function updatePerson(id: number, name: string) {
     setPeople((prev) =>
@@ -94,7 +96,7 @@ export function VisitorForm({ onSuccess }: Props) {
     }));
 
     try {
-      await api.createVisitor({ visitors: validVisitors });
+      await api.createVisitor({ visitors: validVisitors, serviceId });
       setCity('');
       setPeople([{ id: nextId.current++, name: '' }]);
       setCityError('');
@@ -133,6 +135,8 @@ export function VisitorForm({ onSuccess }: Props) {
             <h2 id="visitor-visit-title">Informações da visita</h2>
           </div>
         </div>
+
+        <ServiceLinkField value={serviceId} onChange={setServiceId} />
 
         <div className={`visitor-field${cityError ? ' has-error' : ''}`}>
           <label htmlFor={cityFieldId}>Cidade da visita *</label>

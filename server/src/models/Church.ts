@@ -6,6 +6,7 @@ export interface IChurch extends Document {
   city?: string;
   phone?: string;
   address?: string;
+  timezone?: string;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -19,6 +20,7 @@ const churchSchema = new Schema<IChurch>(
     city: { type: String, trim: true, maxlength: 100, default: '' },
     phone: { type: String, trim: true, maxlength: 40, default: '' },
     address: { type: String, trim: true, maxlength: 200, default: '' },
+    timezone: { type: String, trim: true, default: 'America/Sao_Paulo', maxlength: 64 },
     active: { type: Boolean, default: true, index: true },
   },
   { timestamps: true }

@@ -6,6 +6,7 @@ import { GuestAccess } from './GuestAccess.js';
 import { TeamInvitation } from './TeamInvitation.js';
 import { PublicRateLimit } from './PublicRateLimit.js';
 import { PrayerRequest } from './PrayerRequest.js';
+import { RecurrenceSeries } from './RecurrenceSeries.js';
 import { Service } from './Service.js';
 import { User } from './User.js';
 import { Visitor } from './Visitor.js';
@@ -57,6 +58,29 @@ test('modelos privados possuem churchId obrigatório e índices compostos de iso
 
   assert.equal(Service.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(Service.schema.indexes(), { churchId: 1, date: 1 }));
+  assert.ok(hasIndex(Service.schema.indexes(), { churchId: 1, scheduledStartAt: 1 }));
+  assert.ok(
+    hasIndex(
+      Service.schema.indexes(),
+      { churchId: 1, recurrenceSeriesId: 1, scheduledStartAt: 1 },
+      { unique: true, sparse: true }
+    )
+  );
+
+  assert.equal(RecurrenceSeries.schema.path('churchId').isRequired, true);
+  assert.ok(hasIndex(RecurrenceSeries.schema.indexes(), { churchId: 1, active: 1, startDate: 1 }));
+  assert.ok(
+    hasIndex(
+      RecurrenceSeries.schema.indexes(),
+      { churchId: 1, requestId: 1 },
+      { unique: true, sparse: true }
+    )
+  );
+
+  assert.ok(hasIndex(Visitor.schema.indexes(), { churchId: 1, serviceId: 1, createdAt: -1 }));
+  assert.ok(hasIndex(PrayerRequest.schema.indexes(), { churchId: 1, serviceId: 1, createdAt: -1 }));
+  assert.ok(hasIndex(VehicleNotice.schema.indexes(), { churchId: 1, serviceId: 1, createdAt: -1 }));
+  assert.ok(Church.schema.path('timezone'));
 
   assert.equal(HolyricsSettings.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(HolyricsSettings.schema.indexes(), { churchId: 1 }, { unique: true }));

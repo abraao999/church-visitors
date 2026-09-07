@@ -71,7 +71,7 @@ export function HymnsForm({ service, onSuccess, onCancel }: Props) {
     try {
       await api.updateService(service._id, {
         title: service.title,
-        date: service.date.split('T')[0] ?? service.date,
+        date: service.dateKey || service.date.split('T')[0] || service.date,
         time: service.time || undefined,
         hymns: validHymns,
         updatedAt: service.updatedAt,

@@ -1,5 +1,9 @@
 import { Router, Response } from 'express';
+import { PrayerRequest } from '../models/PrayerRequest.js';
+import { RecurrenceSeries } from '../models/RecurrenceSeries.js';
 import { Service, type IHymn } from '../models/Service.js';
+import { VehicleNotice } from '../models/VehicleNotice.js';
+import { Visitor } from '../models/Visitor.js';
 import type { IActor } from '../models/Actor.js';
 import {
   requireAuth,
@@ -7,11 +11,24 @@ import {
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
 import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
+import { resolveActiveService, timezoneForChurch } from '../services/activeService.js';
 import { fetchHymnPanel } from '../services/panelData.js';
+import {
+  cancelOccurrence,
+  closeOccurrence,
+  createServices,
+  extendOccurrence,
+  openOccurrence,
+  parseEditScope,
+  parseServiceWrite,
+  updateOccurrence,
+} from '../services/serviceMutations.js';
 import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
 import {
   sendPrivateJson,
+  serializePrayerRequest,
   serializeService,
+  serializeVisitor,
   SERVICE_LIST_FIELDS,
   setPrivateCacheHeaders,
 } from '../utils/publicRecord.js';
@@ -21,9 +38,25 @@ import {
   parseExpectedUpdatedAt,
   sameInstant,
 } from '../utils/optimistic.js';
+import {
+  buildServicePreview,
+  DEFAULT_DURATION_MINUTES,
+  frequencyLabel,
+  parseClock,
+  parseDateInput,
+  parseDurationMinutes,
+  parseFrequency,
+} from '../utils/serviceSchedule.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 
 const router = Router();
+
+function httpError(error: unknown): { status: number; message: string } {
+  if (error && typeof error === 'object' && 'status' in error && typeof error.status === 'number') {
+    return { status: error.status, message: error instanceof Error ? error.message : 'Erro' };
+  }
+  return { status: 500, message: error instanceof Error ? error.message : 'Erro ao processar o culto' };
+}
 
 function normalizeHymns(
   hymns: unknown,
@@ -78,55 +111,38 @@ function normalizeHymns(
   return { data };
 }
 
-function weeklyDatesUntilYearEnd(start: Date): Date[] {
-  const dates: Date[] = [];
-  const year = start.getFullYear();
-  const current = new Date(start);
-
-  while (current.getFullYear() === year) {
-    dates.push(new Date(current));
-    current.setDate(current.getDate() + 7);
-  }
-
-  return dates;
-}
-
-function buildPayload(
-  body: Record<string, unknown>,
-  actor: IActor,
-  previousHymns: IHymn[] = []
+function serializeSeries(
+  series: {
+    _id?: unknown;
+    title: string;
+    frequency: 'weekly' | 'biweekly';
+    weekday: number;
+    startDate: Date;
+    endDate: Date;
+    time: string;
+    durationMinutes: number;
+    activationLeadMinutes: number;
+    active: boolean;
+    createdAt?: Date;
+    updatedAt?: Date;
+  },
+  extras: Record<string, unknown> = {}
 ) {
-  const title = typeof body.title === 'string' ? body.title.trim() : '';
-  const time = typeof body.time === 'string' ? body.time.trim() : '';
-  const dateRaw = typeof body.date === 'string' ? body.date : '';
-  const date = parseDateOnly(dateRaw.split('T')[0] ?? '');
-  const hymnsResult = normalizeHymns(body.hymns, actor, previousHymns);
-  const recurring = body.recurring === true || body.recurring === 'true';
-
-  if (!title) {
-    return { error: 'Título do culto é obrigatório' as const };
-  }
-
-  if (!date) {
-    return { error: 'Data do culto é obrigatória' as const };
-  }
-
-  if (recurring && !time) {
-    return { error: 'Horário é obrigatório para culto recorrente' as const };
-  }
-
-  if (hymnsResult.error) {
-    return { error: hymnsResult.error };
-  }
-
   return {
-    data: {
-      title,
-      date,
-      time,
-      hymns: hymnsResult.data,
-    },
-    recurring,
+    id: String(series._id),
+    title: series.title,
+    frequency: series.frequency,
+    frequencyLabel: frequencyLabel(series.frequency),
+    weekday: series.weekday,
+    startDate: series.startDate,
+    endDate: series.endDate,
+    time: series.time,
+    durationMinutes: series.durationMinutes,
+    activationLeadMinutes: series.activationLeadMinutes,
+    active: series.active,
+    createdAt: series.createdAt,
+    updatedAt: series.updatedAt,
+    ...extras,
   };
 }
 
@@ -135,6 +151,8 @@ router.get('/', requireAuth, requirePermission('services:read'), async (req: Aut
     const fromParam = req.query.from as string | undefined;
     const toParam = req.query.to as string | undefined;
     const dateParam = req.query.date as string | undefined;
+    const timeZone = await timezoneForChurch(req.auth!.churchId);
+    const now = new Date();
 
     let filter: Record<string, unknown> = {};
 
@@ -148,8 +166,8 @@ router.get('/', requireAuth, requirePermission('services:read'), async (req: Aut
 
       filter = {
         date: {
-          ...(from ? { $gte: startOfDay(from) } : {}),
-          ...(to ? { $lte: endOfDay(to) } : {}),
+          ...(from ? { $gte: startOfDay(from, timeZone) } : {}),
+          ...(to ? { $lte: endOfDay(to, timeZone) } : {}),
         },
       };
     } else {
@@ -159,7 +177,7 @@ router.get('/', requireAuth, requirePermission('services:read'), async (req: Aut
       }
 
       filter = {
-        date: { $gte: startOfDay(date), $lte: endOfDay(date) },
+        date: { $gte: startOfDay(date, timeZone), $lte: endOfDay(date, timeZone) },
       };
     }
 
@@ -170,7 +188,7 @@ router.get('/', requireAuth, requirePermission('services:read'), async (req: Aut
         time: 1,
         createdAt: 1,
       });
-    return sendPrivateJson(res, services.map(serializeService));
+    return sendPrivateJson(res, services.map((service) => serializeService(service, now, timeZone)));
   } catch {
     res.status(500).json({ error: 'Erro ao buscar cultos' });
   }
@@ -193,6 +211,76 @@ router.get('/panel', requireAuth, requireAnyPermission('panels:open', 'services:
   }
 });
 
+router.get('/active', requireAuth, requireAnyPermission('services:read', 'visitors:create', 'prayers:create', 'vehicle_notices:create'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const timeZone = await timezoneForChurch(req.auth!.churchId);
+    const now = new Date();
+    const service = await resolveActiveService(req.auth!.churchId, now, timeZone);
+    return sendPrivateJson(res, {
+      now,
+      service: service ? serializeService(service, now, timeZone) : null,
+    });
+  } catch {
+    res.status(500).json({ error: 'Erro ao localizar o culto ativo' });
+  }
+});
+
+router.post('/preview', requireAuth, requirePermission('services:create'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? (req.body as Record<string, unknown>) : {};
+    const date = parseDateInput(body.date);
+    const time = parseClock(body.time);
+    const durationMinutes = parseDurationMinutes(body.durationMinutes) ?? DEFAULT_DURATION_MINUTES;
+    const recurring = body.recurring === true || body.recurring === 'true';
+    const frequency = parseFrequency(body.frequency) ?? 'weekly';
+    const endDate = parseDateInput(body.endDate);
+    if (!date || !time) {
+      return res.status(400).json({ error: 'Informe a data e o horário do culto.' });
+    }
+    const timeZone = await timezoneForChurch(req.auth!.churchId);
+    const preview = buildServicePreview({
+      startDate: date,
+      time,
+      durationMinutes,
+      recurring,
+      frequency,
+      endDate: endDate ?? undefined,
+      timeZone,
+    });
+    return sendPrivateJson(res, preview);
+  } catch {
+    res.status(500).json({ error: 'Erro ao calcular a prévia do culto' });
+  }
+});
+
+router.get('/series/:seriesId', requireAuth, requirePermission('services:read'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const filter = tenantRecordFilter(req.auth!.churchId, req.params.seriesId);
+    if (!filter) {
+      return res.status(404).json({ error: 'Série não encontrada' });
+    }
+
+    const series = await RecurrenceSeries.findOne(filter);
+    if (!series) {
+      return res.status(404).json({ error: 'Série não encontrada' });
+    }
+
+    const timeZone = await timezoneForChurch(req.auth!.churchId);
+    const now = new Date();
+    const occurrences = await Service.find(
+      withChurch(req.auth!.churchId, { recurrenceSeriesId: series._id })
+    ).sort({ scheduledStartAt: 1, date: 1 });
+
+    return sendPrivateJson(res, {
+      now,
+      series: serializeSeries(series, { occurrenceCount: occurrences.length }),
+      occurrences: occurrences.map((service) => serializeService(service, now, timeZone)),
+    });
+  } catch {
+    res.status(500).json({ error: 'Erro ao buscar a série' });
+  }
+});
+
 router.get('/:id', requireAuth, requirePermission('services:read'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
@@ -204,68 +292,178 @@ router.get('/:id', requireAuth, requirePermission('services:read'), async (req: 
     if (!service) {
       return res.status(404).json({ error: 'Culto não encontrado' });
     }
-    return sendPrivateJson(res, serializeService(service));
+
+    const timeZone = await timezoneForChurch(req.auth!.churchId);
+    const now = new Date();
+    const series = service.recurrenceSeriesId
+      ? await RecurrenceSeries.findOne(
+          withChurch(req.auth!.churchId, { _id: service.recurrenceSeriesId })
+        )
+      : null;
+    const [visitors, prayers, pendingNotices] = await Promise.all([
+      Visitor.countDocuments(withChurch(req.auth!.churchId, { serviceId: service._id })),
+      PrayerRequest.countDocuments(withChurch(req.auth!.churchId, { serviceId: service._id })),
+      VehicleNotice.countDocuments(
+        withChurch(req.auth!.churchId, {
+          serviceId: service._id,
+          archived: false,
+          status: { $in: ['pending', 'announced'] },
+        })
+      ),
+    ]);
+
+    return sendPrivateJson(res, {
+      ...serializeService(service, now, timeZone),
+      series: series ? serializeSeries(series) : null,
+      counts: {
+        visitors,
+        prayers,
+        pendingNotices,
+        hymns: service.hymns.length,
+      },
+    });
   } catch {
     res.status(500).json({ error: 'Erro ao buscar culto' });
+  }
+});
+
+router.get('/:id/activity', requireAuth, requirePermission('services:read'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
+    if (!filter) {
+      return res.status(404).json({ error: 'Culto não encontrado' });
+    }
+    const service = await Service.findOne(filter).select('_id churchId');
+    if (!service) {
+      return res.status(404).json({ error: 'Culto não encontrado' });
+    }
+
+    const [visitors, prayers, notices] = await Promise.all([
+      Visitor.find(withChurch(req.auth!.churchId, { serviceId: service._id }))
+        .select('name city createdAt visitDate')
+        .sort({ createdAt: -1 })
+        .limit(20),
+      PrayerRequest.find(withChurch(req.auth!.churchId, { serviceId: service._id }))
+        .select('name request source createdAt')
+        .sort({ createdAt: -1 })
+        .limit(20),
+      VehicleNotice.find(withChurch(req.auth!.churchId, { serviceId: service._id, archived: false }))
+        .select('plate requestedAction status createdAt')
+        .sort({ createdAt: -1 })
+        .limit(20),
+    ]);
+
+    return sendPrivateJson(res, {
+      visitors: visitors.map(serializeVisitor),
+      prayers: prayers.map(serializePrayerRequest),
+      notices: notices.map((notice) => ({
+        id: String(notice._id),
+        plate: notice.plate,
+        requestedAction: notice.requestedAction,
+        status: notice.status,
+        createdAt: notice.createdAt,
+      })),
+    });
+  } catch {
+    res.status(500).json({ error: 'Erro ao buscar o movimento da recepção' });
   }
 });
 
 router.post('/', requireAuth, requirePermission('services:create'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const actor = toActor(req.auth!);
-    const payload = buildPayload(req.body, actor);
-    if ('error' in payload) {
-      return res.status(400).json({ error: payload.error });
+    const body = req.body && typeof req.body === 'object' ? (req.body as Record<string, unknown>) : {};
+    const payload = parseServiceWrite(body, { requireTime: true, allowRecurring: true });
+    if (payload.error || !payload.data) {
+      return res.status(400).json({ error: payload.error || 'Revise os dados do culto' });
     }
 
-    const { title, date, time, hymns } = payload.data;
-
-    if (payload.recurring) {
-      const dates = weeklyDatesUntilYearEnd(date);
-      const created = await Service.insertMany(
-        dates.map((occurrenceDate) => ({
-          churchId: req.auth!.churchId,
-          title,
-          date: occurrenceDate,
-          time,
-          hymns: [],
-          createdBy: actor,
-        }))
-      );
-
-      const first = created[0];
-      if (!first) {
-        return res.status(500).json({ error: 'Erro ao criar culto' });
-      }
-
-      return sendPrivateJson(
-        res,
-        {
-          service: serializeService(first),
-          createdCount: created.length,
-        },
-        201
-      );
+    const hymnsResult = normalizeHymns(body.hymns, actor);
+    if (hymnsResult.error) {
+      return res.status(400).json({ error: hymnsResult.error });
     }
 
-    const service = await Service.create({
+    const created = await createServices({
       churchId: req.auth!.churchId,
-      title,
-      date,
-      time,
-      hymns,
-      createdBy: actor,
+      actor,
+      data: payload.data,
+      hymns: hymnsResult.data,
     });
+
+    const timeZone = await timezoneForChurch(req.auth!.churchId);
     return sendPrivateJson(
       res,
       {
-        service: serializeService(service),
-        createdCount: 1,
+        service: serializeService(created.service, new Date(), timeZone),
+        createdCount: created.createdCount,
+        seriesId: created.series ? String(created.series._id) : undefined,
       },
       201
     );
-  } catch {
-    res.status(500).json({ error: 'Erro ao criar culto' });
+  } catch (error) {
+    const parsed = httpError(error);
+    res.status(parsed.status).json({ error: parsed.message });
+  }
+});
+
+router.post('/:id/open', requireAuth, requirePermission('services:update'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
+    if (!filter) return res.status(404).json({ error: 'Culto não encontrado' });
+    const service = await Service.findOne(filter);
+    if (!service) return res.status(404).json({ error: 'Culto não encontrado' });
+    const updated = await openOccurrence(req.auth!.churchId, service);
+    const timeZone = await timezoneForChurch(req.auth!.churchId);
+    return sendPrivateJson(res, serializeService(updated, new Date(), timeZone));
+  } catch (error) {
+    const parsed = httpError(error);
+    res.status(parsed.status).json({ error: parsed.message });
+  }
+});
+
+router.post('/:id/close', requireAuth, requirePermission('services:update'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
+    if (!filter) return res.status(404).json({ error: 'Culto não encontrado' });
+    const service = await Service.findOne(filter);
+    if (!service) return res.status(404).json({ error: 'Culto não encontrado' });
+    const updated = await closeOccurrence(req.auth!.churchId, service);
+    const timeZone = await timezoneForChurch(req.auth!.churchId);
+    return sendPrivateJson(res, serializeService(updated, new Date(), timeZone));
+  } catch (error) {
+    const parsed = httpError(error);
+    res.status(parsed.status).json({ error: parsed.message });
+  }
+});
+
+router.post('/:id/extend', requireAuth, requirePermission('services:update'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
+    if (!filter) return res.status(404).json({ error: 'Culto não encontrado' });
+    const service = await Service.findOne(filter);
+    if (!service) return res.status(404).json({ error: 'Culto não encontrado' });
+    const minutes = Number((req.body as { minutes?: unknown })?.minutes);
+    const updated = await extendOccurrence(req.auth!.churchId, service, minutes);
+    const timeZone = await timezoneForChurch(req.auth!.churchId);
+    return sendPrivateJson(res, serializeService(updated, new Date(), timeZone));
+  } catch (error) {
+    const parsed = httpError(error);
+    res.status(parsed.status).json({ error: parsed.message });
+  }
+});
+
+router.post('/:id/cancel', requireAuth, requirePermission('services:update'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
+    if (!filter) return res.status(404).json({ error: 'Culto não encontrado' });
+    const service = await Service.findOne(filter);
+    if (!service) return res.status(404).json({ error: 'Culto não encontrado' });
+    const updated = await cancelOccurrence(req.auth!.churchId, service);
+    const timeZone = await timezoneForChurch(req.auth!.churchId);
+    return sendPrivateJson(res, serializeService(updated, new Date(), timeZone));
+  } catch (error) {
+    const parsed = httpError(error);
+    res.status(parsed.status).json({ error: parsed.message });
   }
 });
 
@@ -282,12 +480,26 @@ router.put('/:id', requireAuth, requirePermission('services:update'), async (req
     }
 
     const actor = toActor(req.auth!);
-    const payload = buildPayload(req.body, actor, existing.hymns);
-    if ('error' in payload) {
-      return res.status(400).json({ error: payload.error });
+    const body = req.body && typeof req.body === 'object' ? (req.body as Record<string, unknown>) : {};
+    const payload = parseServiceWrite(
+      {
+        ...body,
+        date: body.date ?? existing.date,
+        time: body.time ?? existing.time ?? '',
+        durationMinutes: body.durationMinutes ?? existing.durationMinutes ?? DEFAULT_DURATION_MINUTES,
+      },
+      { requireTime: Boolean(existing.time || existing.recurrenceSeriesId), allowRecurring: false }
+    );
+    if (payload.error || !payload.data) {
+      return res.status(400).json({ error: payload.error || 'Revise os dados do culto' });
     }
 
-    const expectedUpdatedAt = parseExpectedUpdatedAt(req.body?.updatedAt);
+    const hymnsResult = normalizeHymns(body.hymns, actor, existing.hymns);
+    if (hymnsResult.error) {
+      return res.status(400).json({ error: hymnsResult.error });
+    }
+
+    const expectedUpdatedAt = parseExpectedUpdatedAt(body.updatedAt);
     if (!expectedUpdatedAt) {
       return res.status(400).json({ error: MISSING_UPDATED_AT_ERROR });
     }
@@ -295,15 +507,19 @@ router.put('/:id', requireAuth, requirePermission('services:update'), async (req
       return res.status(409).json({ error: STALE_WRITE_ERROR });
     }
 
-    existing.title = payload.data.title;
-    existing.date = payload.data.date;
-    existing.time = payload.data.time;
-    existing.hymns = payload.data.hymns;
-    await existing.save();
+    const updated = await updateOccurrence({
+      churchId: req.auth!.churchId,
+      service: existing,
+      data: { ...payload.data, hymns: hymnsResult.data },
+      hymns: hymnsResult.data,
+      scope: parseEditScope(body.editScope),
+    });
 
-    return sendPrivateJson(res, serializeService(existing));
-  } catch {
-    res.status(500).json({ error: 'Erro ao atualizar culto' });
+    const timeZone = await timezoneForChurch(req.auth!.churchId);
+    return sendPrivateJson(res, serializeService(updated, new Date(), timeZone));
+  } catch (error) {
+    const parsed = httpError(error);
+    res.status(parsed.status).json({ error: parsed.message });
   }
 });
 
@@ -312,6 +528,16 @@ router.delete('/:id', requireAuth, requirePermission('services:delete'), async (
     const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
     if (!filter) {
       return res.status(404).json({ error: 'Culto não encontrado' });
+    }
+
+    const existing = await Service.findOne(filter);
+    if (!existing) {
+      return res.status(404).json({ error: 'Culto não encontrado' });
+    }
+
+    if (existing.recurrenceSeriesId) {
+      await cancelOccurrence(req.auth!.churchId, existing);
+      return res.json({ message: 'Ocorrência cancelada' });
     }
 
     const deleted = await Service.findOneAndDelete(filter);

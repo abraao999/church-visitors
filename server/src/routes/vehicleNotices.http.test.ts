@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { afterEach, describe, test } from 'node:test';
+import { afterEach, beforeEach, describe, test } from 'node:test';
 import type { Response } from 'express';
 import { Types } from 'mongoose';
 import {
@@ -15,6 +15,7 @@ import {
 } from './vehicleNotices.js';
 import { GuestAccess } from '../models/GuestAccess.js';
 import { Church } from '../models/Church.js';
+import { Service } from '../models/Service.js';
 import { PublicRateLimit } from '../models/PublicRateLimit.js';
 import { VehicleNotice } from '../models/VehicleNotice.js';
 import { createGuestPublicId, createGuestToken } from '../utils/guestToken.js';
@@ -148,6 +149,14 @@ function stubGuestAccess(type: string, churchId = churchA) {
 }
 
 describe('avisos de veículos — isolamento multi-tenant', () => {
+  beforeEach(() => {
+    stubMethod(Service, 'find', async () => []);
+    stubMethod(Service, 'updateOne', async () => ({ modifiedCount: 0 }));
+    stubMethod(Church, 'findById', () => ({
+      select: async () => ({ timezone: 'America/Sao_Paulo' }),
+    }));
+  });
+
   test('proprietário A lista somente avisos da igreja A', async () => {
     let receivedFilter: Record<string, unknown> | undefined;
     stubMethod(VehicleNotice, 'find', (filter: Record<string, unknown>) => {
@@ -495,6 +504,21 @@ describe('avisos de veículos — isolamento multi-tenant', () => {
   });
 
   test('painel da TV lista só avisos ativos da igreja da sessão', async () => {
+    const now = new Date();
+    const activeId = new Types.ObjectId();
+    stubMethod(Service, 'find', async () => [
+      {
+        _id: activeId,
+        churchId: churchA,
+        title: 'Culto da noite',
+        date: now,
+        time: '19:00',
+        scheduledStartAt: new Date(now.getTime() - 5 * 60_000),
+        durationMinutes: 120,
+        activationLeadMinutes: 30,
+        hymns: [],
+      },
+    ]);
     let receivedFilter: Record<string, unknown> | undefined;
     stubPanelFind((filter) => {
       receivedFilter = filter;

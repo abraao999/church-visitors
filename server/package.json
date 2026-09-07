@@ -10,6 +10,8 @@
     "start": "node dist/index.js",
     "tenancy:check": "tsx src/scripts/tenancy.ts check",
     "tenancy:migrate": "tsx src/scripts/tenancy.ts migrate",
+    "services:recurrence:check": "tsx src/scripts/serviceRecurrence.ts check",
+    "services:recurrence": "tsx src/scripts/serviceRecurrence.ts migrate",
     "guest-access:types": "tsx src/scripts/guestAccessTypes.ts"
   },
   "dependencies": {

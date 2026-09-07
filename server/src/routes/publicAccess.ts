@@ -17,6 +17,7 @@ import {
   fetchVehicleNoticePanel,
   fetchVisitorPanel,
 } from '../services/panelData.js';
+import { resolveActiveService } from '../services/activeService.js';
 import { parseDateOnly } from '../utils/dayRange.js';
 import { parseVehiclePlate } from '../utils/vehiclePlate.js';
 import { Types } from 'mongoose';
@@ -49,6 +50,15 @@ function rejectsClientChurchId(body: unknown): boolean {
   return Boolean(body && typeof body === 'object' && 'churchId' in body);
 }
 
+function rejectsClientServiceId(body: unknown): boolean {
+  return Boolean(body && typeof body === 'object' && 'serviceId' in body);
+}
+
+async function activeServiceId(churchId: string) {
+  const active = await resolveActiveService(churchId);
+  return active?._id;
+}
+
 router.get('/:token', requireGuestAccess(), (req: GuestAccessRequest, res: Response) => {
   const access = req.guestAccess!;
   res.json({
@@ -76,6 +86,9 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
     if (rejectsClientChurchId(req.body)) {
       return res.status(400).json({ error: 'O identificador da igreja não deve ser enviado.' });
     }
+    if (rejectsClientServiceId(req.body)) {
+      return res.status(400).json({ error: 'O culto não pode ser escolhido neste envio.' });
+    }
 
     const body =
       req.body && typeof req.body === 'object' ? (req.body as Record<string, unknown>) : {};
@@ -91,7 +104,7 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
     }
 
     const visitors = rawVisitors.map((raw) => {
-      if (!raw || typeof raw !== 'object' || 'churchId' in raw) return null;
+      if (!raw || typeof raw !== 'object' || 'churchId' in raw || 'serviceId' in raw) return null;
       const item = raw as Record<string, unknown>;
       const name = normalizeSingleLine(item.name, 120);
       const city = normalizeSingleLine(item.city, 100);
@@ -142,6 +155,8 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
       return res.status(201).json({ success: true, message: 'Informações enviadas' });
     }
 
+    const serviceId = await activeServiceId(access.churchId);
+
     await Visitor.insertMany(
       people.map((visitor, index) => ({
         churchId: access.churchId,
@@ -151,6 +166,7 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
         visitDate: new Date(),
         source: 'guest_access' as const,
         guestAccess,
+        ...(serviceId ? { serviceId } : {}),
         ...(index === 0 && requestId ? { requestId } : {}),
       }))
     );
@@ -169,6 +185,9 @@ export async function createPublicPrayerRequest(req: GuestAccessRequest, res: Re
   try {
     if (rejectsClientChurchId(req.body)) {
       return res.status(400).json({ error: 'O identificador da igreja não deve ser enviado.' });
+    }
+    if (rejectsClientServiceId(req.body)) {
+      return res.status(400).json({ error: 'O culto não pode ser escolhido neste envio.' });
     }
 
     const body =
@@ -205,6 +224,8 @@ export async function createPublicPrayerRequest(req: GuestAccessRequest, res: Re
       return res.status(201).json({ success: true, message: 'Informações enviadas' });
     }
 
+    const serviceId = await activeServiceId(access.churchId);
+
     await PrayerRequest.create({
       churchId: access.churchId,
       name,
@@ -213,6 +234,7 @@ export async function createPublicPrayerRequest(req: GuestAccessRequest, res: Re
       isAnonymous,
       allowProjection: body.allowProjection === true,
       requestId,
+      serviceId,
       guestAccess: {
         guestAccessId: access.guestAccessId,
         name: access.accessName,
@@ -246,6 +268,9 @@ export async function createPublicVehicleNotice(req: GuestAccessRequest, res: Re
   try {
     if (rejectsClientChurchId(req.body)) {
       return res.status(400).json({ error: 'O identificador da igreja não deve ser enviado.' });
+    }
+    if (rejectsClientServiceId(req.body)) {
+      return res.status(400).json({ error: 'O culto não pode ser escolhido neste envio.' });
     }
 
     const body =
@@ -301,6 +326,8 @@ export async function createPublicVehicleNotice(req: GuestAccessRequest, res: Re
       return res.status(201).json({ success: true, message: 'Aviso enviado' });
     }
 
+    const serviceId = await activeServiceId(access.churchId);
+
     await VehicleNotice.create({
       churchId,
       guestAccessId,
@@ -311,6 +338,7 @@ export async function createPublicVehicleNotice(req: GuestAccessRequest, res: Re
       otherDescription,
       details,
       requestId,
+      serviceId,
       status: 'pending',
       source: 'guest_access',
       guestAccess: {

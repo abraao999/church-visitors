@@ -14,6 +14,15 @@ export interface IService extends Document {
   date: Date;
   time?: string;
   hymns: IHymn[];
+  recurrenceSeriesId?: Types.ObjectId;
+  scheduledStartAt?: Date;
+  durationMinutes?: number;
+  activationLeadMinutes?: number;
+  cancelledAt?: Date;
+  closedAt?: Date;
+  extendedUntil?: Date;
+  openedAt?: Date;
+  autoOpenedAt?: Date;
   createdBy?: IActor;
   createdAt: Date;
   updatedAt: Date;
@@ -39,11 +48,25 @@ const serviceSchema = new Schema<IService>(
       type: [hymnSchema],
       default: [],
     },
+    recurrenceSeriesId: { type: Schema.Types.ObjectId, ref: 'RecurrenceSeries' },
+    scheduledStartAt: { type: Date },
+    durationMinutes: { type: Number, min: 15, max: 720 },
+    activationLeadMinutes: { type: Number, min: 0, max: 180 },
+    cancelledAt: { type: Date },
+    closedAt: { type: Date },
+    extendedUntil: { type: Date },
+    openedAt: { type: Date },
+    autoOpenedAt: { type: Date },
     createdBy: { type: actorSchema, required: false },
   },
   { timestamps: true }
 );
 
 serviceSchema.index({ churchId: 1, date: 1 });
+serviceSchema.index({ churchId: 1, scheduledStartAt: 1 });
+serviceSchema.index(
+  { churchId: 1, recurrenceSeriesId: 1, scheduledStartAt: 1 },
+  { unique: true, sparse: true }
+);
 
 export const Service = mongoose.model<IService>('Service', serviceSchema);

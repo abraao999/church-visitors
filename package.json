@@ -15,6 +15,8 @@
     "start": "npm run start --prefix server",
     "tenancy:check": "npm run tenancy:check --prefix server",
     "tenancy:migrate": "npm run tenancy:migrate --prefix server --",
+    "services:recurrence:check": "npm run services:recurrence:check --prefix server",
+    "services:recurrence": "npm run services:recurrence --prefix server --",
     "guest-access:types": "npm run guest-access:types --prefix server --"
   },
   "dependencies": {

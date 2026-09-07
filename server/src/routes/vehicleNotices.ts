@@ -12,6 +12,7 @@ import {
   isVehicleNoticeStatus,
   type VehicleNoticeStatus,
 } from '../models/VehicleNotice.js';
+import { resolveLinkedServiceId } from '../services/activeService.js';
 import { fetchVehicleNoticePanel } from '../services/panelData.js';
 import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
 import { sendPrivateJson, setPrivateCacheHeaders } from '../utils/publicRecord.js';
@@ -271,6 +272,13 @@ export async function createVehicleNoticeOwner(req: AuthenticatedRequest, res: R
       return res.status(400).json({ error: 'Descreva o que precisa ser feito.' });
     }
 
+    const linked = await resolveLinkedServiceId(req.auth!.churchId, req.body?.serviceId, {
+      allowChoose: hasPermission(req.auth!.permissions, 'services:read'),
+    });
+    if (linked.error) {
+      return res.status(400).json({ error: linked.error });
+    }
+
     const notice = await VehicleNotice.create({
       churchId: req.auth!.churchId,
       plate: plate.plate,
@@ -283,6 +291,7 @@ export async function createVehicleNoticeOwner(req: AuthenticatedRequest, res: R
       source: 'owner',
       createdBy: toActor(req.auth!),
       archived: false,
+      ...(linked.serviceId ? { serviceId: linked.serviceId } : {}),
     });
 
     return res.status(201).json(serializeNotice(notice));
