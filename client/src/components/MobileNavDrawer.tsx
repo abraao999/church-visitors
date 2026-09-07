@@ -1,12 +1,14 @@
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { AppIcon, type AppIconName } from './AppIcon';
+import { BrandMark } from './BrandMark';
 import { ThemeToggle } from './ThemeToggle';
 import { drawerLabel, type NavItem } from './navItems';
 
 interface Props {
   open: boolean;
   brandName: string;
+  logoUrl?: string;
   userName?: string;
   pathname: string;
   primary: NavItem[];
@@ -26,6 +28,7 @@ function focusableIn(root: HTMLElement): HTMLElement[] {
 export function MobileNavDrawer({
   open,
   brandName,
+  logoUrl,
   userName,
   pathname,
   primary,
@@ -94,9 +97,7 @@ export function MobileNavDrawer({
       >
         <div className="mobile-drawer-head">
           <div className="mobile-drawer-brand">
-            <span className="logo-icon" aria-hidden="true">
-              ✝
-            </span>
+            <BrandMark name={brandName} logoUrl={logoUrl} />
             <strong id="mobile-drawer-title">{brandName}</strong>
           </div>
           <button

@@ -29,7 +29,8 @@ body:has(.public-access-page) {
   margin-left: auto;
 }
 
-.public-access-cross {
+.public-access-cross,
+.public-access-brand .brand-logo-image {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -41,6 +42,7 @@ body:has(.public-access-page) {
   color: var(--accent);
   font-size: 1.45rem;
   font-weight: 800;
+  object-fit: contain;
 }
 
 .public-access-brand > div {

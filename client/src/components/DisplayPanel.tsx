@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { useBranding } from '../theme/BrandingContext';
 import { AppIcon } from './AppIcon';
+import { BrandMark } from './BrandMark';
 import { formatTodayLabel } from '../utils/date';
 import './DisplayPanel.css';
 
@@ -14,12 +16,13 @@ interface Props {
 
 export function DisplayPanel({ title, subtitle, count, loading, children }: Props) {
   const { user } = useAuth();
-  const brandName = user?.churchName?.trim() || 'Church Visitors';
+  const { branding } = useBranding();
+  const brandName = branding?.name?.trim() || user?.churchName?.trim() || 'Church Visitors';
 
   return (
     <div className="display-panel">
       <div className="display-panel-brand">
-        <span className="display-panel-logo">✝</span>
+        <BrandMark name={brandName} logoUrl={branding?.logoUrl} fallbackClassName="display-panel-logo" />
         <span>{brandName}</span>
       </div>
       <header className="display-panel-header">

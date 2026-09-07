@@ -1,5 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
+import { BrandingProvider } from './theme/BrandingContext';
+import { ChurchBrandingPage } from './pages/ChurchBrandingPage';
 import { Layout } from './components/Layout';
 import { PermissionRoute } from './components/PermissionRoute';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -32,6 +34,7 @@ export function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <BrandingProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/acesso/:token" element={<PublicAccessPage />} />
@@ -72,6 +75,9 @@ export function App() {
               <Route element={<PermissionRoute anyOf={['church:read', 'team:read']} />}>
                 <Route path="/igreja" element={<ChurchSettingsPage />} />
               </Route>
+              <Route element={<PermissionRoute anyOf={['church:update']} />}>
+                <Route path="/igreja/identidade" element={<ChurchBrandingPage />} />
+              </Route>
               <Route element={<PermissionRoute anyOf={['team:read']} />}>
                 <Route path="/igreja/equipe" element={<TeamPage />} />
                 <Route path="/igreja/equipe/:memberId" element={<TeamMemberPage />} />
@@ -92,6 +98,7 @@ export function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </BrandingProvider>
       </BrowserRouter>
     </AuthProvider>
   );

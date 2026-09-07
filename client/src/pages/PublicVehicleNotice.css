@@ -27,7 +27,8 @@
   margin-left: auto;
 }
 
-.vehicle-public-cross {
+.vehicle-public-cross,
+.vehicle-public-brand .brand-logo-image {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -39,6 +40,7 @@
   color: var(--accent);
   font-size: 1.45rem;
   font-weight: 800;
+  object-fit: contain;
 }
 
 .vehicle-public-brand > div {

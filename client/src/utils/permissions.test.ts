@@ -43,6 +43,10 @@ describe('menu lateral por permissão', () => {
       NAV_ITEMS.some((item) => item.label === 'Equipe' || item.to.includes('equipe')),
       false
     );
+    assert.equal(
+      NAV_ITEMS.some((item) => item.to.includes('identidade') || item.label === 'Identidade visual'),
+      false
+    );
   });
 
   test('o proprietário vê todos os itens atuais', () => {

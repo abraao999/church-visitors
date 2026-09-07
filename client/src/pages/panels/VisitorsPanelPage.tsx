@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../api/client';
 import { AppIcon } from '../../components/AppIcon';
+import { BrandMark } from '../../components/BrandMark';
+import { useBranding } from '../../theme/BrandingContext';
 import type { VisitorPanelItem } from '../../types';
 import {
   formatClockTime,
@@ -91,6 +93,7 @@ function pageSizeFor(groupCount: number): number {
 
 export function VisitorsPanelPage() {
   const { token, churchName: brandName } = usePanelAccess();
+  const { branding } = useBranding();
   const [visitors, setVisitors] = useState<VisitorPanelItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(() => new Date());
@@ -203,7 +206,7 @@ export function VisitorsPanelPage() {
     <div className={`visitors-tv ${density}`} aria-live="polite">
       <header className="visitors-tv-top">
         <div className="visitors-tv-brand">
-          <span className="visitors-tv-logo" aria-hidden="true">✝</span>
+          <BrandMark name={brandName} logoUrl={branding?.logoUrl} fallbackClassName="visitors-tv-logo" />
           <span>{brandName}</span>
         </div>
         <div className="visitors-tv-live">

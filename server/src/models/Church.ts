@@ -1,5 +1,13 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export interface ChurchBranding {
+  logoUrl?: string;
+  logoStorageKey?: string;
+  primaryColor?: string;
+  accentColor?: string;
+  updatedAt?: Date;
+}
+
 export interface IChurch extends Document {
   name: string;
   slug: string;
@@ -8,6 +16,7 @@ export interface IChurch extends Document {
   address?: string;
   timezone?: string;
   active: boolean;
+  branding?: ChurchBranding;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +31,19 @@ const churchSchema = new Schema<IChurch>(
     address: { type: String, trim: true, maxlength: 200, default: '' },
     timezone: { type: String, trim: true, default: 'America/Sao_Paulo', maxlength: 64 },
     active: { type: Boolean, default: true, index: true },
+    branding: {
+      type: new Schema(
+        {
+          logoUrl: { type: String, trim: true, maxlength: 500 },
+          logoStorageKey: { type: String, trim: true, maxlength: 300 },
+          primaryColor: { type: String, trim: true, maxlength: 7 },
+          accentColor: { type: String, trim: true, maxlength: 7 },
+          updatedAt: { type: Date },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
   },
   { timestamps: true }
 );

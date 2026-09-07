@@ -21,6 +21,7 @@ import { resolveActiveService } from '../services/activeService.js';
 import { parseDateOnly } from '../utils/dayRange.js';
 import { parseVehiclePlate } from '../utils/vehiclePlate.js';
 import { Types } from 'mongoose';
+import { publicAccessMetadata } from '../utils/branding.js';
 
 const router = Router();
 const MAX_VISITORS_PER_REQUEST = 10;
@@ -60,14 +61,7 @@ async function activeServiceId(churchId: string) {
 }
 
 router.get('/:token', requireGuestAccess(), (req: GuestAccessRequest, res: Response) => {
-  const access = req.guestAccess!;
-  res.json({
-    valid: true,
-    churchName: access.churchName,
-    accessName: access.accessName,
-    type: access.scope,
-    types: access.scopes,
-  });
+  res.json(publicAccessMetadata(req.guestAccess!));
 });
 
 function parseRequestId(value: unknown): string | undefined {

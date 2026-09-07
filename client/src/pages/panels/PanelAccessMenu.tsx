@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { AppIcon } from '../../components/AppIcon';
+import { BrandMark } from '../../components/BrandMark';
+import { useBranding } from '../../theme/BrandingContext';
 import { PANEL_OPTIONS, panelPath } from '../../utils/publicAccess';
 import { usePanelAccess } from './usePanelAccess';
 import '../PublicAccessMenu.css';
@@ -10,6 +12,7 @@ import '../PublicAccessMenu.css';
  */
 export function PanelAccessMenu() {
   const { token, churchName, invalidToken } = usePanelAccess();
+  const { branding } = useBranding();
 
   if (!token || invalidToken) {
     return (
@@ -25,9 +28,7 @@ export function PanelAccessMenu() {
   return (
     <main className="public-access-page public-portal-page">
       <header className="public-access-brand">
-        <span className="public-access-cross" aria-hidden="true">
-          ✝
-        </span>
+        <BrandMark name={churchName} logoUrl={branding?.logoUrl} fallbackClassName="public-access-cross" />
         <div>
           <strong>{churchName}</strong>
           <span>Painéis para projeção</span>

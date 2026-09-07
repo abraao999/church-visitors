@@ -66,7 +66,8 @@
   white-space: nowrap;
 }
 
-.vehicles-tv-logo {
+.vehicles-tv-logo,
+.vehicles-tv-brand .brand-logo-image {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -77,6 +78,7 @@
   background: var(--tv-accent-soft);
   color: var(--tv-accent);
   font-size: 1.05rem;
+  object-fit: contain;
 }
 
 .vehicles-tv-live {

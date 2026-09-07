@@ -3,7 +3,9 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useVehicleAlerts, VehicleAlertProvider } from '../alerts/VehicleAlertProvider';
 import { formatPendingBadge, pendingBadgeLabel } from '../alerts/vehicleAlertLogic';
 import { useAuth } from '../auth/AuthContext';
+import { useBranding } from '../theme/BrandingContext';
 import { AppIcon, type AppIconName } from './AppIcon';
+import { BrandMark } from './BrandMark';
 import { MobileNavDrawer } from './MobileNavDrawer';
 import { ThemeToggle } from './ThemeToggle';
 import { drawerSections, NAV_ITEMS } from './navItems';
@@ -51,10 +53,12 @@ function VehicleNavBadge({ to }: { to: string }) {
 
 function AuthenticatedShell({ pathname }: { pathname: string }) {
   const { user, logout } = useAuth();
+  const { branding } = useBranding();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const drawerOpenRef = useRef(false);
-  const brandName = user?.churchName?.trim() || 'Church Visitors';
+  const brandName = branding?.name?.trim() || user?.churchName?.trim() || 'Church Visitors';
+  const logoUrl = branding?.logoUrl;
   const navItems = NAV_ITEMS.filter((item) =>
     navItemVisible(item.to, user?.role, user?.permissions)
   );
@@ -109,7 +113,7 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
           </button>
 
           <Link to="/" className="logo">
-            <span className="logo-icon">✝</span>
+            <BrandMark name={brandName} logoUrl={logoUrl} />
             <span className="logo-text">{brandName}</span>
           </Link>
 
@@ -154,6 +158,7 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
       <MobileNavDrawer
         open={drawerOpen}
         brandName={brandName}
+        logoUrl={logoUrl}
         userName={user?.name}
         pathname={pathname}
         primary={primary}

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../api/client';
 import { AppIcon, type AppIconName } from '../../components/AppIcon';
+import { BrandMark } from '../../components/BrandMark';
+import { useBranding } from '../../theme/BrandingContext';
 import { formatPanelDayMonth, formatPanelWeekday } from '../../utils/date';
 import {
   activeNoticesLabel,
@@ -25,6 +27,7 @@ const ACTION_ICONS: Record<string, AppIconName> = {
 
 export function VehicleNoticesPanelPage() {
   const { token, churchName: brandName } = usePanelAccess();
+  const { branding } = useBranding();
   const [notices, setNotices] = useState<VehiclePanelNotice[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -120,9 +123,7 @@ export function VehicleNoticesPanelPage() {
 
       <header className="vehicles-tv-top">
         <div className="vehicles-tv-brand">
-          <span className="vehicles-tv-logo" aria-hidden="true">
-            ✝
-          </span>
+          <BrandMark name={brandName} logoUrl={branding?.logoUrl} fallbackClassName="vehicles-tv-logo" />
           <span>{brandName}</span>
         </div>
         <div className="vehicles-tv-live">

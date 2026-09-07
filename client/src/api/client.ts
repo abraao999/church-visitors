@@ -1,5 +1,6 @@
 import type {
   AuthUser,
+  ChurchBranding,
   ChurchProfile,
   CreatePrayerDto,
   CreateServiceDto,
@@ -471,6 +472,45 @@ export const api = {
       body: JSON.stringify(data),
     });
     return handleResponse<ChurchProfile>(response);
+  },
+
+  async getChurchBranding(): Promise<ChurchBranding> {
+    const response = await apiFetch(`${API_BASE}/church/branding`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<ChurchBranding>(response);
+  },
+
+  async updateChurchBranding(data: {
+    primaryColor?: string;
+    accentColor?: string;
+    restoreDefault?: boolean;
+  }): Promise<ChurchBranding> {
+    const response = await apiFetch(`${API_BASE}/church/branding`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<ChurchBranding>(response);
+  },
+
+  async uploadChurchLogo(file: File): Promise<ChurchBranding> {
+    const body = new FormData();
+    body.append('logo', file);
+    const response = await apiFetch(`${API_BASE}/church/branding/logo`, {
+      method: 'POST',
+      body,
+    });
+    return handleResponse<ChurchBranding>(response);
+  },
+
+  async deleteChurchLogo(): Promise<ChurchBranding> {
+    const response = await apiFetch(`${API_BASE}/church/branding/logo`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    return handleResponse<ChurchBranding>(response);
   },
 
   async getRetentionOverview(): Promise<RetentionOverview> {

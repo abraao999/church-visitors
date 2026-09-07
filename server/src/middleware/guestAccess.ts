@@ -25,6 +25,9 @@ export interface GuestAccessContext {
   accessName: string;
   scope: GuestAccessType;
   scopes: GuestAccessType[];
+  logoUrl?: string;
+  primaryColor?: string;
+  accentColor?: string;
 }
 
 export interface GuestAccessRequest extends Request {
@@ -107,11 +110,12 @@ export function requireGuestAccess(requiredScope?: GuestAccessType) {
       }
 
       const church = await Church.findOne({ _id: access.churchId, active: true })
-        .select('name')
+        .select('name branding.logoUrl branding.primaryColor branding.accentColor')
         .lean();
       if (!church) return rejectInvalid(res);
 
       const scope = requiredScope && scopes.includes(requiredScope) ? requiredScope : scopes[0];
+      const branding = church.branding || {};
 
       req.guestAccess = {
         churchId: String(access.churchId),
@@ -120,6 +124,9 @@ export function requireGuestAccess(requiredScope?: GuestAccessType) {
         accessName: access.name,
         scope,
         scopes,
+        ...(branding.logoUrl ? { logoUrl: branding.logoUrl } : {}),
+        ...(branding.primaryColor ? { primaryColor: branding.primaryColor } : {}),
+        ...(branding.accentColor ? { accentColor: branding.accentColor } : {}),
       };
       next();
     } catch {

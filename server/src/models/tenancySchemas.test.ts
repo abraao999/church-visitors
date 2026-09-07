@@ -36,6 +36,9 @@ test('Church define identidade, estado e timestamps', () => {
   assert.ok(Church.schema.path('active'));
   assert.ok(Church.schema.path('createdAt'));
   assert.ok(Church.schema.path('updatedAt'));
+  assert.ok(Church.schema.path('branding'));
+  assert.ok(Church.schema.path('branding.logoUrl'));
+  assert.ok(Church.schema.path('branding.primaryColor'));
 });
 
 test('modelos privados possuem churchId obrigatório e índices compostos de isolamento', () => {

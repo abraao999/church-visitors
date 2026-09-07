@@ -27,6 +27,28 @@
   --radius-sm: 8px;
 }
 
+html[data-branding='custom'] .visitors-tv {
+  --tv-primary: var(--primary);
+  --tv-primary-soft: var(--primary-soft);
+  --tv-accent: var(--accent);
+  --tv-accent-soft: var(--accent-soft);
+}
+
+html[data-branding='custom'] .vehicles-tv {
+  --tv-accent: var(--accent);
+  --tv-accent-soft: var(--accent-soft);
+}
+
+.brand-logo-image {
+  display: block;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 11px;
+  background: var(--surface-muted);
+  flex-shrink: 0;
+}
+
 html[data-theme='dark'] {
   color-scheme: dark;
   --bg: #12151c;

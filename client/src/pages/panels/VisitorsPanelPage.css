@@ -23,8 +23,8 @@
   padding: var(--tv-pad-y) var(--tv-pad-x);
   overflow: hidden;
   background:
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 34%),
-    radial-gradient(circle at bottom left, rgba(180, 83, 9, 0.08), transparent 30%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--tv-primary) 8%, transparent), transparent 34%),
+    radial-gradient(circle at bottom left, color-mix(in srgb, var(--tv-accent) 8%, transparent), transparent 30%),
     var(--tv-bg);
   color: var(--tv-text);
   color-scheme: light;
@@ -53,7 +53,8 @@
   font-weight: 700;
 }
 
-.visitors-tv-logo {
+.visitors-tv-logo,
+.visitors-tv-brand .brand-logo-image {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -63,6 +64,7 @@
   background: var(--tv-accent-soft);
   color: var(--tv-accent);
   font-size: 1.05rem;
+  object-fit: contain;
 }
 
 .visitors-tv-live {

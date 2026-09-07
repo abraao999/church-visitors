@@ -10,6 +10,7 @@ Sistema web para registro de visitantes (famílias) e pedidos de oração em igr
 - **Avisos de veículos**: formulário público por QR Code e painel administrativo
 - **Calendário de cultos**: agenda mensal com louvores por culto
 - **Painéis**: visualização em tela cheia de louvores, visitantes e pedidos de oração
+- **Identidade visual**: logotipo e cores por igreja, em Igreja → Identidade visual
 - **Auditoria**: nome do usuário fica nos registros que ele adiciona
 
 > As rotas de dados atuais exigem login e são isoladas pela igreja da sessão. O endereço legado
@@ -56,6 +57,7 @@ cp server/.env.example server/.env
 # - MONGODB_URI
 # - JWT_SECRET
 # - GUEST_ACCESS_SECRET (use uma chave diferente do JWT_SECRET)
+# - BLOB_READ_WRITE_TOKEN (Vercel Blob, necessário para o logotipo da igreja)
 ```
 
 ## Preparação para múltiplas igrejas
@@ -163,6 +165,7 @@ Em **Network Access**, libere `0.0.0.0/0` (a Vercel usa IPs dinâmicos).
 | `JWT_SECRET` | Server | chave longa e aleatória |
 | `GUEST_ACCESS_SECRET` | Server | outra chave longa e aleatória |
 | `CRON_SECRET` | Server | chave aleatória para proteger a limpeza automática diária |
+| `BLOB_READ_WRITE_TOKEN` | Server | token do Vercel Blob para o logotipo da igreja |
 
 ### 4. Deploy
 
@@ -208,6 +211,18 @@ No início do culto, o operador pode enviar os louvores cadastrados para a playl
 - No modo local, o Holyrics precisa estar aberto no PC da igreja
 - Se o app estiver na Vercel, o sync pelo servidor não alcança a rede local; o app tenta enviar **pelo navegador** do PC que tem o Holyrics
 - Modo **Internet** usa a API pública do Holyrics (`api.holyrics.com.br`) com API Key + token
+
+## Identidade visual por igreja
+
+Cada igreja configura logotipo e cores em **Igreja → Identidade visual**. A personalização vale só para as páginas daquela igreja. Login, cadastro e ícones do PWA permanecem com a marca geral do sistema.
+
+O logotipo é gravado no [Vercel Blob](https://vercel.com/docs/storage/vercel-blob), não no MongoDB nem no disco do servidor. Em produção:
+
+1. No projeto da Vercel, abra **Storage → Create Database → Blob**
+2. Conecte o store ao projeto (isso cria `BLOB_READ_WRITE_TOKEN`)
+3. Faça um novo deploy depois de conectar o store
+
+Formatos aceitos: PNG, JPEG e WebP, até 2 MB. SVG é recusado.
 
 ## Estrutura
 

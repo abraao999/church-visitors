@@ -2,6 +2,8 @@ import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
+import { BrandMark } from '../components/BrandMark';
+import { useBranding } from '../theme/BrandingContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
   VEHICLE_NOTICE_ACTIONS,
@@ -29,11 +31,10 @@ function VehicleBrand({
   churchName: string;
   centered?: boolean;
 }) {
+  const { branding } = useBranding();
   return (
     <header className={`vehicle-public-brand${centered ? ' centered' : ''}`}>
-      <span className="vehicle-public-cross" aria-hidden="true">
-        ✝
-      </span>
+      <BrandMark name={churchName} logoUrl={branding?.logoUrl} fallbackClassName="vehicle-public-cross" />
       <div>
         <strong>{churchName}</strong>
         <span>Canal oficial de avisos</span>

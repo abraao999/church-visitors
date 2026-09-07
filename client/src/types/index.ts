@@ -33,6 +33,14 @@ export type TeamRole =
   | 'louvor'
   | 'midia';
 
+export interface ChurchBranding {
+  name: string;
+  logoUrl?: string;
+  primaryColor?: string;
+  accentColor?: string;
+  updatedAt?: string;
+}
+
 export interface AuthUser {
   id: string;
   name: string;
@@ -41,6 +49,7 @@ export interface AuthUser {
   churchName: string;
   role: TeamRole;
   permissions: string[];
+  branding?: ChurchBranding;
 }
 
 export interface TeamMember {
@@ -228,6 +237,9 @@ export interface PublicAccessMetadata {
   accessName: string;
   type: GuestAccessType;
   types: GuestAccessType[];
+  logoUrl?: string;
+  primaryColor?: string;
+  accentColor?: string;
 }
 
 export interface Visitor {

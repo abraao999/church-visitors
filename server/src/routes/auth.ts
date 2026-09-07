@@ -13,6 +13,7 @@ import {
   type AuthContext,
 } from '../middleware/auth.js';
 import { requireAuthRateLimit } from '../middleware/authRateLimit.js';
+import { publicChurchBranding, type PublicChurchBranding } from '../utils/branding.js';
 import { createChurchSlug, normalizeChurchName } from '../utils/church.js';
 import { readLoginIdentifier } from '../utils/loginIdentifier.js';
 import { resolvePermissions, type Permission, type TeamRole } from '../utils/permissions.js';
@@ -54,7 +55,8 @@ function publicUser(
     permissions?: Permission[];
     permissionsCustomized?: boolean;
   },
-  churchName: string
+  churchName: string,
+  branding?: PublicChurchBranding
 ) {
   const role = user.role || 'owner';
   return {
@@ -65,6 +67,7 @@ function publicUser(
     churchName,
     role,
     permissions: resolvePermissions(user),
+    branding: branding || { name: churchName },
   };
 }
 
@@ -82,7 +85,8 @@ function issueSession(
     permissionsCustomized?: boolean;
     tokenVersion?: number;
   },
-  churchName: string
+  churchName: string,
+  branding?: PublicChurchBranding
 ) {
   const payload: AuthContext = {
     userId: String(user._id),
@@ -94,7 +98,7 @@ function issueSession(
     tokenVersion: user.tokenVersion ?? 0,
   };
   setSessionCookie(req, res, signToken(payload));
-  return { user: publicUser(user, churchName) };
+  return { user: publicUser(user, churchName, branding) };
 }
 
 export async function registerAccount(
@@ -212,7 +216,9 @@ export async function loginAccount(
       return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
     }
 
-    const church = await Church.findOne({ _id: user.churchId, active: true }).select('name');
+    const church = await Church.findOne({ _id: user.churchId, active: true }).select(
+      'name branding.logoUrl branding.primaryColor branding.accentColor'
+    );
     if (!church) {
       return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
     }
@@ -220,7 +226,15 @@ export async function loginAccount(
     user.lastSeenAt = new Date();
     await user.save();
 
-    return res.json(issueSession(req, res, user as IUser & { churchId: Types.ObjectId }, church.name));
+    return res.json(
+      issueSession(
+        req,
+        res,
+        user as IUser & { churchId: Types.ObjectId },
+        church.name,
+        publicChurchBranding(church)
+      )
+    );
   } catch (error) {
     if (isJwtSecretError(error)) {
       return res.status(503).json({ error: JWT_SECRET_HELP });
@@ -258,7 +272,9 @@ export async function changePassword(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ error: 'Senha atual incorreta' });
     }
 
-    const church = await Church.findOne({ _id: user.churchId, active: true }).select('name');
+    const church = await Church.findOne({ _id: user.churchId, active: true }).select(
+      'name branding.logoUrl branding.primaryColor branding.accentColor'
+    );
     if (!church) {
       return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
     }
@@ -267,7 +283,15 @@ export async function changePassword(req: AuthenticatedRequest, res: Response) {
     user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await user.save();
 
-    return res.json(issueSession(req, res, user as IUser & { churchId: Types.ObjectId }, church.name));
+    return res.json(
+      issueSession(
+        req,
+        res,
+        user as IUser & { churchId: Types.ObjectId },
+        church.name,
+        publicChurchBranding(church)
+      )
+    );
   } catch (error) {
     if (isJwtSecretError(error)) {
       return res.status(503).json({ error: JWT_SECRET_HELP });
@@ -301,7 +325,9 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
-    const church = await Church.findOne({ _id: req.auth!.churchId, active: true }).select('name');
+    const church = await Church.findOne({ _id: req.auth!.churchId, active: true }).select(
+      'name branding.logoUrl branding.primaryColor branding.accentColor'
+    );
     if (!church) {
       return res.status(403).json({ error: 'O acesso desta igreja está indisponível.' });
     }
@@ -309,7 +335,7 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
     user.lastSeenAt = new Date();
     await user.save();
 
-    res.json({ user: publicUser(user, church.name) });
+    res.json({ user: publicUser(user, church.name, publicChurchBranding(church)) });
   } catch {
     res.status(500).json({ error: 'Erro ao buscar usuário' });
   }

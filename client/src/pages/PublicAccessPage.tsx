@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon } from '../components/AppIcon';
+import { BrandMark } from '../components/BrandMark';
+import { useBranding } from '../theme/BrandingContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { type PublicAccessMetadata, type VehicleNoticeAction } from '../types';
 import {
@@ -54,11 +56,13 @@ function PublicBrand({
   churchName?: string;
   subtitle?: string;
 }) {
+  const { branding } = useBranding();
+  const name = churchName || branding?.name || 'Church Visitors';
   return (
     <header className="public-access-brand">
-      <span className="public-access-cross">✝</span>
+      <BrandMark name={name} logoUrl={branding?.logoUrl} fallbackClassName="public-access-cross" />
       <div>
-        <strong>{churchName || 'Church Visitors'}</strong>
+        <strong>{name}</strong>
         {churchName && <span>{subtitle}</span>}
       </div>
       <ThemeToggle compact />
@@ -531,6 +535,7 @@ export function PublicAccessPage() {
   const { token = '' } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { setPublicBranding } = useBranding();
   const [metadata, setMetadata] = useState<PublicAccessMetadata | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -557,6 +562,20 @@ export function PublicAccessPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!metadata) {
+      setPublicBranding(null);
+      return;
+    }
+    setPublicBranding({
+      name: metadata.churchName,
+      logoUrl: metadata.logoUrl,
+      primaryColor: metadata.primaryColor,
+      accentColor: metadata.accentColor,
+    });
+    return () => setPublicBranding(null);
+  }, [metadata, setPublicBranding]);
 
   useEffect(() => {
     setSuccess(false);

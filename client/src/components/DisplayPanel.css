@@ -17,7 +17,8 @@
   font-weight: 800;
 }
 
-.display-panel-logo {
+.display-panel-logo,
+.display-panel-brand .brand-logo-image {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -27,6 +28,7 @@
   background: var(--accent-soft);
   color: var(--accent);
   font-size: 1rem;
+  object-fit: contain;
 }
 
 .display-panel-header {

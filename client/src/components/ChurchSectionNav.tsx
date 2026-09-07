@@ -7,6 +7,7 @@ export function ChurchSectionNav() {
   const { user } = useAuth();
   const canTeam = hasPermission(user?.permissions, 'team:read') || user?.role === 'owner';
   const canChurch = hasPermission(user?.permissions, 'church:read') || user?.role === 'owner';
+  const canBranding = hasPermission(user?.permissions, 'church:update') || user?.role === 'owner';
 
   return (
     <nav className="church-section-nav" aria-label="Área da igreja">
@@ -18,6 +19,11 @@ export function ChurchSectionNav() {
       {canTeam && (
         <NavLink to="/igreja/equipe" className={({ isActive }) => (isActive ? 'active' : '')}>
           Equipe e permissões
+        </NavLink>
+      )}
+      {canBranding && (
+        <NavLink to="/igreja/identidade" className={({ isActive }) => (isActive ? 'active' : '')}>
+          Identidade visual
         </NavLink>
       )}
     </nav>

@@ -24,7 +24,7 @@ export const CONTENT_SECURITY_POLICY = [
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
-  "img-src 'self' data:",
+  "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com https://*.blob.vercel-storage.com",
   "connect-src 'self' http://127.0.0.1:* http://localhost:* http://[::1]:*",
 ].join('; ');
 

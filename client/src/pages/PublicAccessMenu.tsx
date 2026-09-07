@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { AppIcon } from '../components/AppIcon';
+import { BrandMark } from '../components/BrandMark';
+import { useBranding } from '../theme/BrandingContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { PUBLIC_ACCESS_OPTIONS, publicFormPath } from '../utils/publicAccess';
 import type { GuestAccessType } from '../types';
@@ -16,14 +18,13 @@ export function PublicAccessMenu({
   types: GuestAccessType[];
   deniedMessage?: string;
 }) {
+  const { branding } = useBranding();
   const cards = PUBLIC_ACCESS_OPTIONS.filter((option) => types.includes(option.type));
 
   return (
     <main className="public-access-page public-portal-page">
       <header className="public-access-brand">
-        <span className="public-access-cross" aria-hidden="true">
-          ✝
-        </span>
+        <BrandMark name={churchName} logoUrl={branding?.logoUrl} fallbackClassName="public-access-cross" />
         <div>
           <strong>{churchName}</strong>
           <span>Acesso da igreja</span>

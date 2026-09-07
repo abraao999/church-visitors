@@ -3,8 +3,26 @@ import { Church } from '../models/Church.js';
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth.js';
 import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
 import { normalizeChurchName } from '../utils/church.js';
+import {
+  deleteChurchLogo,
+  getChurchBranding,
+  patchChurchBranding,
+  postChurchLogo,
+  uploadChurchLogo,
+} from './churchBranding.js';
 
 const router = Router();
+
+router.get('/branding', requireAuth, requirePermission('church:update'), getChurchBranding);
+router.patch('/branding', requireAuth, requirePermission('church:update'), patchChurchBranding);
+router.post(
+  '/branding/logo',
+  requireAuth,
+  requirePermission('church:update'),
+  uploadChurchLogo,
+  postChurchLogo
+);
+router.delete('/branding/logo', requireAuth, requirePermission('church:update'), deleteChurchLogo);
 
 function normalizeOptionalLine(value: unknown, maxLength: number): string {
   if (typeof value !== 'string') return '';
