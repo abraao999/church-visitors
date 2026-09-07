@@ -17,6 +17,7 @@ import type {
   VehicleNotice,
   VehicleNoticeStats,
   VehicleNoticeStatus,
+  VehiclePanelNotice,
   Visitor,
 } from '../types';
 
@@ -245,7 +246,8 @@ export const api = {
 
   async createGuestAccess(data: {
     name: string;
-    type: GuestAccessType;
+    type?: GuestAccessType;
+    types?: GuestAccessType[];
     expiresAt?: string;
   }): Promise<GuestAccess> {
     const response = await fetch(`${API_BASE}/guest-accesses`, {
@@ -258,7 +260,7 @@ export const api = {
 
   async updateGuestAccess(
     id: string,
-    data: { name: string; expiresAt?: string }
+    data: { name: string; expiresAt?: string; types?: GuestAccessType[] }
   ): Promise<GuestAccess> {
     const response = await fetch(`${API_BASE}/guest-accesses/${id}`, {
       method: 'PUT',
@@ -361,6 +363,14 @@ export const api = {
       headers: authHeaders(),
     });
     return handleResponse<VehicleNotice[]>(response);
+  },
+
+  async getVehicleNoticesPanel(): Promise<VehiclePanelNotice[]> {
+    const response = await fetch(`${API_BASE}/vehicle-notices/panel`, {
+      headers: authHeaders(),
+      cache: 'no-store',
+    });
+    return handleResponse<VehiclePanelNotice[]>(response);
   },
 
   async getVehicleNoticeStats(date?: string): Promise<VehicleNoticeStats> {

@@ -67,7 +67,7 @@ test('chaves do rate limit não armazenam a identidade original', () => {
   assert.equal(key.includes(identity), false);
 });
 
-test('modelo restringe cada acesso a uma única permissão', () => {
+test('modelo aceita permissão única ou lista unificada', () => {
   const base = {
     churchId: new Types.ObjectId(),
     createdBy: {
@@ -83,6 +83,14 @@ test('modelo restringe cada acesso a uma única permissão', () => {
   assert.equal(new GuestAccess({ ...base, type: 'prayers:create' }).validateSync(), undefined);
   assert.equal(
     new GuestAccess({ ...base, type: 'vehicle_notices:create' }).validateSync(),
+    undefined
+  );
+  assert.equal(
+    new GuestAccess({
+      ...base,
+      type: 'visitors:create',
+      types: ['visitors:create', 'prayers:create', 'vehicle_notices:create'],
+    }).validateSync(),
     undefined
   );
   assert.ok(new GuestAccess({ ...base, type: 'records:read' }).validateSync());

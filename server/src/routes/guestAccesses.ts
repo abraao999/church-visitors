@@ -5,18 +5,44 @@ import {
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
 import {
-  GUEST_ACCESS_TYPES,
   GuestAccess,
   type GuestAccessType,
   type IGuestAccess,
 } from '../models/GuestAccess.js';
 import { createGuestPublicId, createGuestToken } from '../utils/guestToken.js';
+import { parseGuestAccessTypes, resolveGuestAccessTypes } from '../utils/guestAccessTypes.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 
 const router = Router();
 
-function isGuestAccessType(value: unknown): value is GuestAccessType {
-  return GUEST_ACCESS_TYPES.includes(value as GuestAccessType);
+function serializeAccess(access: Pick<
+  IGuestAccess,
+  | '_id'
+  | 'name'
+  | 'publicId'
+  | 'type'
+  | 'types'
+  | 'version'
+  | 'active'
+  | 'expiresAt'
+  | 'lastUsedAt'
+  | 'createdAt'
+  | 'updatedAt'
+>) {
+  const types = resolveGuestAccessTypes(access);
+  return {
+    id: String(access._id),
+    name: access.name,
+    type: types[0] || access.type,
+    types,
+    specific: types.length === 1,
+    active: access.active,
+    expiresAt: access.expiresAt,
+    lastUsedAt: access.lastUsedAt,
+    createdAt: access.createdAt,
+    updatedAt: access.updatedAt,
+    token: createGuestToken(access.publicId, access.version),
+  };
 }
 
 function normalizeName(value: unknown): string | null {
@@ -33,30 +59,9 @@ function parseFutureDate(value: unknown): Date | null | undefined {
   return date;
 }
 
-function serializeAccess(access: Pick<
-  IGuestAccess,
-  | '_id'
-  | 'name'
-  | 'publicId'
-  | 'type'
-  | 'version'
-  | 'active'
-  | 'expiresAt'
-  | 'lastUsedAt'
-  | 'createdAt'
-  | 'updatedAt'
->) {
-  return {
-    id: String(access._id),
-    name: access.name,
-    type: access.type,
-    active: access.active,
-    expiresAt: access.expiresAt,
-    lastUsedAt: access.lastUsedAt,
-    createdAt: access.createdAt,
-    updatedAt: access.updatedAt,
-    token: createGuestToken(access.publicId, access.version),
-  };
+function typesFromBody(body: unknown): GuestAccessType[] {
+  const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
+  return parseGuestAccessTypes(payload.types ?? payload.type);
 }
 
 function configurationError(res: Response) {
@@ -87,17 +92,16 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
     }
 
     const name = normalizeName(req.body?.name);
-    const type = req.body?.type;
+    const types = typesFromBody(req.body);
     const expiresAt = parseFutureDate(req.body?.expiresAt);
 
-    if (!name || !isGuestAccessType(type)) {
-      return res.status(400).json({ error: 'Informe um nome e uma permissão válidos.' });
+    if (!name || types.length === 0) {
+      return res.status(400).json({ error: 'Informe um nome e pelo menos uma opção autorizada.' });
     }
     if (expiresAt === null) {
       return res.status(400).json({ error: 'A validade deve ser uma data futura.' });
     }
 
-    // Valida a configuração antes de persistir para não deixar um acesso sem link utilizável.
     createGuestToken(createGuestPublicId(), 1);
 
     let access: IGuestAccess | undefined;
@@ -108,7 +112,8 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
           createdBy: toActor(req.auth!),
           name,
           publicId: createGuestPublicId(),
-          type,
+          type: types[0],
+          types,
           version: 1,
           active: true,
           ...(expiresAt ? { expiresAt } : {}),
@@ -147,7 +152,15 @@ router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response)
     const access = await GuestAccess.findOne(filter);
     if (!access) return res.status(404).json({ error: 'Acesso não encontrado.' });
 
+    const requestedTypes = typesFromBody(req.body);
+    const types = requestedTypes.length > 0 ? requestedTypes : resolveGuestAccessTypes(access);
+    if (types.length === 0) {
+      return res.status(400).json({ error: 'Selecione pelo menos uma opção autorizada.' });
+    }
+
     access.name = name;
+    access.type = types[0];
+    access.types = types;
     access.expiresAt = expiresAt;
     await access.save();
     return res.json(serializeAccess(access));

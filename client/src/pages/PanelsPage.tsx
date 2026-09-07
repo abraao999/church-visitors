@@ -30,6 +30,13 @@ const PANELS: Array<{
     icon: 'prayer',
     color: 'yellow',
   },
+  {
+    to: '/painel/veiculos',
+    title: 'Avisos de veículos',
+    description: 'Mostre na TV as placas que precisam de atenção durante o culto.',
+    icon: 'car',
+    color: 'blue',
+  },
 ];
 
 export function PanelsPage() {

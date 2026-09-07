@@ -59,6 +59,8 @@ export interface GuestAccess {
   id: string;
   name: string;
   type: GuestAccessType;
+  types: GuestAccessType[];
+  specific?: boolean;
   active: boolean;
   expiresAt?: string;
   lastUsedAt?: string;
@@ -72,6 +74,7 @@ export interface PublicAccessMetadata {
   churchName: string;
   accessName: string;
   type: GuestAccessType;
+  types: GuestAccessType[];
 }
 
 export interface Visitor {
@@ -204,6 +207,7 @@ export interface VehicleNotice {
   plateNormalized: string;
   vehicleModel: string;
   requestedAction: VehicleNoticeAction;
+  otherDescription?: string;
   details: string;
   status: VehicleNoticeStatus;
   source: 'guest_access' | 'owner';
@@ -220,11 +224,21 @@ export interface VehicleNoticeStats {
   resolvedToday: number;
 }
 
+export interface VehiclePanelNotice {
+  id: string;
+  plate: string;
+  vehicleModel: string;
+  requestedAction: VehicleNoticeAction;
+  instruction: string;
+}
+
 export interface CreateVehicleNoticeDto {
   plate: string;
   vehicleModel: string;
   requestedAction: VehicleNoticeAction;
+  otherDescription?: string;
   details?: string;
+  requestId?: string;
 }
 
 export function formatVisitor(visitor: Pick<Visitor, 'name' | 'relationship' | 'city'>): string {

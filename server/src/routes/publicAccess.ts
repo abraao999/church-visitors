@@ -17,10 +17,13 @@ import { Types } from 'mongoose';
 const router = Router();
 const MAX_VISITORS_PER_REQUEST = 10;
 const MAX_DETAILS_LENGTH = 500;
+const MAX_OTHER_DESCRIPTION = 240;
+const DUPLICATE_WINDOW_MS = 20_000;
 
 router.use((_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'no-referrer');
   next();
 });
 
@@ -46,6 +49,7 @@ router.get('/:token', requireGuestAccess(), (req: GuestAccessRequest, res: Respo
     churchName: access.churchName,
     accessName: access.accessName,
     type: access.scope,
+    types: access.scopes,
   });
 });
 
@@ -156,6 +160,13 @@ router.post(
   }
 );
 
+function parseRequestId(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const requestId = value.trim();
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(requestId)) return undefined;
+  return requestId;
+}
+
 export async function createPublicVehicleNotice(req: GuestAccessRequest, res: Response) {
   try {
     if (rejectsClientChurchId(req.body)) {
@@ -172,15 +183,20 @@ export async function createPublicVehicleNotice(req: GuestAccessRequest, res: Re
 
     const vehicleModel = normalizeSingleLine(body.vehicleModel, 120);
     const requestedAction = body.requestedAction;
+    const otherDescription =
+      typeof body.otherDescription === 'string'
+        ? body.otherDescription.trim().replace(/\s+/g, ' ').slice(0, MAX_OTHER_DESCRIPTION)
+        : '';
     const detailsRaw = typeof body.details === 'string' ? body.details.trim() : '';
     const details = detailsRaw.slice(0, MAX_DETAILS_LENGTH);
+    const requestId = parseRequestId(body.requestId);
 
     if (!vehicleModel || !isVehicleNoticeAction(requestedAction)) {
       return res.status(400).json({ error: 'Revise o modelo e a ação solicitada.' });
     }
 
-    if (requestedAction === 'other' && !details) {
-      return res.status(400).json({ error: 'Descreva o aviso na observação.' });
+    if (requestedAction === 'other' && !otherDescription) {
+      return res.status(400).json({ error: 'Descreva o que precisa ser feito.' });
     }
 
     if (detailsRaw.length > MAX_DETAILS_LENGTH) {
@@ -188,14 +204,38 @@ export async function createPublicVehicleNotice(req: GuestAccessRequest, res: Re
     }
 
     const access = req.guestAccess!;
+    const churchId = new Types.ObjectId(access.churchId);
+    const guestAccessId = new Types.ObjectId(access.guestAccessId);
+
+    if (requestId) {
+      const replayed = await VehicleNotice.exists({ churchId, requestId });
+      if (replayed) {
+        return res.status(201).json({ success: true, message: 'Aviso enviado' });
+      }
+    }
+
+    const recentDuplicate = await VehicleNotice.exists({
+      churchId,
+      guestAccessId,
+      plateNormalized: plate.plateNormalized,
+      requestedAction,
+      vehicleModel,
+      createdAt: { $gte: new Date(Date.now() - DUPLICATE_WINDOW_MS) },
+    });
+    if (recentDuplicate) {
+      return res.status(201).json({ success: true, message: 'Aviso enviado' });
+    }
+
     await VehicleNotice.create({
-      churchId: new Types.ObjectId(access.churchId),
-      guestAccessId: new Types.ObjectId(access.guestAccessId),
+      churchId,
+      guestAccessId,
       plate: plate.plate,
       plateNormalized: plate.plateNormalized,
       vehicleModel,
       requestedAction,
+      otherDescription,
       details,
+      requestId,
       status: 'pending',
       source: 'guest_access',
       guestAccess: {
@@ -208,7 +248,11 @@ export async function createPublicVehicleNotice(req: GuestAccessRequest, res: Re
 
     await markGuestAccessUsed(access).catch(() => undefined);
     return res.status(201).json({ success: true, message: 'Aviso enviado' });
-  } catch {
+  } catch (error) {
+    const code = typeof error === 'object' && error && 'code' in error ? error.code : undefined;
+    if (code === 11000) {
+      return res.status(201).json({ success: true, message: 'Aviso enviado' });
+    }
     return res.status(500).json({ error: 'Não foi possível enviar o aviso.' });
   }
 }

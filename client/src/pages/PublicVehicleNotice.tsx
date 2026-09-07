@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -10,6 +11,7 @@ import {
 } from '../types';
 import { isValidVehiclePlate, maskVehiclePlateInput } from '../utils/vehiclePlate';
 import './PublicVehicleNotice.css';
+import './PublicAccessMenu.css';
 
 const ACTION_ICONS: Record<VehicleNoticeAction, AppIconName> = {
   remove_vehicle: 'tow',
@@ -19,9 +21,22 @@ const ACTION_ICONS: Record<VehicleNoticeAction, AppIconName> = {
   other: 'chat',
 };
 
-function VehicleBrand({ churchName }: { churchName: string }) {
+function createRequestId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID().replace(/-/g, '').slice(0, 24);
+  }
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
+}
+
+function VehicleBrand({
+  churchName,
+  centered = false,
+}: {
+  churchName: string;
+  centered?: boolean;
+}) {
   return (
-    <header className="vehicle-public-brand">
+    <header className={`vehicle-public-brand${centered ? ' centered' : ''}`}>
       <span className="vehicle-public-cross" aria-hidden="true">
         ✝
       </span>
@@ -29,7 +44,7 @@ function VehicleBrand({ churchName }: { churchName: string }) {
         <strong>{churchName}</strong>
         <span>Canal oficial de avisos</span>
       </div>
-      <ThemeToggle compact />
+      {!centered && <ThemeToggle compact />}
     </header>
   );
 }
@@ -40,24 +55,24 @@ export function PublicVehicleSuccess({
   vehicleModel,
   action,
   onAgain,
+  menuTo,
 }: {
   churchName: string;
   plate: string;
   vehicleModel: string;
   action: VehicleNoticeAction;
   onAgain: () => void;
+  menuTo?: string;
 }) {
   return (
-    <main className="public-access-page vehicle-public-page">
-      <VehicleBrand churchName={churchName} />
+    <main className="public-access-page vehicle-public-page vehicle-success-page">
+      <VehicleBrand churchName={churchName} centered />
       <div className="vehicle-success-card card" role="status">
         <span className="vehicle-success-icon">
           <AppIcon name="check" />
         </span>
         <h1>Aviso enviado</h1>
-        <p>
-          O responsável da <strong>{churchName}</strong> recebeu as informações do veículo.
-        </p>
+        <p>O responsável pela igreja já pode visualizar sua solicitação.</p>
 
         <div className="vehicle-success-summary">
           <AppIcon name="car" />
@@ -75,9 +90,16 @@ export function PublicVehicleSuccess({
           <p>Outros avisos não ficam visíveis neste acesso.</p>
         </div>
 
-        <button type="button" className="public-primary-button" onClick={onAgain}>
-          Enviar outro aviso
-        </button>
+        <div className="public-success-actions">
+          <button type="button" className="public-primary-button" onClick={onAgain}>
+            Enviar outro aviso
+          </button>
+          {menuTo && (
+            <Link to={menuTo} className="public-secondary-button">
+              Voltar ao menu
+            </Link>
+          )}
+        </div>
 
         <p className="vehicle-success-footnote">
           <AppIcon name="info" /> Você já pode fechar esta página.
@@ -91,43 +113,57 @@ export function PublicVehicleNoticeForm({
   metadata,
   token,
   onSuccess,
+  showMenu,
+  menuTo,
 }: {
   metadata: PublicAccessMetadata;
   token: string;
+  showMenu?: boolean;
+  menuTo?: string;
   onSuccess: (summary: {
     plate: string;
     vehicleModel: string;
     requestedAction: VehicleNoticeAction;
   }) => void;
 }) {
+  const requestId = useRef(createRequestId()).current;
   const [plate, setPlate] = useState('');
   const [vehicleModel, setVehicleModel] = useState('');
   const [requestedAction, setRequestedAction] = useState<VehicleNoticeAction>('remove_vehicle');
+  const [otherDescription, setOtherDescription] = useState('');
   const [details, setDetails] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [plateError, setPlateError] = useState('');
+  const [modelError, setModelError] = useState('');
+  const [otherError, setOtherError] = useState('');
 
-  const detailsRequired = requestedAction === 'other';
+  const otherRequired = requestedAction === 'other';
   const actionLabel = VEHICLE_NOTICE_ACTION_LABELS[requestedAction];
 
   const canSubmit = useMemo(() => {
     if (!isValidVehiclePlate(plate) || !vehicleModel.trim()) return false;
-    if (detailsRequired && !details.trim()) return false;
+    if (otherRequired && !otherDescription.trim()) return false;
     return true;
-  }, [plate, vehicleModel, details, detailsRequired]);
+  }, [plate, vehicleModel, otherDescription, otherRequired]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError('');
     setPlateError('');
+    setModelError('');
+    setOtherError('');
 
     if (!isValidVehiclePlate(plate)) {
       setPlateError('Confira a placa do veículo.');
       return;
     }
-    if (detailsRequired && !details.trim()) {
-      setError('Descreva o aviso na observação.');
+    if (!vehicleModel.trim()) {
+      setModelError('Informe o modelo ou a descrição do veículo.');
+      return;
+    }
+    if (otherRequired && !otherDescription.trim()) {
+      setOtherError('Descreva o que precisa ser feito.');
       return;
     }
 
@@ -137,7 +173,9 @@ export function PublicVehicleNoticeForm({
         plate,
         vehicleModel: vehicleModel.trim().replace(/\s+/g, ' '),
         requestedAction,
+        otherDescription: otherRequired ? otherDescription.trim() : '',
         details: details.trim(),
+        requestId,
       });
       onSuccess({
         plate: maskVehiclePlateInput(plate),
@@ -147,6 +185,8 @@ export function PublicVehicleNoticeForm({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Não foi possível enviar o aviso.';
       if (/placa/i.test(message)) setPlateError(message);
+      else if (/modelo|descrição/i.test(message)) setModelError(message);
+      else if (/precisa ser feito|Descreva/i.test(message)) setOtherError(message);
       else setError(message);
     } finally {
       setSubmitting(false);
@@ -156,6 +196,12 @@ export function PublicVehicleNoticeForm({
   return (
     <main className="public-access-page vehicle-public-page">
       <VehicleBrand churchName={metadata.churchName} />
+      {showMenu && menuTo && (
+        <Link to={menuTo} className="public-back-link">
+          <AppIcon name="arrow" />
+          Voltar ao menu
+        </Link>
+      )}
 
       <section className="vehicle-public-hero">
         <span className="vehicle-public-hero-icon" aria-hidden="true">
@@ -166,8 +212,10 @@ export function PublicVehicleNoticeForm({
       </section>
 
       <div className="vehicle-privacy-banner">
-        <AppIcon name="shield" />
-        <span>O aviso será enviado somente para o responsável da igreja.</span>
+        <span className="vehicle-privacy-icon" aria-hidden="true">
+          <AppIcon name="shield" />
+        </span>
+        <p>O aviso será enviado somente para o responsável da igreja.</p>
       </div>
 
       <form className="vehicle-public-form" onSubmit={handleSubmit} noValidate>
@@ -196,28 +244,39 @@ export function PublicVehicleNoticeForm({
               maxLength={8}
               required
               aria-invalid={Boolean(plateError)}
+              aria-describedby={plateError ? 'vehicle-plate-error' : undefined}
             />
           </div>
           {plateError && (
-            <p className="field-error" role="alert">
+            <p id="vehicle-plate-error" className="field-error" role="alert">
               {plateError}
             </p>
           )}
         </div>
 
         <div className="form-group">
-          <label htmlFor="vehicle-model">Modelo e cor do veículo</label>
+          <label htmlFor="vehicle-model">Modelo ou descrição</label>
           <div className="vehicle-input-wrap">
             <AppIcon name="car" />
             <input
               id="vehicle-model"
               value={vehicleModel}
-              onChange={(event) => setVehicleModel(event.target.value)}
+              onChange={(event) => {
+                setVehicleModel(event.target.value);
+                setModelError('');
+              }}
               placeholder="Ex: Gol branco"
               maxLength={120}
               required
+              aria-invalid={Boolean(modelError)}
+              aria-describedby={modelError ? 'vehicle-model-error' : undefined}
             />
           </div>
+          {modelError && (
+            <p id="vehicle-model-error" className="field-error" role="alert">
+              {modelError}
+            </p>
+          )}
         </div>
 
         <fieldset className="vehicle-action-fieldset">
@@ -232,12 +291,15 @@ export function PublicVehicleNoticeForm({
                   role="radio"
                   aria-checked={selected}
                   className={`vehicle-action-card${selected ? ' selected' : ''}`}
-                  onClick={() => setRequestedAction(action.value)}
+                  onClick={() => {
+                    setRequestedAction(action.value);
+                    setOtherError('');
+                  }}
                 >
                   <AppIcon name={ACTION_ICONS[action.value]} />
                   <span>{action.label}</span>
                   <span className="vehicle-action-check" aria-hidden="true">
-                    {selected ? <AppIcon name="check" /> : null}
+                    {selected ? <AppIcon name="checkPlain" /> : null}
                   </span>
                 </button>
               );
@@ -245,10 +307,36 @@ export function PublicVehicleNoticeForm({
           </div>
         </fieldset>
 
+        {otherRequired && (
+          <div className="form-group">
+            <label htmlFor="vehicle-other">Descreva o aviso</label>
+            <div className="vehicle-input-wrap vehicle-textarea-wrap">
+              <AppIcon name="chat" />
+              <textarea
+                id="vehicle-other"
+                value={otherDescription}
+                onChange={(event) => {
+                  setOtherDescription(event.target.value);
+                  setOtherError('');
+                }}
+                placeholder="Ex: O alarme está disparando"
+                maxLength={240}
+                rows={3}
+                required
+                aria-invalid={Boolean(otherError)}
+                aria-describedby={otherError ? 'vehicle-other-error' : undefined}
+              />
+            </div>
+            {otherError && (
+              <p id="vehicle-other-error" className="field-error" role="alert">
+                {otherError}
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="form-group">
-          <label htmlFor="vehicle-details">
-            Observação {detailsRequired ? '' : '(opcional)'}
-          </label>
+          <label htmlFor="vehicle-details">Observação (opcional)</label>
           <div className="vehicle-input-wrap vehicle-textarea-wrap">
             <AppIcon name="chat" />
             <textarea
@@ -258,14 +346,13 @@ export function PublicVehicleNoticeForm({
               placeholder="Ex: O carro está bloqueando a saída"
               maxLength={500}
               rows={3}
-              required={detailsRequired}
             />
           </div>
         </div>
 
         <div className="vehicle-summary" aria-live="polite">
           <div className="vehicle-summary-label">
-            <AppIcon name="info" />
+            <AppIcon name="clipboard" />
             Resumo do aviso
           </div>
           <strong>

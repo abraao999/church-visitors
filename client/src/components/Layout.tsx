@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { to: '/oracao', label: 'Oração', short: 'Oração', icon: 'prayer' },
   { to: '/acessos', label: 'Acessos', short: 'Acessos', icon: 'link' },
   { to: '/cultos', label: 'Cultos', short: 'Cultos', icon: 'calendar' },
-  { to: '/avisos-veiculos', label: 'Veículos', short: 'Veíc.', icon: 'car' },
+  { to: '/avisos-veiculos', label: 'Avisos de veículos', short: 'Avisos', icon: 'car' },
   { to: '/paineis', label: 'Painéis', short: 'Painéis', icon: 'panels' },
   { to: '/igreja', label: 'Igreja', short: 'Igreja', icon: 'pin' },
   { to: '/configuracoes', label: 'Holyric', short: 'Holyric', icon: 'music' },

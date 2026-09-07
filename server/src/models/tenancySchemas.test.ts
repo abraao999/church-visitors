@@ -56,6 +56,9 @@ test('modelos privados possuem churchId e índices compostos de isolamento', () 
     hasIndex(VehicleNotice.schema.indexes(), { churchId: 1, plateNormalized: 1, createdAt: -1 })
   );
   assert.ok(hasIndex(VehicleNotice.schema.indexes(), { guestAccessId: 1, createdAt: -1 }));
+  assert.ok(
+    hasIndex(VehicleNotice.schema.indexes(), { churchId: 1, requestId: 1 }, { unique: true, sparse: true })
+  );
 
   assert.equal(GuestAccess.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(GuestAccess.schema.indexes(), { publicId: 1 }, { unique: true }));

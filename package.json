@@ -13,7 +13,8 @@
     "build:vercel": "npm run build --prefix client",
     "start": "npm run start --prefix server",
     "tenancy:check": "npm run tenancy:check --prefix server",
-    "tenancy:migrate": "npm run tenancy:migrate --prefix server --"
+    "tenancy:migrate": "npm run tenancy:migrate --prefix server --",
+    "guest-access:types": "npm run guest-access:types --prefix server --"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

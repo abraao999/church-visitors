@@ -11,6 +11,7 @@ import { LoginPage } from './pages/LoginPage';
 import { PanelsPage } from './pages/PanelsPage';
 import { HymnsPanelPage } from './pages/panels/HymnsPanelPage';
 import { PrayersPanelPage } from './pages/panels/PrayersPanelPage';
+import { VehicleNoticesPanelPage } from './pages/panels/VehicleNoticesPanelPage';
 import { VisitorsPanelPage } from './pages/panels/VisitorsPanelPage';
 import { PrayerRequestsPage } from './pages/PrayerRequestsPage';
 import { PublicAccessPage } from './pages/PublicAccessPage';
@@ -25,6 +26,9 @@ export function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/acesso/:token" element={<PublicAccessPage />} />
+          <Route path="/acesso/:token/visitantes" element={<PublicAccessPage />} />
+          <Route path="/acesso/:token/oracao" element={<PublicAccessPage />} />
+          <Route path="/acesso/:token/veiculos" element={<PublicAccessPage />} />
           <Route path="/live/oracao" element={<Layout />}>
             <Route index element={<LivePrayerPage />} />
           </Route>
@@ -42,6 +46,7 @@ export function App() {
               <Route path="/painel/louvores" element={<HymnsPanelPage />} />
               <Route path="/painel/visitantes" element={<VisitorsPanelPage />} />
               <Route path="/painel/oracao" element={<PrayersPanelPage />} />
+              <Route path="/painel/veiculos" element={<VehicleNoticesPanelPage />} />
             </Route>
           </Route>
 

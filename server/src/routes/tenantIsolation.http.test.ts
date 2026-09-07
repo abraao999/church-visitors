@@ -262,6 +262,7 @@ describe('acessos convidados', () => {
     assert.equal(req.guestAccess?.churchId, String(churchA));
     assert.equal(req.guestAccess?.churchName, 'Igreja Alfa');
     assert.equal(req.guestAccess?.scope, 'visitors:create');
+    assert.deepEqual(req.guestAccess?.scopes, ['visitors:create']);
     assert.equal(state.body, undefined);
   });
 
@@ -382,6 +383,101 @@ describe('acessos convidados', () => {
       assert.fail('não deveria autorizar escopo cruzado');
     });
     assert.equal(state.statusCode, 403);
+    assert.equal(
+      (state.body as { error?: string }).error,
+      'Esta opção não está disponível neste acesso.'
+    );
+  });
+
+  test('acesso unificado autoriza as três opções e esconde as demais no metadata', async () => {
+    allowRateLimit();
+    const publicId = createGuestPublicId();
+    const token = createGuestToken(publicId, 1);
+
+    stubMethod(GuestAccess, 'findOne', () => ({
+      select() {
+        return {
+          lean: async () => ({
+            _id: new Types.ObjectId(),
+            churchId: churchA,
+            name: 'Portal público',
+            publicId,
+            type: 'visitors:create',
+            types: ['visitors:create', 'prayers:create', 'vehicle_notices:create'],
+            version: 1,
+            active: true,
+          }),
+        };
+      },
+    }));
+
+    stubMethod(Church, 'findOne', () => ({
+      select() {
+        return { lean: async () => ({ _id: churchA, name: 'Igreja Alfa' }) };
+      },
+    }));
+
+    const req = {
+      method: 'GET',
+      params: { token },
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+    } as unknown as GuestAccessRequest;
+    const { res } = mockRes();
+    await requireGuestAccess()(req, res, () => undefined);
+    assert.deepEqual(req.guestAccess?.scopes, [
+      'visitors:create',
+      'prayers:create',
+      'vehicle_notices:create',
+    ]);
+
+    const prayer = mockRes();
+    await requireGuestAccess('prayers:create')(req, prayer.res, () => undefined);
+    assert.equal(prayer.state.statusCode, 200);
+    assert.equal(req.guestAccess?.scope, 'prayers:create');
+  });
+
+  test('token antigo de veículos continua autorizado só nessa opção', async () => {
+    allowRateLimit();
+    const publicId = createGuestPublicId();
+    const token = createGuestToken(publicId, 1);
+
+    stubMethod(GuestAccess, 'findOne', () => ({
+      select() {
+        return {
+          lean: async () => ({
+            _id: new Types.ObjectId(),
+            churchId: churchA,
+            name: 'Estacionamento',
+            publicId,
+            type: 'vehicle_notices:create',
+            version: 1,
+            active: true,
+          }),
+        };
+      },
+    }));
+
+    stubMethod(Church, 'findOne', () => ({
+      select() {
+        return { lean: async () => ({ _id: churchA, name: 'Igreja Alfa' }) };
+      },
+    }));
+
+    const req = {
+      method: 'POST',
+      params: { token },
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+    } as unknown as GuestAccessRequest;
+
+    const ok = mockRes();
+    await requireGuestAccess('vehicle_notices:create')(req, ok.res, () => undefined);
+    assert.equal(ok.state.statusCode, 200);
+
+    const denied = mockRes();
+    await requireGuestAccess('visitors:create')(req, denied.res, () => undefined);
+    assert.equal(denied.state.statusCode, 403);
   });
 
   test('markGuestAccessUsed atualiza somente o acesso da igreja correta', async () => {
@@ -397,6 +493,7 @@ describe('acessos convidados', () => {
       guestAccessId: new Types.ObjectId().toHexString(),
       accessName: 'Portaria',
       scope: 'visitors:create',
+      scopes: ['visitors:create'],
     });
 
     assert.equal(String(updateFilter?.churchId), String(churchA));

@@ -11,6 +11,7 @@ import {
   type VehicleNoticeStatus,
 } from '../models/VehicleNotice.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
+import { serializeVehiclePanelNotice } from '../utils/vehicleNoticePanel.js';
 import { parseVehiclePlate } from '../utils/vehiclePlate.js';
 import { Types } from 'mongoose';
 
@@ -46,6 +47,7 @@ function serializeNotice(notice: {
   plateNormalized: string;
   vehicleModel: string;
   requestedAction: string;
+  otherDescription?: string;
   details?: string;
   status: string;
   source: string;
@@ -61,6 +63,7 @@ function serializeNotice(notice: {
     plateNormalized: notice.plateNormalized,
     vehicleModel: notice.vehicleModel,
     requestedAction: notice.requestedAction,
+    otherDescription: notice.otherDescription || '',
     details: notice.details || '',
     status: notice.status,
     source: notice.source,
@@ -113,6 +116,25 @@ export async function listVehicleNotices(req: AuthenticatedRequest, res: Respons
     return res.json(notices.map(serializeNotice));
   } catch {
     return res.status(500).json({ error: 'Erro ao buscar avisos de veículos' });
+  }
+}
+
+export async function listVehicleNoticesPanel(req: AuthenticatedRequest, res: Response) {
+  try {
+    const notices = await VehicleNotice.find(
+      withChurch(req.auth!.churchId, {
+        archived: false,
+        status: { $in: ['pending', 'announced'] },
+      })
+    )
+      .select('plate vehicleModel requestedAction otherDescription')
+      .sort({ createdAt: -1 });
+
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Vary', 'Authorization');
+    return res.json(notices.map(serializeVehiclePanelNotice));
+  } catch {
+    return res.status(500).json({ error: 'Erro ao carregar o painel de veículos' });
   }
 }
 
@@ -235,14 +257,18 @@ export async function createVehicleNoticeOwner(req: AuthenticatedRequest, res: R
         ? req.body.vehicleModel.trim().replace(/\s+/g, ' ').slice(0, 120)
         : '';
     const requestedAction = req.body?.requestedAction;
+    const otherDescription =
+      typeof req.body?.otherDescription === 'string'
+        ? req.body.otherDescription.trim().replace(/\s+/g, ' ').slice(0, 240)
+        : '';
     const details =
       typeof req.body?.details === 'string' ? req.body.details.trim().slice(0, 500) : '';
 
     if (!vehicleModel || !isVehicleNoticeAction(requestedAction)) {
       return res.status(400).json({ error: 'Revise o modelo e a ação solicitada.' });
     }
-    if (requestedAction === 'other' && !details) {
-      return res.status(400).json({ error: 'Descreva o aviso na observação.' });
+    if (requestedAction === 'other' && !otherDescription) {
+      return res.status(400).json({ error: 'Descreva o que precisa ser feito.' });
     }
 
     const notice = await VehicleNotice.create({
@@ -251,6 +277,7 @@ export async function createVehicleNoticeOwner(req: AuthenticatedRequest, res: R
       plateNormalized: plate.plateNormalized,
       vehicleModel,
       requestedAction,
+      otherDescription,
       details,
       status: 'pending',
       source: 'owner',
@@ -265,6 +292,7 @@ export async function createVehicleNoticeOwner(req: AuthenticatedRequest, res: R
 }
 
 router.get('/', requireAuth, listVehicleNotices);
+router.get('/panel', requireAuth, listVehicleNoticesPanel);
 router.get('/stats', requireAuth, getVehicleNoticeStats);
 router.post('/', requireAuth, createVehicleNoticeOwner);
 router.patch('/:id/status', requireAuth, updateVehicleNoticeStatus);

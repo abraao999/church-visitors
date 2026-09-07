@@ -34,10 +34,14 @@ export type AppIconName =
   | 'info'
   | 'headlight'
   | 'parking'
+  | 'reposition'
   | 'tow'
   | 'door'
   | 'chat'
-  | 'plate';
+  | 'plate'
+  | 'search'
+  | 'checkPlain'
+  | 'clipboard';
 
 export function AppIcon({ name, className = '' }: { name: AppIconName; className?: string }) {
   const content = {
@@ -52,6 +56,7 @@ export function AppIcon({ name, className = '' }: { name: AppIconName; className
     arrow: <><path d="M5 12h14m-5-5 5 5-5 5" /></>,
     copy: <><rect x="8" y="8" width="11" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h2" /></>,
     check: <><circle cx="12" cy="12" r="9" /><path d="m8 12 2.6 2.6L16.5 9" /></>,
+    checkPlain: <><path d="m5 12 4.5 4.5L19 7" /></>,
     plus: <><circle cx="12" cy="12" r="9" /><path d="M12 8v8m-4-4h8" /></>,
     edit: <><path d="M4 20h4l11-11-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></>,
     trash: <><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" /></>,
@@ -76,10 +81,13 @@ export function AppIcon({ name, className = '' }: { name: AppIconName; className
     info: <><circle cx="12" cy="12" r="9" /><path d="M12 10v6m0-8.5v.5" /></>,
     headlight: <><circle cx="9" cy="12" r="4" /><path d="M13 9.5 20 7m-7 5h8m-8 2.5 7 2.5" /></>,
     parking: <><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M9 17V7h4.2a3.2 3.2 0 0 1 0 6.4H9" /></>,
+    reposition: <><path d="M7 13.5V10l1.7-3.3A1.6 1.6 0 0 1 10.1 6h3.8a1.6 1.6 0 0 1 1.4.7L17 10v3.5" /><circle cx="9.2" cy="14" r="1.2" /><circle cx="14.8" cy="14" r="1.2" /><path d="M3 19h6M15 19h6M5.2 19 3.5 17.3M3.5 20.7 5.2 19M18.8 19l1.7-1.7M20.5 20.7 18.8 19" /></>,
     tow: <><path d="M3 16h8l2-5h4l2 5h2" /><circle cx="7" cy="17.5" r="1.5" /><circle cx="17" cy="17.5" r="1.5" /><path d="M5 11V8h5l2 3M14 8h4" /></>,
     door: <><rect x="6" y="3" width="12" height="18" rx="1.5" /><path d="M14.5 12h.01" /></>,
     chat: <><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" /></>,
     plate: <><rect x="3" y="7" width="18" height="10" rx="2" /><path d="M7 12h.01M11 12h6" /></>,
+    search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></>,
+    clipboard: <><rect x="7" y="4" width="10" height="16" rx="2" /><path d="M9 4.5h6V6a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V4.5Z" /><path d="M10 11h4m-4 3h4" /></>,
   }[name];
 
   return (

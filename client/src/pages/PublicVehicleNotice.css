@@ -13,6 +13,16 @@
   margin-bottom: 1.25rem;
 }
 
+.vehicle-public-brand.centered {
+  flex-direction: column;
+  text-align: center;
+  gap: 0.55rem;
+}
+
+.vehicle-public-brand.centered > div {
+  align-items: center;
+}
+
 .vehicle-public-brand .theme-toggle {
   margin-left: auto;
 }
@@ -58,68 +68,127 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
-  margin-bottom: 0.85rem;
+  width: 84px;
+  height: 84px;
+  margin-bottom: 0.95rem;
   border-radius: 999px;
-  background: var(--surface-muted);
-  color: var(--primary);
+  background: var(--accent-soft);
+  color: var(--text);
 }
 
 .vehicle-public-hero-icon .app-icon {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
 }
 
 .vehicle-public-hero h1 {
-  font-size: clamp(1.55rem, 6vw, 1.9rem);
+  font-size: clamp(1.65rem, 6.5vw, 2rem);
   letter-spacing: -0.03em;
   line-height: 1.15;
 }
 
 .vehicle-public-hero p {
-  margin-top: 0.4rem;
+  margin-top: 0.45rem;
   color: var(--text-muted);
+  font-size: 1rem;
 }
 
 .vehicle-privacy-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  margin-bottom: 1.25rem;
-  padding: 0.85rem 1rem;
-  border-radius: 12px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 0.7rem;
+  width: 100%;
+  margin-bottom: 1.35rem;
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
   background: var(--accent-soft);
   color: var(--text);
-  font-size: 0.92rem;
-  line-height: 1.35;
 }
 
-.vehicle-privacy-banner .app-icon {
-  flex-shrink: 0;
+.vehicle-privacy-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 0.15rem;
   color: var(--accent);
-  margin-top: 0.1rem;
+}
+
+.vehicle-privacy-icon .app-icon,
+.vehicle-privacy-icon svg {
+  width: 22px;
+  height: 22px;
+  max-width: 22px;
+  max-height: 22px;
+}
+
+.vehicle-privacy-banner p {
+  min-width: 0;
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .vehicle-public-form {
   display: grid;
-  gap: 1rem;
+  gap: 1.15rem;
+}
+
+.vehicle-public-form .form-group {
+  margin-bottom: 0;
+}
+
+.vehicle-public-form .form-group label {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+/* Evita o estilo global de .form-group input (borda/padding duplos). */
+.vehicle-public-form .form-group input,
+.vehicle-public-form .form-group textarea {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  min-height: 0;
+  outline: none;
+}
+
+.vehicle-public-form .form-group input:focus,
+.vehicle-public-form .form-group textarea:focus {
+  outline: none;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .vehicle-input-wrap {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  min-height: 52px;
-  padding: 0 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  gap: 0.7rem;
+  min-height: 56px;
+  padding: 0 0.95rem;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
   background: var(--surface);
   box-shadow: var(--shadow);
 }
 
+.vehicle-input-wrap:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
 .vehicle-input-wrap .app-icon {
   flex-shrink: 0;
+  width: 22px;
+  height: 22px;
   color: var(--text-muted);
 }
 
@@ -131,28 +200,32 @@
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 650;
   outline: none;
   box-shadow: none;
-  padding: 0.85rem 0;
+  padding: 0.9rem 0;
 }
 
 .vehicle-textarea-wrap {
   align-items: flex-start;
-  padding-top: 0.85rem;
+  min-height: 96px;
+  padding-top: 0.95rem;
+  padding-bottom: 0.75rem;
 }
 
 .vehicle-textarea-wrap textarea {
   font-weight: 500;
   resize: vertical;
   min-height: 72px;
+  line-height: 1.45;
 }
 
 .field-error {
-  margin-top: 0.35rem;
+  margin-top: 0.4rem;
   color: var(--danger);
   font-size: 0.88rem;
+  font-weight: 600;
 }
 
 .vehicle-action-fieldset {
@@ -162,31 +235,33 @@
 }
 
 .vehicle-action-fieldset legend {
-  margin-bottom: 0.55rem;
-  font-weight: 700;
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
+  font-weight: 750;
   color: var(--text);
 }
 
 .vehicle-action-list {
   display: grid;
-  gap: 0.55rem;
+  gap: 0.6rem;
 }
 
 .vehicle-action-card {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  grid-template-columns: 26px minmax(0, 1fr) 24px;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.75rem;
   width: 100%;
-  min-height: 52px;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  min-height: 56px;
+  padding: 0.8rem 0.95rem;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
   background: var(--surface);
   color: var(--text);
   text-align: left;
   font: inherit;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 650;
   cursor: pointer;
   box-shadow: var(--shadow);
 }
@@ -195,6 +270,7 @@
   border-color: var(--primary);
   background: var(--primary-soft);
   color: var(--primary);
+  box-shadow: none;
 }
 
 .vehicle-action-card .app-icon {
@@ -203,35 +279,55 @@
 
 .vehicle-action-check {
   display: inline-flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+}
+
+.vehicle-action-card.selected .vehicle-action-check {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
 }
 
 .vehicle-action-check .app-icon {
-  width: 22px;
-  height: 22px;
+  width: 13px;
+  height: 13px;
+  color: inherit;
+  stroke-width: 2.4;
 }
 
 .vehicle-summary {
-  padding: 0.95rem 1rem;
-  border-radius: 12px;
+  padding: 1rem 1.05rem;
+  border-radius: 14px;
   background: var(--accent-soft);
   display: grid;
-  gap: 0.25rem;
+  gap: 0.28rem;
 }
 
 .vehicle-summary-label {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   color: var(--accent);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
+.vehicle-summary-label .app-icon {
+  width: 18px;
+  height: 18px;
+}
+
 .vehicle-summary strong {
-  font-size: 1.05rem;
+  font-size: 1.08rem;
+  letter-spacing: -0.01em;
 }
 
 .vehicle-summary span {
@@ -239,7 +335,7 @@
 }
 
 .vehicle-success-card {
-  padding: 1.5rem 1.15rem;
+  padding: 1.6rem 1.2rem;
   text-align: center;
 }
 
@@ -247,49 +343,53 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
-  margin-bottom: 0.85rem;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 0.95rem;
   border-radius: 999px;
   background: var(--success-soft);
   color: var(--success);
 }
 
 .vehicle-success-icon .app-icon {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
 }
 
 .vehicle-success-card h1 {
-  font-size: 1.7rem;
-  margin-bottom: 0.45rem;
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.03em;
 }
 
 .vehicle-success-card > p {
   color: var(--text-muted);
-  margin-bottom: 1.1rem;
+  margin-bottom: 1.2rem;
+  line-height: 1.45;
 }
 
 .vehicle-success-summary {
   display: flex;
   align-items: flex-start;
-  gap: 0.85rem;
+  gap: 0.9rem;
   text-align: left;
-  padding: 1rem;
-  margin-bottom: 1.1rem;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-muted);
+  padding: 1.05rem;
+  margin-bottom: 1.15rem;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
 }
 
 .vehicle-success-summary > .app-icon {
   flex-shrink: 0;
-  margin-top: 0.15rem;
+  width: 26px;
+  height: 26px;
+  margin-top: 0.1rem;
 }
 
 .vehicle-success-summary div {
   display: grid;
-  gap: 0.15rem;
+  gap: 0.18rem;
   min-width: 0;
 }
 
@@ -302,7 +402,7 @@
   display: grid;
   gap: 0.55rem;
   justify-items: center;
-  margin: 0.5rem 0 1.15rem;
+  margin: 0.35rem 0 1.2rem;
   color: var(--text-muted);
   font-size: 0.92rem;
 }
@@ -311,8 +411,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -323,7 +423,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  margin-top: 0.95rem;
+  margin-top: 1rem;
   color: var(--text-muted);
   font-size: 0.88rem;
 }

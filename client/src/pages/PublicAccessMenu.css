@@ -1,0 +1,210 @@
+.public-portal-page {
+  max-width: 430px;
+}
+
+.public-portal-intro {
+  margin: 0.4rem 0 1rem;
+}
+
+.public-portal-intro h1 {
+  font-size: clamp(1.7rem, 7vw, 2.15rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+
+.public-portal-intro p {
+  margin-top: 0.45rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.public-portal-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 52px;
+  margin-bottom: 1.1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.public-portal-notice .app-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+}
+
+.public-portal-denied {
+  margin: -0.35rem 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.public-portal-cards {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.public-portal-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 108px;
+  padding: 1rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 8px 22px rgba(28, 25, 23, 0.04);
+  color: inherit;
+  text-decoration: none;
+}
+
+.public-portal-card:focus-visible {
+  outline: 3px solid var(--focus-ring, #93c5fd);
+  outline-offset: 2px;
+}
+
+.public-portal-card-icon,
+.public-portal-card-go {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.public-portal-card-icon .app-icon,
+.public-portal-card-go .app-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.public-portal-card-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.public-portal-card-copy strong {
+  font-size: 1.05rem;
+}
+
+.public-portal-card-copy > span {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.public-portal-card-copy em {
+  margin-top: 0.2rem;
+  font-style: normal;
+  font-size: 0.92rem;
+  font-weight: 750;
+}
+
+.public-portal-card.is-visitors .public-portal-card-icon,
+.public-portal-card.is-visitors .public-portal-card-go,
+.public-portal-card.is-visitors em {
+  color: #2563eb;
+}
+
+.public-portal-card.is-visitors .public-portal-card-icon,
+.public-portal-card.is-visitors .public-portal-card-go {
+  background: #dbeafe;
+}
+
+.public-portal-card.is-prayer .public-portal-card-icon,
+.public-portal-card.is-prayer .public-portal-card-go,
+.public-portal-card.is-prayer em {
+  color: #ea580c;
+}
+
+.public-portal-card.is-prayer .public-portal-card-icon,
+.public-portal-card.is-prayer .public-portal-card-go {
+  background: #ffedd5;
+}
+
+.public-portal-card.is-vehicle .public-portal-card-icon,
+.public-portal-card.is-vehicle .public-portal-card-go,
+.public-portal-card.is-vehicle em {
+  color: #0e7490;
+}
+
+.public-portal-card.is-vehicle .public-portal-card-icon,
+.public-portal-card.is-vehicle .public-portal-card-go {
+  background: #cffafe;
+}
+
+.public-portal-secure {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 0.75rem;
+  margin-top: 1.15rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent-soft) 80%, var(--surface));
+}
+
+.public-portal-secure .app-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--accent);
+}
+
+.public-portal-secure strong {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.public-portal-secure p {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.public-portal-footnote {
+  margin-top: 1.15rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.public-back-link,
+.public-menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  margin: 0.15rem 0 0.85rem;
+  padding: 0.35rem 0.1rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.public-back-link .app-icon,
+.public-menu-button .app-icon {
+  width: 18px;
+  height: 18px;
+  transform: rotate(180deg);
+}
+
+.public-success-actions {
+  display: grid;
+  gap: 0.7rem;
+  width: 100%;
+}

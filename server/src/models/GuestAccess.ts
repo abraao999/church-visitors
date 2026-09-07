@@ -14,6 +14,7 @@ export interface IGuestAccess extends Document {
   name: string;
   publicId: string;
   type: GuestAccessType;
+  types: GuestAccessType[];
   version: number;
   active: boolean;
   expiresAt?: Date;
@@ -35,7 +36,11 @@ const guestAccessSchema = new Schema<IGuestAccess>(
       minlength: 32,
       maxlength: 32,
     },
-    type: { type: String, enum: GUEST_ACCESS_TYPES, required: true, immutable: true },
+    type: { type: String, enum: GUEST_ACCESS_TYPES, required: true },
+    types: {
+      type: [{ type: String, enum: GUEST_ACCESS_TYPES }],
+      default: undefined,
+    },
     version: { type: Number, required: true, default: 1, min: 1 },
     active: { type: Boolean, required: true, default: true },
     expiresAt: { type: Date },

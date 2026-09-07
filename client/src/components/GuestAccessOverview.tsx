@@ -4,44 +4,25 @@ import { api } from '../api/client';
 import type { GuestAccess, GuestAccessType } from '../types';
 import { AppIcon } from './AppIcon';
 import { GuestAccessQr, guestAccessUrl } from './GuestAccessQr';
+import { OPTION_LABELS } from '../utils/publicAccess';
 import './GuestAccessOverview.css';
 
-const TYPES: Array<{
-  type: GuestAccessType;
-  title: string;
-  permission: string;
-  defaultName: string;
-  createLabel: string;
-  icon: 'users' | 'prayer' | 'car';
-}> = [
-  {
-    type: 'visitors:create',
-    title: 'Equipe da portaria',
-    permission: 'Cadastrar visitantes',
-    defaultName: 'Portaria — culto',
-    createLabel: 'Gerar acesso da portaria',
-    icon: 'users',
-  },
-  {
-    type: 'prayers:create',
-    title: 'Pedidos de oração',
-    permission: 'Enviar pedidos',
-    defaultName: 'Oração — transmissão',
-    createLabel: 'Gerar acesso de oração',
-    icon: 'prayer',
-  },
-  {
-    type: 'vehicle_notices:create',
-    title: 'Avisos de veículos',
-    permission: 'Enviar avisos sobre veículos',
-    defaultName: 'Estacionamento — culto',
-    createLabel: 'Gerar acesso de veículos',
-    icon: 'car',
-  },
+const ALL_TYPES: GuestAccessType[] = [
+  'visitors:create',
+  'prayers:create',
+  'vehicle_notices:create',
 ];
 
 function isAvailable(access: GuestAccess): boolean {
   return access.active && (!access.expiresAt || new Date(access.expiresAt).getTime() > Date.now());
+}
+
+function accessTypes(access: GuestAccess): GuestAccessType[] {
+  return access.types?.length ? access.types : access.type ? [access.type] : [];
+}
+
+function isPortal(access: GuestAccess): boolean {
+  return accessTypes(access).length > 1;
 }
 
 function labelDate(value?: string): string {
@@ -52,7 +33,7 @@ function labelDate(value?: string): string {
 export function GuestAccessOverview() {
   const [accesses, setAccesses] = useState<GuestAccess[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busyType, setBusyType] = useState<GuestAccessType | null>(null);
+  const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
 
@@ -70,25 +51,26 @@ export function GuestAccessOverview() {
     load();
   }, [load]);
 
-  const featured = useMemo(() => {
-    return new Map(TYPES.map(({ type }) => {
-      const matching = accesses.filter((access) => access.type === type);
-      return [type, matching.find(isAvailable) || matching[0]];
-    }));
+  const portal = useMemo(() => {
+    const unified = accesses.filter(isPortal);
+    return unified.find(isAvailable) || unified[0];
   }, [accesses]);
 
-  async function create(type: GuestAccessType, defaultName: string) {
-    setBusyType(type);
+  async function createPortal() {
+    setBusy(true);
     setError('');
     setFeedback('');
     try {
-      const access = await api.createGuestAccess({ name: defaultName, type });
+      const access = await api.createGuestAccess({
+        name: 'Portal público da igreja',
+        types: ALL_TYPES,
+      });
       setAccesses((current) => [access, ...current]);
-      setFeedback(`Acesso “${access.name}” criado com segurança.`);
+      setFeedback('Portal público criado. O QR Code já pode ser compartilhado.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível criar o acesso.');
+      setError(err instanceof Error ? err.message : 'Não foi possível criar o portal.');
     } finally {
-      setBusyType(null);
+      setBusy(false);
     }
   }
 
@@ -102,13 +84,15 @@ export function GuestAccessOverview() {
     }
   }
 
+  const available = portal ? isAvailable(portal) : false;
+
   return (
     <section className="access-overview" aria-labelledby="access-overview-title">
       <div className="access-overview-heading">
         <div>
           <span className="access-overview-eyebrow"><AppIcon name="qr" /> Links e QR Codes</span>
-          <h2 id="access-overview-title">Acessos sem login</h2>
-          <p>Compartilhe somente a permissão necessária para cada equipe.</p>
+          <h2 id="access-overview-title">Portal público da igreja</h2>
+          <p>Um único QR Code para visitantes, oração e avisos de veículos.</p>
         </div>
         <Link to="/acessos">Gerenciar todos <AppIcon name="arrow" /></Link>
       </div>
@@ -118,50 +102,48 @@ export function GuestAccessOverview() {
         {error && <span className="error" role="alert">{error}</span>}
       </div>
 
-      <div className="access-overview-grid">
-        {TYPES.map((item) => {
-          const access = featured.get(item.type);
-          const available = access ? isAvailable(access) : false;
-          return (
-            <article className="access-overview-card card" key={item.type}>
+      <article className="access-overview-card card access-overview-portal">
+        {loading ? (
+          <p className="access-overview-loading">Carregando...</p>
+        ) : portal ? (
+          <div className="access-overview-content">
+            <GuestAccessQr token={portal.token} name={portal.name} size={168} />
+            <div className="access-overview-info">
               <div className="access-overview-card-header">
-                <span className={item.type === 'prayers:create' ? 'prayer' : ''}>
-                  <AppIcon name={item.icon} />
-                </span>
                 <div>
-                  <h3>{item.title}</h3>
-                  <p>Permissão: {item.permission.toLowerCase()}</p>
+                  <h3>{portal.name}</h3>
+                  <p>{accessTypes(portal).map((type) => OPTION_LABELS[type]).join(' · ')}</p>
                 </div>
-                {access && <strong className={available ? 'active' : 'inactive'}>{available ? 'Ativo' : 'Inativo'}</strong>}
+                <strong className={available ? 'active' : 'inactive'}>
+                  {available ? 'Ativo' : 'Inativo'}
+                </strong>
               </div>
-
-              {loading ? (
-                <p className="access-overview-loading">Carregando...</p>
-              ) : access ? (
-                <div className="access-overview-content">
-                  <GuestAccessQr token={access.token} name={access.name} size={142} />
-                  <div className="access-overview-info">
-                    <strong>{access.name}</strong>
-                    <span><AppIcon name="calendar" />{labelDate(access.expiresAt)}</span>
-                    <input value={guestAccessUrl(access.token)} readOnly aria-label={`Link de ${access.name}`} onFocus={(event) => event.currentTarget.select()} />
-                    <button type="button" onClick={() => copy(access)}><AppIcon name="copy" />Copiar link</button>
-                    <Link to="/acessos">Gerenciar acesso</Link>
-                  </div>
-                </div>
-              ) : (
-                <div className="access-overview-empty">
-                  <AppIcon name="lock" />
-                  <p>Nenhum link foi ativado para esta finalidade.</p>
-                  <button type="button" onClick={() => create(item.type, item.defaultName)} disabled={busyType === item.type}>
-                    <AppIcon name="plus" />
-                    {busyType === item.type ? 'Gerando...' : item.createLabel}
-                  </button>
-                </div>
-              )}
-            </article>
-          );
-        })}
-      </div>
+              <span><AppIcon name="calendar" />{labelDate(portal.expiresAt)}</span>
+              <input
+                value={guestAccessUrl(portal.token)}
+                readOnly
+                aria-label={`Link de ${portal.name}`}
+                onFocus={(event) => event.currentTarget.select()}
+              />
+              <div className="access-overview-actions">
+                <button type="button" onClick={() => copy(portal)}>
+                  <AppIcon name="copy" />Copiar link
+                </button>
+                <Link to="/acessos">Gerenciar acesso</Link>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="access-overview-empty">
+            <AppIcon name="lock" />
+            <p>Nenhum portal público foi criado.</p>
+            <button type="button" onClick={createPortal} disabled={busy}>
+              <AppIcon name="plus" />
+              {busy ? 'Gerando...' : 'Criar portal público'}
+            </button>
+          </div>
+        )}
+      </article>
     </section>
   );
 }

@@ -1,7 +1,11 @@
 import type { NextFunction, Request, Response } from 'express';
-import { GuestAccess, type GuestAccessType } from '../models/GuestAccess.js';
+import {
+  GuestAccess,
+  type GuestAccessType,
+} from '../models/GuestAccess.js';
 import { Church } from '../models/Church.js';
 import { PublicRateLimit } from '../models/PublicRateLimit.js';
+import { guestAccessHasScope, resolveGuestAccessTypes } from '../utils/guestAccessTypes.js';
 import {
   opaqueRateLimitKey,
   parseGuestToken,
@@ -16,6 +20,7 @@ export interface GuestAccessContext {
   guestAccessId: string;
   accessName: string;
   scope: GuestAccessType;
+  scopes: GuestAccessType[];
 }
 
 export interface GuestAccessRequest extends Request {
@@ -66,7 +71,7 @@ export function requireGuestAccess(requiredScope?: GuestAccessType) {
       if (!parsed) return rejectInvalid(res);
 
       const access = await GuestAccess.findOne({ publicId: parsed.publicId })
-        .select('churchId name publicId type version active expiresAt')
+        .select('churchId name publicId type types version active expiresAt')
         .lean();
 
       if (!access || !verifyGuestTokenSignature(parsed, access.version)) {
@@ -87,10 +92,18 @@ export function requireGuestAccess(requiredScope?: GuestAccessType) {
         });
       }
 
-      if (requiredScope && access.type !== requiredScope) {
+      const scopes = resolveGuestAccessTypes(access);
+      if (scopes.length === 0) {
+        return res.status(410).json({
+          valid: false,
+          error: 'Este acesso não está ativo. Solicite um novo QR Code ao responsável pela igreja.',
+        });
+      }
+
+      if (requiredScope && !guestAccessHasScope(access, requiredScope)) {
         return res.status(403).json({
           valid: false,
-          error: 'Este acesso não permite realizar esta ação.',
+          error: 'Esta opção não está disponível neste acesso.',
         });
       }
 
@@ -107,12 +120,15 @@ export function requireGuestAccess(requiredScope?: GuestAccessType) {
         .lean();
       if (!church) return rejectInvalid(res);
 
+      const scope = requiredScope && scopes.includes(requiredScope) ? requiredScope : scopes[0];
+
       req.guestAccess = {
         churchId: String(access.churchId),
         churchName: church.name,
         guestAccessId: String(access._id),
         accessName: access.name,
-        scope: access.type,
+        scope,
+        scopes,
       };
       next();
     } catch {

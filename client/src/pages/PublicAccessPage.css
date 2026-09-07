@@ -430,6 +430,11 @@ body:has(.public-access-page) {
   border: 1.5px solid var(--border);
   background: var(--surface);
   color: var(--text-muted);
+  text-decoration: none;
+}
+
+.public-success-actions .public-secondary-button {
+  margin-top: 0;
 }
 
 .public-add-button:disabled,

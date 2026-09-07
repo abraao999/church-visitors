@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
@@ -53,7 +54,9 @@ export function VehicleNoticesPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState('');
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -70,7 +73,7 @@ export function VehicleNoticesPage() {
       setLastRefresh(new Date());
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar avisos');
+      setError(err instanceof Error ? err.message : 'Não foi possível carregar os avisos.');
     } finally {
       setLoading(false);
     }
@@ -85,14 +88,25 @@ export function VehicleNoticesPage() {
 
   async function setStatus(id: string, status: VehicleNoticeStatus) {
     setBusyId(id);
-    setError('');
+    setActionError('');
     try {
       await api.updateVehicleNoticeStatus(id, status);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar status');
+      setActionError(err instanceof Error ? err.message : 'Não foi possível atualizar o aviso.');
     } finally {
       setBusyId('');
+    }
+  }
+
+  async function copyPanelAddress() {
+    const url = `${window.location.origin}/painel/veiculos`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setActionError('Não foi possível copiar o endereço do painel.');
     }
   }
 
@@ -103,7 +117,20 @@ export function VehicleNoticesPage() {
           <h1>Avisos de veículos</h1>
           <p>Acompanhe os avisos recebidos durante o culto.</p>
         </div>
-        <label className="vehicle-date-filter">
+        <div className="vehicle-notices-header-actions">
+          <Link to="/painel/veiculos" target="_blank" rel="noreferrer" className="vehicle-tv-link">
+            <AppIcon name="panels" />
+            <span>
+              <strong>Exibir na TV</strong>
+              <small>Abrir painel em nova aba</small>
+            </span>
+            <AppIcon name="external" />
+          </Link>
+          <button type="button" className="btn btn-secondary vehicle-copy-panel" onClick={copyPanelAddress}>
+            <AppIcon name={copied ? 'check' : 'copy'} />
+            {copied ? 'Endereço copiado' : 'Copiar endereço'}
+          </button>
+          <label className="vehicle-date-filter">
           <AppIcon name="calendar" />
           <span>{date === todayLocalISO() ? 'Culto de hoje' : 'Data'}</span>
           <input
@@ -113,6 +140,7 @@ export function VehicleNoticesPage() {
             aria-label="Filtrar por data do culto"
           />
         </label>
+        </div>
       </header>
 
       <div className="vehicle-stats">
@@ -156,7 +184,7 @@ export function VehicleNoticesPage() {
             ))}
           </div>
           <label className="vehicle-search">
-            <AppIcon name="pin" />
+            <AppIcon name="search" />
             <span className="sr-only">Buscar por placa</span>
             <input
               value={plateSearch}
@@ -182,11 +210,22 @@ export function VehicleNoticesPage() {
             {error}
           </p>
         )}
+        {actionError && (
+          <p className="error-message" role="alert">
+            {actionError}
+          </p>
+        )}
 
         {loading ? (
           <p className="empty-state">Carregando avisos...</p>
+        ) : error ? (
+          <p className="empty-state">Tente novamente em instantes.</p>
         ) : notices.length === 0 ? (
-          <p className="empty-state">Nenhum aviso encontrado para este filtro.</p>
+          <p className="empty-state">
+            {statusFilter === 'all' && !plateSearch.trim()
+              ? 'Nenhum aviso recebido neste período.'
+              : 'Nenhum aviso encontrado para este filtro.'}
+          </p>
         ) : (
           <ul className="vehicle-notice-list">
             {notices.map((notice) => (
@@ -201,6 +240,7 @@ export function VehicleNoticesPage() {
                   </div>
                   <div className="vehicle-notice-action">
                     <strong>{VEHICLE_NOTICE_ACTION_LABELS[notice.requestedAction]}</strong>
+                    {notice.otherDescription ? <span>{notice.otherDescription}</span> : null}
                     {notice.details ? <span>{notice.details}</span> : null}
                     <small>
                       {notice.source === 'guest_access'

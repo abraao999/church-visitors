@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon } from '../components/AppIcon';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { type PublicAccessMetadata, type VehicleNoticeAction } from '../types';
+import {
+  publicFormPath,
+  publicMenuPath,
+  resolvePublicTypes,
+  typeFromPublicPath,
+} from '../utils/publicAccess';
+import { PublicAccessMenu } from './PublicAccessMenu';
 import { PublicVehicleNoticeForm, PublicVehicleSuccess } from './PublicVehicleNotice';
 import './PublicAccessPage.css';
+import './PublicAccessMenu.css';
 
 interface PersonDraft {
   id: number;
@@ -36,16 +44,31 @@ function ChurchIllustration() {
   );
 }
 
-function PublicBrand({ churchName }: { churchName?: string }) {
+function PublicBrand({
+  churchName,
+  subtitle = 'Church Visitors',
+}: {
+  churchName?: string;
+  subtitle?: string;
+}) {
   return (
     <header className="public-access-brand">
       <span className="public-access-cross">✝</span>
       <div>
         <strong>{churchName || 'Church Visitors'}</strong>
-        {churchName && <span>Church Visitors</span>}
+        {churchName && <span>{subtitle}</span>}
       </div>
       <ThemeToggle compact />
     </header>
+  );
+}
+
+function PublicBackLink({ to }: { to: string }) {
+  return (
+    <Link to={to} className="public-back-link">
+      <AppIcon name="arrow" />
+      Voltar ao menu
+    </Link>
   );
 }
 
@@ -57,6 +80,22 @@ function PublicLoading() {
         <span className="public-loading-spinner" aria-hidden="true" />
         <h1>Verificando acesso</h1>
         <p>Aguarde um instante.</p>
+      </div>
+    </main>
+  );
+}
+
+function PublicUnavailable({ retry }: { retry: () => void }) {
+  return (
+    <main className="public-access-page public-access-centered">
+      <PublicBrand />
+      <div className="public-state-card card" role="alert">
+        <span className="public-state-icon invalid"><AppIcon name="lock" /></span>
+        <h1>Acesso indisponível</h1>
+        <p>Este acesso não está ativo. Solicite um novo QR Code ao responsável pela igreja.</p>
+        <button type="button" className="public-secondary-button" onClick={retry}>
+          Tentar novamente
+        </button>
       </div>
     </main>
   );
@@ -83,10 +122,12 @@ function PublicSuccess({
   type,
   churchName,
   onAgain,
+  menuTo,
 }: {
   type: PublicAccessMetadata['type'];
   churchName: string;
   onAgain: () => void;
+  menuTo?: string;
 }) {
   const visitors = type === 'visitors:create';
   return (
@@ -109,10 +150,20 @@ function PublicSuccess({
               : 'Por segurança, os pedidos enviados não são exibidos neste acesso.'}
           </span>
         </div>
-        <button type="button" className="public-primary-button" onClick={onAgain}>
-          <AppIcon name={visitors ? 'users' : 'prayer'} />
-          {visitors ? 'Registrar outras pessoas' : 'Enviar outro pedido'}
-        </button>
+        <div className="public-success-actions">
+          <button type="button" className="public-primary-button" onClick={onAgain}>
+            <AppIcon name={visitors ? 'users' : 'prayer'} />
+            {visitors ? 'Registrar outro visitante' : 'Enviar outro pedido'}
+          </button>
+          {menuTo && (
+            <Link to={menuTo} className="public-secondary-button">
+              Voltar ao menu
+            </Link>
+          )}
+        </div>
+        <p className="vehicle-success-footnote">
+          <AppIcon name="info" /> Você já pode fechar esta página.
+        </p>
       </div>
     </main>
   );
@@ -122,10 +173,12 @@ function PublicVisitorsForm({
   metadata,
   token,
   onSuccess,
+  showMenu,
 }: {
   metadata: PublicAccessMetadata;
   token: string;
   onSuccess: () => void;
+  showMenu: boolean;
 }) {
   const nextId = useRef(2);
   const [city, setCity] = useState('');
@@ -211,7 +264,8 @@ function PublicVisitorsForm({
 
   return (
     <main className="public-access-page">
-      <PublicBrand churchName={metadata.churchName} />
+      <PublicBrand churchName={metadata.churchName} subtitle="Acesso da igreja" />
+      {showMenu && <PublicBackLink to={publicMenuPath(token)} />}
       <section className="public-access-hero visitors">
         <div>
           <span className="public-access-badge"><AppIcon name="users" /> Acesso da equipe da portaria</span>
@@ -332,10 +386,12 @@ function PublicPrayerForm({
   metadata,
   token,
   onSuccess,
+  showMenu,
 }: {
   metadata: PublicAccessMetadata;
   token: string;
   onSuccess: () => void;
+  showMenu: boolean;
 }) {
   const [anonymous, setAnonymous] = useState(false);
   const [name, setName] = useState('');
@@ -364,7 +420,8 @@ function PublicPrayerForm({
 
   return (
     <main className="public-access-page">
-      <PublicBrand churchName={metadata.churchName} />
+      <PublicBrand churchName={metadata.churchName} subtitle="Acesso da igreja" />
+      {showMenu && <PublicBackLink to={publicMenuPath(token)} />}
       <section className="public-access-hero prayer">
         <span className="public-prayer-icon"><AppIcon name="prayer" /></span>
         <span className="public-access-badge"><AppIcon name="check" /> Canal oficial de oração</span>
@@ -412,6 +469,8 @@ function PublicPrayerForm({
 
 export function PublicAccessPage() {
   const { token = '' } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [metadata, setMetadata] = useState<PublicAccessMetadata | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -439,16 +498,77 @@ export function PublicAccessPage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    setSuccess(false);
+    setVehicleSummary(null);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'referrer';
+    meta.content = 'no-referrer';
+    document.head.appendChild(meta);
+    return () => {
+      meta.remove();
+    };
+  }, []);
+
+  const section = typeFromPublicPath(location.pathname);
+  const types = metadata ? resolvePublicTypes(metadata.types, metadata.type) : [];
+  const showMenu = types.length > 1;
+  const menuTo = showMenu ? publicMenuPath(token) : undefined;
+  const deniedMessage =
+    (location.state as { optionDenied?: boolean } | null)?.optionDenied
+      ? 'Esta opção não está disponível neste acesso.'
+      : undefined;
+
   if (loading) return <PublicLoading />;
   if (!metadata) return <PublicInvalid message={error} retry={load} />;
+  if (types.length === 0) return <PublicUnavailable retry={load} />;
 
-  if (success && metadata.type === 'vehicle_notices:create' && vehicleSummary) {
+  if (section === 'menu') {
+    if (types.length === 1) {
+      return <Navigate to={publicFormPath(token, types[0])} replace />;
+    }
+    return (
+      <PublicAccessMenu
+        token={token}
+        churchName={metadata.churchName}
+        types={types}
+        deniedMessage={deniedMessage}
+      />
+    );
+  }
+
+  const formType = section;
+  if (!formType || !types.includes(formType)) {
+    if (showMenu) {
+      return (
+        <Navigate
+          to={publicMenuPath(token)}
+          replace
+          state={{ optionDenied: true }}
+        />
+      );
+    }
+    return (
+      <PublicInvalid
+        message="Esta opção não está disponível neste acesso."
+        retry={() => navigate(publicFormPath(token, types[0]), { replace: true })}
+      />
+    );
+  }
+
+  const formMetadata: PublicAccessMetadata = { ...metadata, type: formType, types };
+
+  if (success && formType === 'vehicle_notices:create' && vehicleSummary) {
     return (
       <PublicVehicleSuccess
         churchName={metadata.churchName}
         plate={vehicleSummary.plate}
         vehicleModel={vehicleSummary.vehicleModel}
         action={vehicleSummary.requestedAction}
+        menuTo={menuTo}
         onAgain={() => {
           setSuccess(false);
           setVehicleSummary(null);
@@ -458,16 +578,34 @@ export function PublicAccessPage() {
   }
 
   if (success) {
-    return <PublicSuccess type={metadata.type} churchName={metadata.churchName} onAgain={() => setSuccess(false)} />;
+    return (
+      <PublicSuccess
+        type={formType}
+        churchName={metadata.churchName}
+        menuTo={menuTo}
+        onAgain={() => setSuccess(false)}
+      />
+    );
   }
-  if (metadata.type === 'visitors:create') {
-    return <PublicVisitorsForm metadata={metadata} token={token} onSuccess={() => setSuccess(true)} />;
+
+  if (formType === 'visitors:create') {
+    return (
+      <PublicVisitorsForm
+        metadata={formMetadata}
+        token={token}
+        showMenu={showMenu}
+        onSuccess={() => setSuccess(true)}
+      />
+    );
   }
-  if (metadata.type === 'vehicle_notices:create') {
+
+  if (formType === 'vehicle_notices:create') {
     return (
       <PublicVehicleNoticeForm
-        metadata={metadata}
+        metadata={formMetadata}
         token={token}
+        showMenu={showMenu}
+        menuTo={menuTo}
         onSuccess={(summary) => {
           setVehicleSummary(summary);
           setSuccess(true);
@@ -475,5 +613,13 @@ export function PublicAccessPage() {
       />
     );
   }
-  return <PublicPrayerForm metadata={metadata} token={token} onSuccess={() => setSuccess(true)} />;
+
+  return (
+    <PublicPrayerForm
+      metadata={formMetadata}
+      token={token}
+      showMenu={showMenu}
+      onSuccess={() => setSuccess(true)}
+    />
+  );
 }

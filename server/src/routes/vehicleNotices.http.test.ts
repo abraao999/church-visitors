@@ -8,7 +8,9 @@ import {
 } from '../middleware/guestAccess.js';
 import { createPublicVehicleNotice } from './publicAccess.js';
 import {
+  getVehicleNoticeStats,
   listVehicleNotices,
+  listVehicleNoticesPanel,
   updateVehicleNoticeStatus,
 } from './vehicleNotices.js';
 import { GuestAccess } from '../models/GuestAccess.js';
@@ -17,6 +19,7 @@ import { PublicRateLimit } from '../models/PublicRateLimit.js';
 import { VehicleNotice } from '../models/VehicleNotice.js';
 import { createGuestPublicId, createGuestToken } from '../utils/guestToken.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/auth.js';
 
 process.env.GUEST_ACCESS_SECRET = 'teste-guest-veiculos-chave-outra-654321abcdef';
 process.env.JWT_SECRET = 'teste-jwt-veiculos-chave-longa-123456abcdef';
@@ -67,7 +70,11 @@ function authReq(
 }
 
 function mockRes() {
-  const state: { statusCode: number; body: unknown } = { statusCode: 200, body: undefined };
+  const state: { statusCode: number; body: unknown; headers: Record<string, string> } = {
+    statusCode: 200,
+    body: undefined,
+    headers: {},
+  };
   const res = {
     status(code: number) {
       state.statusCode = code;
@@ -77,11 +84,29 @@ function mockRes() {
       state.body = payload;
       return res;
     },
-    setHeader() {
+    setHeader(name: string, value: string) {
+      state.headers[name] = value;
       return res;
     },
   } as unknown as Response;
   return { res, state };
+}
+
+function stubPanelFind(
+  implementation: (filter: Record<string, unknown>) => unknown[] | Promise<unknown[]>
+) {
+  stubMethod(VehicleNotice, 'find', (filter: Record<string, unknown>) => {
+    const chain = {
+      select() {
+        return chain;
+      },
+      async sort(sort: Record<string, number>) {
+        assert.deepEqual(sort, { createdAt: -1 });
+        return implementation(filter);
+      },
+    };
+    return chain;
+  });
 }
 
 function allowRateLimit() {
@@ -177,6 +202,7 @@ describe('avisos de veículos — isolamento multi-tenant', () => {
     const { token, accessId } = stubGuestAccess('vehicle_notices:create', churchA);
 
     let created: Record<string, unknown> | undefined;
+    stubMethod(VehicleNotice, 'exists', async () => null);
     stubMethod(VehicleNotice, 'create', async (doc: Record<string, unknown>) => {
       created = doc;
       return doc;
@@ -286,7 +312,7 @@ describe('avisos de veículos — isolamento multi-tenant', () => {
     }
   });
 
-  test('outro aviso exige observação e placa inválida é rejeitada', async () => {
+  test('outro aviso exige descrição e placa inválida é rejeitada', async () => {
     allowRateLimit();
     const { accessId } = stubGuestAccess('vehicle_notices:create');
     const base = {
@@ -323,7 +349,69 @@ describe('avisos de veículos — isolamento multi-tenant', () => {
       missingDetails.res
     );
     assert.equal(missingDetails.state.statusCode, 400);
-    assert.match(String((missingDetails.state.body as { error: string }).error), /observação/i);
+    assert.match(String((missingDetails.state.body as { error: string }).error), /Descreva|feito/i);
+  });
+
+  test('envio repetido com o mesmo requestId é idempotente', async () => {
+    let createdCount = 0;
+    stubMethod(VehicleNotice, 'exists', async (filter: Record<string, unknown>) => {
+      if (filter.requestId === 'req-abc-123') return { _id: noticeA };
+      return null;
+    });
+    stubMethod(VehicleNotice, 'create', async () => {
+      createdCount += 1;
+      return {};
+    });
+
+    const { accessId } = stubGuestAccess('vehicle_notices:create');
+    const req = {
+      method: 'POST',
+      params: { token: 'x' },
+      body: {
+        plate: 'ABC-1D23',
+        vehicleModel: 'Gol branco',
+        requestedAction: 'remove_vehicle',
+        requestId: 'req-abc-123',
+      },
+      guestAccess: {
+        churchId: String(churchA),
+        churchName: 'Igreja Alfa',
+        guestAccessId: String(accessId),
+        accessName: 'Estacionamento',
+        scope: 'vehicle_notices:create' as const,
+      },
+    } as unknown as GuestAccessRequest;
+    const { res, state } = mockRes();
+    await createPublicVehicleNotice(req, res);
+    assert.equal(state.statusCode, 201);
+    assert.equal(createdCount, 0);
+  });
+
+  test('contagem e busca por placa ficam na igreja da sessão', async () => {
+    const filters: Array<Record<string, unknown>> = [];
+    stubMethod(VehicleNotice, 'countDocuments', async (filter: Record<string, unknown>) => {
+      filters.push(filter);
+      return 1;
+    });
+
+    const stats = mockRes();
+    await getVehicleNoticeStats(authReq(churchA, userA, { query: { date: '2026-09-04' } }), stats.res);
+    assert.equal(stats.state.statusCode, 200);
+    assert.equal(String((filters[0] as { churchId: Types.ObjectId }).churchId), String(churchA));
+
+    stubMethod(VehicleNotice, 'find', (filter: Record<string, unknown>) => {
+      filters.push(filter);
+      return { sort: async () => [] };
+    });
+    const list = mockRes();
+    await listVehicleNotices(
+      authReq(churchA, userA, { query: { plate: 'ABC-1D23', status: 'pending' } }),
+      list.res
+    );
+    const plateFilter = filters.at(-1) as { churchId: Types.ObjectId; plateNormalized: unknown; status: string };
+    assert.equal(String(plateFilter.churchId), String(churchA));
+    assert.equal(plateFilter.status, 'pending');
+    assert.ok(plateFilter.plateNormalized);
   });
 
   test('status só aceita transições permitidas', async () => {
@@ -377,6 +465,108 @@ describe('avisos de veículos — isolamento multi-tenant', () => {
       bad.res
     );
     assert.equal(bad.state.statusCode, 400);
+  });
+
+  test('painel da TV lista só avisos ativos da igreja da sessão', async () => {
+    let receivedFilter: Record<string, unknown> | undefined;
+    stubPanelFind((filter) => {
+      receivedFilter = filter;
+      return [
+          {
+            _id: noticeA,
+            plate: 'ABC-1D23',
+            vehicleModel: 'Gol branco',
+            requestedAction: 'remove_vehicle',
+            otherDescription: '',
+            details: 'O carro está bloqueando a saída',
+            status: 'pending',
+            guestAccess: { name: 'Estacionamento' },
+            createdAt: new Date(),
+          },
+          {
+            _id: noticeB,
+            plate: 'ZZZ-9999',
+            vehicleModel: 'Outro',
+            requestedAction: 'other',
+            otherDescription: '<b>Farol</b> alto',
+            details: 'telefone 9999',
+            status: 'announced',
+            createdAt: new Date(),
+          },
+      ];
+    });
+
+    const { res, state } = mockRes();
+    await listVehicleNoticesPanel(
+      authReq(churchA, userA, { query: { churchId: String(churchB) } }),
+      res
+    );
+
+    assert.equal(state.statusCode, 200);
+    assert.equal(state.headers['Cache-Control'], 'private, no-store');
+    assert.equal(state.headers.Vary, 'Authorization');
+    assert.equal(String((receivedFilter as { churchId: Types.ObjectId }).churchId), String(churchA));
+    assert.equal((receivedFilter as { archived: boolean }).archived, false);
+    assert.deepEqual((receivedFilter as { status: { $in: string[] } }).status.$in, [
+      'pending',
+      'announced',
+    ]);
+    const body = state.body as Array<Record<string, unknown>>;
+    assert.equal(body.length, 2);
+    assert.equal(body[0].plate, 'ABC-1D23');
+    assert.equal(body[0].instruction, 'POR FAVOR, RETIRE O VEÍCULO');
+    assert.equal(body[1].instruction, 'FAROL ALTO');
+    assert.equal('details' in body[0], false);
+    assert.equal('guestAccessName' in body[0], false);
+    assert.equal('otherDescription' in body[0], false);
+  });
+
+  test('painel da TV não mistura avisos de outra igreja', async () => {
+    stubPanelFind((filter) => {
+      assert.equal(String((filter as { churchId: Types.ObjectId }).churchId), String(churchB));
+      return [];
+    });
+
+    const { res, state } = mockRes();
+    await listVehicleNoticesPanel(authReq(churchB, userB), res);
+    assert.equal(state.statusCode, 200);
+    assert.deepEqual(state.body, []);
+  });
+
+  test('painel da TV vazio não inventa avisos', async () => {
+    stubPanelFind(() => []);
+    const { res, state } = mockRes();
+    await listVehicleNoticesPanel(authReq(churchA, userA), res);
+    assert.equal(state.statusCode, 200);
+    assert.deepEqual(state.body, []);
+  });
+
+  test('painel da TV exige sessão autenticada e é somente leitura', async () => {
+    const { res, state } = mockRes();
+    await requireAuth(
+      { headers: {}, query: {}, params: {}, body: {} } as AuthenticatedRequest,
+      res,
+      () => {
+        assert.fail('não deveria autorizar');
+      }
+    );
+    assert.equal(state.statusCode, 401);
+
+    const token = createGuestToken(createGuestPublicId(), 1);
+    const guest = mockRes();
+    await requireAuth(
+      {
+        headers: { authorization: `Bearer ${token}` },
+        query: {},
+        params: {},
+        body: {},
+      } as unknown as AuthenticatedRequest,
+      guest.res,
+      () => {
+        assert.fail('token de formulário público não abre o painel');
+      }
+    );
+    assert.equal(guest.state.statusCode, 401);
   });
 
   test('QR Code / link público usa o token completo sem churchId', () => {

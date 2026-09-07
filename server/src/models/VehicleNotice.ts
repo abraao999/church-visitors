@@ -24,7 +24,9 @@ export interface IVehicleNotice extends Document {
   plateNormalized: string;
   vehicleModel: string;
   requestedAction: VehicleNoticeAction;
+  otherDescription?: string;
   details?: string;
+  requestId?: string;
   status: VehicleNoticeStatus;
   source: VehicleNoticeSource;
   createdBy?: IActor;
@@ -57,7 +59,9 @@ const vehicleNoticeSchema = new Schema<IVehicleNotice>(
       enum: VEHICLE_NOTICE_ACTIONS,
       required: true,
     },
+    otherDescription: { type: String, trim: true, maxlength: 240, default: '' },
     details: { type: String, trim: true, maxlength: 500, default: '' },
+    requestId: { type: String, trim: true, maxlength: 64 },
     status: {
       type: String,
       enum: VEHICLE_NOTICE_STATUSES,
@@ -84,6 +88,7 @@ const vehicleNoticeSchema = new Schema<IVehicleNotice>(
 vehicleNoticeSchema.index({ churchId: 1, status: 1, createdAt: -1 });
 vehicleNoticeSchema.index({ churchId: 1, plateNormalized: 1, createdAt: -1 });
 vehicleNoticeSchema.index({ guestAccessId: 1, createdAt: -1 });
+vehicleNoticeSchema.index({ churchId: 1, requestId: 1 }, { unique: true, sparse: true });
 
 export function isVehicleNoticeAction(value: unknown): value is VehicleNoticeAction {
   return (
