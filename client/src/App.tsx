@@ -26,6 +26,7 @@ import { ServiceOccurrencePage } from './pages/ServiceOccurrencePage';
 import { ServicesPage } from './pages/ServicesPage';
 import { VehicleNoticesPage } from './pages/VehicleNoticesPage';
 import { VisitorsPage } from './pages/VisitorsPage';
+import { PortariaApp } from './portaria/PortariaApp';
 
 export function App() {
   return (
@@ -44,6 +45,7 @@ export function App() {
           <Route path="/painel/:token/oracao" element={<PrayersPanelPage />} />
           <Route path="/painel/:token/veiculos" element={<VehicleNoticesPanelPage />} />
           <Route path="/convite/:token" element={<InviteAcceptPage />} />
+          <Route path="/portaria/*" element={<PortariaApp />} />
           <Route path="/live/oracao" element={<Layout />}>
             <Route index element={<LivePrayerPage />} />
           </Route>

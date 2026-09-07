@@ -1,0 +1,338 @@
+.portaria-page :focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.portaria-page {
+  width: min(640px, 100%);
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 1.1rem 1rem 6.5rem;
+  color: var(--text);
+}
+
+body:has(.portaria-page) {
+  background: var(--bg);
+}
+
+.portaria-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 54px;
+  margin-bottom: 1rem;
+}
+
+.portaria-cross {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.portaria-brand > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.portaria-brand strong {
+  overflow: hidden;
+  font-size: 1.05rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portaria-brand span:not(.portaria-cross) {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.portaria-brand .theme-toggle {
+  margin-left: auto;
+}
+
+.portaria-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  margin-bottom: 1.1rem;
+}
+
+.portaria-status.is-offline,
+.portaria-status.is-failed {
+  background: var(--warning-soft);
+  color: var(--text);
+}
+
+.portaria-status.is-online,
+.portaria-status.is-syncing {
+  background: var(--success-soft);
+}
+
+.portaria-status.is-revoked {
+  background: var(--danger-soft);
+}
+
+.portaria-status strong,
+.portaria-status p {
+  display: block;
+}
+
+.portaria-status p {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.portaria-status-count {
+  margin-left: auto;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.portaria-page h1 {
+  font-size: clamp(1.7rem, 5vw, 2.1rem);
+  letter-spacing: -0.03em;
+  margin-bottom: 0.85rem;
+}
+
+.portaria-cards {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.portaria-card {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.8rem;
+  min-height: 76px;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  text-decoration: none;
+}
+
+.portaria-card .app-icon {
+  grid-row: 1 / span 2;
+  width: 28px;
+  height: 28px;
+  color: var(--primary);
+}
+
+.portaria-card span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.portaria-form,
+.portaria-locked {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.portaria-form label,
+.portaria-page > label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+.portaria-form input,
+.portaria-form select,
+.portaria-form textarea,
+.portaria-page textarea {
+  min-height: 48px;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.portaria-form textarea,
+.portaria-page textarea {
+  min-height: 120px;
+}
+
+.portaria-person {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.8fr) 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.portaria-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  font-weight: 600;
+}
+
+.portaria-primary,
+.portaria-secondary,
+.portaria-text-btn,
+.portaria-item-actions button,
+.portaria-update button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.portaria-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.portaria-secondary,
+.portaria-item-actions button {
+  background: var(--surface);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.portaria-text-btn {
+  min-height: 44px;
+  background: transparent;
+  color: var(--danger);
+}
+
+.portaria-note,
+.portaria-muted {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: var(--primary-soft);
+}
+
+.portaria-warning {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: var(--warning-soft);
+}
+
+.portaria-error {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.portaria-success {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.portaria-queue-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem calc(0.9rem + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.portaria-queue-footer a {
+  margin-left: auto;
+  color: var(--primary);
+  font-weight: 800;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.portaria-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  color: var(--primary);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.portaria-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.portaria-item span,
+.portaria-item p {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.portaria-item.is-review strong {
+  color: var(--warning);
+}
+
+.portaria-update {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  background: var(--primary-soft);
+}
+
+.portaria-install {
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.portaria-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.portaria-locked {
+  padding: 1rem;
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portaria-page * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .portaria-person {
+    grid-template-columns: 1fr;
+  }
+}

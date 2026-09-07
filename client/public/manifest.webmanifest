@@ -1,0 +1,42 @@
+{
+  "name": "Church Visitors — Portaria",
+  "short_name": "Portaria",
+  "description": "Cadastro offline da portaria",
+  "start_url": "/portaria",
+  "scope": "/portaria",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f8f6f2",
+  "theme_color": "#2563eb",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Registrar visitantes",
+      "short_name": "Visitantes",
+      "url": "/portaria/visitantes"
+    },
+    {
+      "name": "Avisar sobre veículo",
+      "short_name": "Veículo",
+      "url": "/portaria/veiculos"
+    }
+  ]
+}

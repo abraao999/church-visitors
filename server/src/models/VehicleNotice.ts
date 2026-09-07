@@ -15,7 +15,7 @@ export type VehicleNoticeAction = (typeof VEHICLE_NOTICE_ACTIONS)[number];
 export const VEHICLE_NOTICE_STATUSES = ['pending', 'announced', 'resolved'] as const;
 export type VehicleNoticeStatus = (typeof VEHICLE_NOTICE_STATUSES)[number];
 
-export type VehicleNoticeSource = 'guest_access' | 'owner';
+export type VehicleNoticeSource = 'guest_access' | 'owner' | 'portaria_device';
 
 export interface IVehicleNotice extends Document {
   churchId: Types.ObjectId;
@@ -31,6 +31,8 @@ export interface IVehicleNotice extends Document {
   source: VehicleNoticeSource;
   createdBy?: IActor;
   guestAccess?: IGuestOrigin;
+  portariaDevice?: { deviceId: Types.ObjectId; name: string };
+  capturedAt?: Date;
   announcedAt?: Date;
   announcedBy?: Types.ObjectId;
   resolvedAt?: Date;
@@ -70,12 +72,23 @@ const vehicleNoticeSchema = new Schema<IVehicleNotice>(
     },
     source: {
       type: String,
-      enum: ['guest_access', 'owner'],
+      enum: ['guest_access', 'owner', 'portaria_device'],
       required: true,
       default: 'guest_access',
     },
     createdBy: { type: actorSchema, required: false },
     guestAccess: { type: guestOriginSchema, required: false },
+    portariaDevice: {
+      type: new Schema(
+        {
+          deviceId: { type: Schema.Types.ObjectId, ref: 'PortariaDevice', required: true },
+          name: { type: String, required: true, trim: true, maxlength: 80 },
+        },
+        { _id: false }
+      ),
+      required: false,
+    },
+    capturedAt: { type: Date },
     announcedAt: { type: Date },
     announcedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     resolvedAt: { type: Date },

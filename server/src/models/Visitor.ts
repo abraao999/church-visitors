@@ -3,7 +3,7 @@ import { RELATIONSHIPS, type Relationship } from '../constants/relationships.js'
 import { actorSchema, type IActor } from './Actor.js';
 import { guestOriginSchema, type IGuestOrigin } from './GuestOrigin.js';
 
-export type VisitorSource = 'owner' | 'guest_access';
+export type VisitorSource = 'owner' | 'guest_access' | 'portaria_device';
 
 export interface IVisitor extends Document {
   churchId: Types.ObjectId;
@@ -14,9 +14,11 @@ export interface IVisitor extends Document {
   source: VisitorSource;
   createdBy?: IActor;
   guestAccess?: IGuestOrigin;
+  portariaDevice?: { deviceId: Types.ObjectId; name: string };
   /** Idempotência do formulário público; só o primeiro visitante do lote leva o valor. */
   requestId?: string;
   serviceId?: Types.ObjectId;
+  capturedAt?: Date;
   createdAt: Date;
 }
 
@@ -27,11 +29,22 @@ const visitorSchema = new Schema<IVisitor>(
     relationship: { type: String, enum: RELATIONSHIPS, required: true, default: 'outro' },
     city: { type: String, required: true, trim: true, maxlength: 100 },
     visitDate: { type: Date, default: Date.now },
-    source: { type: String, enum: ['owner', 'guest_access'], default: 'owner' },
+    source: { type: String, enum: ['owner', 'guest_access', 'portaria_device'], default: 'owner' },
     createdBy: { type: actorSchema, required: false },
     guestAccess: { type: guestOriginSchema, required: false },
+    portariaDevice: {
+      type: new Schema(
+        {
+          deviceId: { type: Schema.Types.ObjectId, ref: 'PortariaDevice', required: true },
+          name: { type: String, required: true, trim: true, maxlength: 80 },
+        },
+        { _id: false }
+      ),
+      required: false,
+    },
     requestId: { type: String, trim: true, maxlength: 64 },
     serviceId: { type: Schema.Types.ObjectId, ref: 'Service' },
+    capturedAt: { type: Date },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

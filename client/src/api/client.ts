@@ -11,6 +11,8 @@ import type {
   HolyricsLocalToken,
   HolyricsSettings,
   HolyricsSyncResponse,
+  PortariaDevice,
+  PortariaPairing,
   PrayerRequest,
   PrayerRequestPanelItem,
   PublicInvitation,
@@ -570,6 +572,40 @@ export const api = {
       body: JSON.stringify({}),
     });
     return handleResponse<GuestAccess>(response);
+  },
+
+  async getPortariaDevices(): Promise<PortariaDevice[]> {
+    const response = await apiFetch(`${API_BASE}/portaria-devices`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<PortariaDevice[]>(response);
+  },
+
+  async createPortariaPairing(): Promise<PortariaPairing> {
+    const response = await apiFetch(`${API_BASE}/portaria-devices/pairings`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    return handleResponse<PortariaPairing>(response);
+  },
+
+  async renamePortariaDevice(id: string, name: string): Promise<PortariaDevice> {
+    const response = await apiFetch(`${API_BASE}/portaria-devices/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ name }),
+    });
+    return handleResponse<PortariaDevice>(response);
+  },
+
+  async revokePortariaDevice(id: string): Promise<PortariaDevice> {
+    const response = await apiFetch(`${API_BASE}/portaria-devices/${id}/revoke`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    });
+    return handleResponse<PortariaDevice>(response);
   },
 
   async getPublicAccess(token: string): Promise<PublicAccessMetadata> {

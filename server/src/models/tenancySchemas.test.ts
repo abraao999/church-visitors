@@ -11,6 +11,8 @@ import { Service } from './Service.js';
 import { User } from './User.js';
 import { Visitor } from './Visitor.js';
 import { VehicleNotice } from './VehicleNotice.js';
+import { PortariaDevice } from './PortariaDevice.js';
+import { PortariaPairing } from './PortariaPairing.js';
 import { createChurchSlug, normalizeChurchName } from '../utils/church.js';
 
 function hasIndex(
@@ -99,6 +101,12 @@ test('modelos privados possuem churchId obrigatório e índices compostos de iso
   assert.equal(GuestAccess.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(GuestAccess.schema.indexes(), { publicId: 1 }, { unique: true }));
   assert.ok(hasIndex(GuestAccess.schema.indexes(), { churchId: 1, active: 1 }));
+
+  assert.equal(PortariaDevice.schema.path('churchId').isRequired, true);
+  assert.ok(hasIndex(PortariaDevice.schema.indexes(), { publicId: 1 }, { unique: true }));
+  assert.ok(hasIndex(PortariaDevice.schema.indexes(), { churchId: 1, active: 1, createdAt: -1 }));
+  assert.equal(PortariaPairing.schema.path('churchId').isRequired, true);
+  assert.ok(hasIndex(PortariaPairing.schema.indexes(), { publicId: 1 }, { unique: true }));
 
   assert.equal(TeamInvitation.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(TeamInvitation.schema.indexes(), { publicId: 1 }, { unique: true }));

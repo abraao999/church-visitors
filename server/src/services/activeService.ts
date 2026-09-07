@@ -34,18 +34,44 @@ export function asSchedule(service: IService): ServiceScheduleInput {
   };
 }
 
-async function nearbyServices(churchId: string, now: Date, timeZone: string) {
+async function nearbyServices(
+  churchId: string,
+  now: Date,
+  timeZone: string,
+  options: { includeClosed?: boolean } = {}
+) {
   const from = startOfDay(addCivilDays(now, -1, timeZone), timeZone);
   const to = endOfDay(addCivilDays(now, 1, timeZone), timeZone);
   return Service.find(
     withChurch(churchId, {
       cancelledAt: { $exists: false },
-      closedAt: { $exists: false },
+      ...(options.includeClosed ? {} : { closedAt: { $exists: false } }),
       $or: [
         { scheduledStartAt: { $gte: from, $lte: to } },
         { date: { $gte: from, $lte: to } },
       ],
     })
+  );
+}
+
+/** Avalia o culto no instante da captura, mesmo que ele já tenha sido encerrado depois. */
+export function serviceStatusAtCapture(
+  service: IService,
+  capturedAt: Date,
+  timeZone: string
+) {
+  const closedAt =
+    service.closedAt && service.closedAt.getTime() <= capturedAt.getTime()
+      ? service.closedAt
+      : undefined;
+  const cancelledAt =
+    service.cancelledAt && service.cancelledAt.getTime() <= capturedAt.getTime()
+      ? service.cancelledAt
+      : undefined;
+  return resolveServiceStatus(
+    { ...asSchedule(service), closedAt, cancelledAt },
+    capturedAt,
+    timeZone
   );
 }
 
@@ -75,6 +101,27 @@ export async function resolveActiveService(
   }
 
   return active;
+}
+
+/**
+ * Localiza o culto que estava operacional no horário da captura.
+ * Não usa o culto atual e não grava abertura automática.
+ */
+export async function resolveServiceAtCapture(
+  churchId: string,
+  capturedAt: Date,
+  timeZone?: string
+): Promise<IService | null> {
+  const tz = timeZone || (await timezoneForChurch(churchId));
+  const services = await nearbyServices(churchId, capturedAt, tz, { includeClosed: true });
+  const operational = services
+    .filter((service) => isOperationalStatus(serviceStatusAtCapture(service, capturedAt, tz)))
+    .sort((left, right) => {
+      const a = scheduledStartOf(asSchedule(left), tz)?.getTime() ?? 0;
+      const b = scheduledStartOf(asSchedule(right), tz)?.getTime() ?? 0;
+      return a - b;
+    });
+  return operational[0] ?? null;
 }
 
 export async function findOverlappingService(

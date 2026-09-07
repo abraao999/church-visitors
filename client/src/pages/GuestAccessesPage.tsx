@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
+import { PortariaDevicesSection } from '../components/PortariaDevicesSection';
 import { GuestAccessQr, guestAccessUrl } from '../components/GuestAccessQr';
 import type { GuestAccess, GuestAccessType } from '../types';
 import { OPTION_LABELS } from '../utils/publicAccess';
@@ -239,6 +240,8 @@ export function GuestAccessesPage() {
           </button>
         </div>
       </header>
+
+      <PortariaDevicesSection />
 
       <div className="guest-access-notice">
         <AppIcon name="lock" />

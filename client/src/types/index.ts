@@ -115,6 +115,46 @@ export interface GuestOrigin {
   name: string;
 }
 
+export type PortariaOfflinePermission =
+  | 'offline_visitors:create'
+  | 'offline_vehicle_notices:create';
+
+export interface PortariaDevice {
+  id: string;
+  name: string;
+  publicId: string;
+  permissions: PortariaOfflinePermission[];
+  active: boolean;
+  lastUsedAt?: string;
+  createdAt: string;
+  revokedAt?: string;
+}
+
+export interface PortariaPairing {
+  id: string;
+  token: string;
+  expiresAt: string;
+  url: string;
+}
+
+export interface PortariaDeviceSession {
+  valid: true;
+  churchName: string;
+  deviceName: string;
+  publicId: string;
+  permissions: PortariaOfflinePermission[];
+  serverTime: string;
+}
+
+export interface PortariaClaimResult {
+  churchName: string;
+  deviceName: string;
+  publicId: string;
+  permissions: PortariaOfflinePermission[];
+  serverTime: string;
+  credential: string;
+}
+
 export interface GuestAccess {
   id: string;
   name: string;
