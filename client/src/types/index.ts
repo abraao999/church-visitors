@@ -415,6 +415,26 @@ export interface VehicleNoticeStats {
   resolvedToday: number;
 }
 
+export interface VehicleNoticeAlert {
+  id: string;
+  plate: string;
+  vehicleModel: string;
+  requestedAction: VehicleNoticeAction;
+  otherDescription?: string;
+  status: VehicleNoticeStatus;
+  createdAt: string;
+  updatedAt: string;
+  serviceId?: string;
+}
+
+export interface VehicleNoticeAlerts {
+  notices: VehicleNoticeAlert[];
+  pendingCount: number;
+  nextCursor: string;
+  serverTime: string;
+  operationalService: boolean;
+}
+
 export interface VehiclePanelNotice {
   id: string;
   plate: string;

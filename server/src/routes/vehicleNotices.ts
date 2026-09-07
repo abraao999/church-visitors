@@ -12,8 +12,15 @@ import {
   isVehicleNoticeStatus,
   type VehicleNoticeStatus,
 } from '../models/VehicleNotice.js';
-import { resolveLinkedServiceId } from '../services/activeService.js';
+import { resolveActiveService, resolveLinkedServiceId } from '../services/activeService.js';
 import { fetchVehicleNoticePanel } from '../services/panelData.js';
+import {
+  alertCursorFilter,
+  EMPTY_ALERT_ID,
+  encodeVehicleAlertCursor,
+  parseVehicleAlertCursor,
+  VEHICLE_ALERTS_LIMIT,
+} from '../utils/vehicleAlertCursor.js';
 import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
 import { sendPrivateJson, setPrivateCacheHeaders } from '../utils/publicRecord.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
@@ -120,6 +127,88 @@ export async function listVehicleNoticesPanel(req: AuthenticatedRequest, res: Re
     return res.json(notices);
   } catch {
     return res.status(500).json({ error: 'Erro ao carregar o painel de veículos' });
+  }
+}
+
+function serializeAlert(notice: {
+  _id: unknown;
+  plate: string;
+  vehicleModel: string;
+  requestedAction: string;
+  otherDescription?: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  serviceId?: unknown;
+}) {
+  return {
+    id: String(notice._id),
+    plate: notice.plate,
+    vehicleModel: notice.vehicleModel,
+    requestedAction: notice.requestedAction,
+    otherDescription: notice.otherDescription || '',
+    status: notice.status,
+    createdAt: notice.createdAt,
+    updatedAt: notice.updatedAt,
+    ...(notice.serviceId ? { serviceId: String(notice.serviceId) } : {}),
+  };
+}
+
+export async function listVehicleNoticeAlerts(req: AuthenticatedRequest, res: Response) {
+  try {
+    const churchId = req.auth!.churchId;
+    const now = new Date();
+    const afterParam = typeof req.query.after === 'string' ? req.query.after : undefined;
+    const cursor = afterParam ? parseVehicleAlertCursor(afterParam) : null;
+    if (afterParam && !cursor) {
+      return res.status(400).json({ error: 'Cursor inválido.' });
+    }
+
+    const churchScope = withChurch(churchId, { archived: { $ne: true } });
+    const [pendingCount, operational, newest] = await Promise.all([
+      VehicleNotice.countDocuments({ ...churchScope, status: 'pending' }),
+      resolveActiveService(churchId, now),
+      cursor
+        ? Promise.resolve(null)
+        : VehicleNotice.findOne(churchScope).sort({ createdAt: -1, _id: -1 }).select('_id createdAt'),
+    ]);
+
+    if (!cursor) {
+      const nextCursor = newest
+        ? encodeVehicleAlertCursor(newest.createdAt, String(newest._id))
+        : encodeVehicleAlertCursor(now, EMPTY_ALERT_ID);
+      return sendPrivateJson(res, {
+        notices: [],
+        pendingCount,
+        nextCursor,
+        serverTime: now,
+        operationalService: Boolean(operational),
+      });
+    }
+
+    const notices = await VehicleNotice.find({
+      ...churchScope,
+      status: 'pending',
+      ...alertCursorFilter(cursor.createdAt, cursor.id),
+    })
+      .sort({ createdAt: 1, _id: 1 })
+      .limit(VEHICLE_ALERTS_LIMIT)
+      .select('plate vehicleModel requestedAction otherDescription status createdAt updatedAt serviceId');
+
+    const last = notices[notices.length - 1];
+    const nextCursor = last
+      ? encodeVehicleAlertCursor(last.createdAt, String(last._id))
+      : afterParam;
+
+    return sendPrivateJson(res, {
+      notices: notices.map(serializeAlert),
+      pendingCount,
+      nextCursor,
+      serverTime: now,
+      operationalService: Boolean(operational),
+    });
+  } catch {
+    return res.status(500).json({ error: 'Erro ao buscar novos avisos' });
   }
 }
 
@@ -302,6 +391,7 @@ export async function createVehicleNoticeOwner(req: AuthenticatedRequest, res: R
 
 router.get('/', requireAuth, requirePermission('vehicle_notices:read'), listVehicleNotices);
 router.get('/panel', requireAuth, requireAnyPermission('panels:open', 'vehicle_notices:read'), listVehicleNoticesPanel);
+router.get('/alerts', requireAuth, requirePermission('vehicle_notices:read'), listVehicleNoticeAlerts);
 router.get('/stats', requireAuth, requirePermission('vehicle_notices:read'), getVehicleNoticeStats);
 router.post('/', requireAuth, requirePermission('vehicle_notices:create'), createVehicleNoticeOwner);
 router.patch('/:id/status', requireAuth, requirePermission('vehicle_notices:read'), updateVehicleNoticeStatus);

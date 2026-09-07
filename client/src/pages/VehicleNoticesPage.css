@@ -223,6 +223,15 @@
   padding-top: 0.35rem;
 }
 
+.vehicle-notice-row.is-highlighted {
+  margin: 0 -0.75rem;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent);
+}
+
 .vehicle-notice-main {
   display: grid;
   grid-template-columns: 42px minmax(120px, 160px) minmax(0, 1fr) auto;

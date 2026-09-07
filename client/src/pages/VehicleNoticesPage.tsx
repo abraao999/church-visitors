@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useVehicleAlerts } from '../alerts/VehicleAlertProvider';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
@@ -42,8 +43,13 @@ function relativeTime(iso: string): string {
 
 export function VehicleNoticesPage() {
   const { user } = useAuth();
+  const alerts = useVehicleAlerts();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get('aviso') || '';
   const [date, setDate] = useState(todayLocalISO());
-  const [statusFilter, setStatusFilter] = useState<VehicleNoticeStatus | 'all'>('pending');
+  const [statusFilter, setStatusFilter] = useState<VehicleNoticeStatus | 'all'>(
+    highlightId ? 'all' : 'pending'
+  );
   const [plateSearch, setPlateSearch] = useState('');
   const [notices, setNotices] = useState<VehicleNotice[]>([]);
   const [stats, setStats] = useState<VehicleNoticeStats>({
@@ -85,6 +91,12 @@ export function VehicleNoticesPage() {
     const poll = window.setInterval(load, POLL_MS);
     return () => window.clearInterval(poll);
   }, [load]);
+
+  useEffect(() => {
+    if (!highlightId) return;
+    const row = document.getElementById(`aviso-${highlightId}`);
+    row?.scrollIntoView({ block: 'center' });
+  }, [highlightId, notices]);
 
   async function setStatus(
     id: string,
@@ -130,6 +142,12 @@ export function VehicleNoticesPage() {
           <p>Acompanhe os avisos recebidos durante o culto.</p>
         </div>
         <div className="vehicle-notices-header-actions">
+          {alerts && (
+            <button type="button" className="btn btn-secondary" onClick={alerts.openSettings}>
+              <AppIcon name="bell" />
+              Configurar alertas
+            </button>
+          )}
           <Link to="/painel/veiculos" target="_blank" rel="noreferrer" className="vehicle-tv-link">
             <AppIcon name="panels" />
             <span>
@@ -241,7 +259,11 @@ export function VehicleNoticesPage() {
         ) : (
           <ul className="vehicle-notice-list">
             {notices.map((notice) => (
-              <li key={notice.id} className="vehicle-notice-row">
+              <li
+                key={notice.id}
+                id={`aviso-${notice.id}`}
+                className={`vehicle-notice-row${highlightId === notice.id ? ' is-highlighted' : ''}`}
+              >
                 <div className="vehicle-notice-main">
                   <span className="vehicle-notice-car">
                     <AppIcon name="car" />

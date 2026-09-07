@@ -28,6 +28,7 @@ import type {
   TodayCount,
   UpdateServiceDto,
   VehicleNotice,
+  VehicleNoticeAlerts,
   VehicleNoticeStats,
   VehicleNoticeStatus,
   VehiclePanelNotice,
@@ -658,6 +659,15 @@ export const api = {
       cache: 'no-store',
     });
     return handleResponse<VehiclePanelNotice[]>(response);
+  },
+
+  async getVehicleNoticeAlerts(after?: string): Promise<VehicleNoticeAlerts> {
+    const query = after ? `?after=${encodeURIComponent(after)}` : '';
+    const response = await apiFetch(`${API_BASE}/vehicle-notices/alerts${query}`, {
+      headers: authHeaders(),
+      cache: 'no-store',
+    });
+    return handleResponse<VehicleNoticeAlerts>(response);
   },
 
   async getVehicleNoticeStats(date?: string): Promise<VehicleNoticeStats> {

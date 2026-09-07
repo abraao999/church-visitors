@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { useVehicleAlerts, VehicleAlertProvider } from '../alerts/VehicleAlertProvider';
+import { formatPendingBadge, pendingBadgeLabel } from '../alerts/vehicleAlertLogic';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon, type AppIconName } from './AppIcon';
 import { ThemeToggle } from './ThemeToggle';
@@ -27,7 +29,22 @@ export function Layout() {
   }
 
   return (
-    <AuthenticatedShell pathname={location.pathname} />
+    <VehicleAlertProvider>
+      <AuthenticatedShell pathname={location.pathname} />
+    </VehicleAlertProvider>
+  );
+}
+
+function VehicleNavBadge({ to }: { to: string }) {
+  const alerts = useVehicleAlerts();
+  if (to !== '/avisos-veiculos') return null;
+  const count = alerts?.pendingCount ?? 0;
+  const label = formatPendingBadge(count);
+  if (!label) return null;
+  return (
+    <span className="nav-pending-badge" aria-label={pendingBadgeLabel(count)}>
+      {label}
+    </span>
   );
 }
 
@@ -72,6 +89,7 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
                 >
                   <AppIcon name={item.icon as AppIconName} />
                   {item.label}
+                  <VehicleNavBadge to={item.to} />
                 </Link>
               ))}
             </nav>
@@ -167,6 +185,7 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
             >
               <AppIcon name={item.icon as AppIconName} />
               <span className="nav-mobile-label">{item.short}</span>
+              <VehicleNavBadge to={item.to} />
             </Link>
           ))}
         </nav>

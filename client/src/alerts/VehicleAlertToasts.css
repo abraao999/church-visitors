@@ -1,0 +1,131 @@
+.vehicle-alert-stack {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(380px, calc(100vw - 1.5rem));
+  pointer-events: none;
+}
+
+.vehicle-alert-toast {
+  pointer-events: auto;
+  padding: 1rem 1.05rem 0.95rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.vehicle-alert-toast-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.vehicle-alert-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 12px;
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.vehicle-alert-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.vehicle-alert-copy small {
+  display: block;
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.vehicle-alert-plate {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.vehicle-alert-copy p {
+  margin: 0.15rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.vehicle-alert-dismiss {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.vehicle-alert-dismiss:hover,
+.vehicle-alert-dismiss:focus-visible {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.vehicle-alert-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.vehicle-alert-actions .btn {
+  min-height: 44px;
+}
+
+.vehicle-alert-live,
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.vehicle-alert-stack-footer {
+  top: auto;
+  bottom: 5.5rem;
+}
+
+.vehicle-alert-offline {
+  pointer-events: none;
+  margin: 0;
+  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 720px) {
+  .vehicle-alert-stack {
+    top: 0.65rem;
+    right: 0.65rem;
+    left: 0.65rem;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vehicle-alert-toast {
+    transition: none;
+  }
+}

@@ -41,7 +41,8 @@ export type AppIconName =
   | 'plate'
   | 'search'
   | 'checkPlain'
-  | 'clipboard';
+  | 'clipboard'
+  | 'close';
 
 export function AppIcon({ name, className = '' }: { name: AppIconName; className?: string }) {
   const content = {
@@ -88,6 +89,7 @@ export function AppIcon({ name, className = '' }: { name: AppIconName; className
     plate: <><rect x="3" y="7" width="18" height="10" rx="2" /><path d="M7 12h.01M11 12h6" /></>,
     search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></>,
     clipboard: <><rect x="7" y="4" width="10" height="16" rx="2" /><path d="M9 4.5h6V6a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V4.5Z" /><path d="M10 11h4m-4 3h4" /></>,
+    close: <><path d="M6 6l12 12M18 6 6 18" /></>,
   }[name];
 
   return (
