@@ -10,14 +10,22 @@ import {
 } from '../utils/requestIdIndex.js';
 
 async function replaceRequestIdIndex(collection: Collection): Promise<void> {
-  const indexes = await collection.indexes();
-  const current = indexes.find((index) => index.name === REQUEST_ID_INDEX_NAME);
+  let current: { unique?: boolean; sparse?: boolean; partialFilterExpression?: unknown; name?: string } | undefined;
+  try {
+    const indexes = await collection.indexes();
+    current = indexes.find((index) => index.name === REQUEST_ID_INDEX_NAME);
+  } catch (error) {
+    const code = (error as { code?: number }).code;
+    const message = error instanceof Error ? error.message : String(error);
+    if (code !== 26 && !message.includes('ns does not exist')) throw error;
+  }
+
   if (requestIdIndexNeedsReplacement(current)) {
     try {
       await collection.dropIndex(REQUEST_ID_INDEX_NAME);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      if (!message.includes('index not found')) throw error;
+      if (!message.includes('index not found') && !message.includes('ns does not exist')) throw error;
     }
   }
   await collection.createIndex({ churchId: 1, requestId: 1 }, { ...REQUEST_ID_UNIQUE_INDEX });

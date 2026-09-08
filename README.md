@@ -132,10 +132,37 @@ Essas páginas não possuem menu administrativo, login, indicadores ou listagens
 Depois do envio, a página confirma o recebimento sem devolver os registros privados. A URL antiga
 `/live/oracao` permanece apenas como uma orientação amigável para solicitar um novo QR Code.
 
+## MongoDB local com Docker
+
+No desenvolvimento o banco sobe no seu computador, sem usar o Atlas.
+
+```bash
+# Sobe o Mongo na porta 27017 (os dados ficam num volume do Docker)
+npm run db:up
+```
+
+Em `server/.env`, use:
+
+```
+MONGODB_URI=mongodb://127.0.0.1:27017/church-visitors
+```
+
+Comandos úteis:
+
+```bash
+npm run db:up      # inicia o container
+npm run db:logs    # acompanha o log
+npm run db:down    # para o container (os dados permanecem)
+docker compose down -v   # apaga o container e o volume local
+```
+
+O Docker Desktop precisa estar aberto. A imagem é `mongo:8.0.4` de propósito: as tags `mongo:8` mais novas recusam o kernel do Docker Desktop atual.
+
 ## Executar
 
 ```bash
 # Desenvolvimento (API + frontend)
+npm run db:up
 npm run dev
 ```
 

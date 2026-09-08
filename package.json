@@ -5,6 +5,9 @@
   "description": "Sistema de visitantes e pedidos de oração para igreja",
   "type": "module",
   "scripts": {
+    "db:up": "docker compose up -d mongo",
+    "db:down": "docker compose stop mongo",
+    "db:logs": "docker compose logs -f mongo",
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",

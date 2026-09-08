@@ -1,0 +1,22 @@
+services:
+  mongo:
+    image: mongo:8.0.4
+    container_name: church-visitors-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: church-visitors
+      # Docker Desktop usa kernel 6.19+; Mongo 8 recente recusa subir sem isso.
+      GLIBC_TUNABLES: glibc.pthread.rseq=1
+    volumes:
+      - church_visitors_mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  church_visitors_mongo:
