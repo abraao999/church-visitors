@@ -89,6 +89,35 @@
   align-items: center;
 }
 
+.team-list-people ul {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) minmax(8.75rem, max-content) 6.75rem minmax(5.5rem, max-content) 7.5rem;
+  row-gap: 0.85rem;
+  column-gap: 0.75rem;
+}
+
+.team-list-people .team-row {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  gap: 0 0.75rem;
+}
+
+.team-list-people .team-role-badge,
+.team-list-people .team-status,
+.team-list-people .team-meta {
+  justify-self: start;
+  max-width: 100%;
+}
+
+.team-list-people .team-row-action {
+  justify-self: stretch;
+}
+
+.team-row-action-placeholder {
+  min-height: 44px;
+}
+
 .team-avatar {
   width: 44px;
   height: 44px;
@@ -269,16 +298,29 @@
     grid-template-columns: 1fr;
   }
 
-  .team-row {
+  .team-list-people ul {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .team-row,
+  .team-list-people .team-row {
     grid-template-columns: 44px minmax(0, 1fr);
+    grid-column: auto;
+    gap: 0.75rem;
   }
 
   .team-row .btn,
   .team-role-badge,
   .team-status,
   .team-meta,
-  .team-row-actions {
+  .team-row-actions,
+  .team-row-action {
     grid-column: 1 / -1;
+  }
+
+  .team-row-action-placeholder {
+    display: none;
   }
 }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
@@ -48,14 +48,24 @@ function relativeAccess(iso?: string): string {
 
 export function TeamPage() {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [data, setData] = useState<TeamOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [q, setQ] = useState('');
   const [qApplied, setQApplied] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('all');
   const [inviteOpen, setInviteOpen] = useState(false);
+
+  useEffect(() => {
+    const fromState = (location.state as { notice?: string } | null)?.notice;
+    if (!fromState) return;
+    setNotice(fromState);
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setQApplied(q.trim()), 300);
@@ -100,6 +110,11 @@ export function TeamPage() {
       {error && (
         <p className="error-message" role="alert">
           {error}
+        </p>
+      )}
+      {notice && (
+        <p className="success-message" role="status">
+          {notice}
         </p>
       )}
 
@@ -147,7 +162,7 @@ export function TeamPage() {
         </select>
       </div>
 
-      <section className="card team-list">
+      <section className="card team-list team-list-people">
         <h2>Pessoas com acesso</h2>
         {loading ? (
           <p className="empty-state">Carregando...</p>
@@ -222,8 +237,10 @@ function MemberRow({ member }: { member: TeamMember }) {
         {member.active ? 'Ativo' : 'Desativado'}
       </span>
       <span className="team-meta">{member.you ? 'Você' : relativeAccess(member.lastSeenAt)}</span>
-      {!member.you && (
-        <Link to={`/igreja/equipe/${member.id}`} className="btn btn-secondary">
+      {member.you ? (
+        <span className="team-row-action team-row-action-placeholder" aria-hidden="true" />
+      ) : (
+        <Link to={`/igreja/equipe/${member.id}`} className="btn btn-secondary team-row-action">
           Gerenciar
         </Link>
       )}

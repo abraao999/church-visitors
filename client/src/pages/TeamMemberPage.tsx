@@ -35,6 +35,14 @@ export function TeamMemberPage() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
+    if (!success.startsWith('Alterações salvas')) return;
+    const timer = window.setTimeout(() => {
+      navigate('/igreja/equipe', { replace: true, state: { notice: success } });
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [navigate, success]);
+
+  useEffect(() => {
     if (!memberId) return;
     api
       .getTeamMember(memberId)

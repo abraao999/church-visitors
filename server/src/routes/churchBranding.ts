@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import multer from 'multer';
 import { Church } from '../models/Church.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
-import { getBrandingLogoStore } from '../services/brandingLogoStore.js';
+import { discardUnusedLogos, getBrandingLogoStore } from '../services/brandingLogoStore.js';
 import {
   detectLogoImageType,
   LOGO_FIELD,
@@ -75,9 +75,7 @@ export async function patchChurchBranding(req: AuthenticatedRequest, res: Respon
       church.branding = undefined;
       church.markModified('branding');
       await church.save();
-      if (previousKey) {
-        await getBrandingLogoStore().delete(previousKey).catch(() => undefined);
-      }
+      await discardUnusedLogos(String(church._id), { previousKey });
       return res.json(brandingResponse(church));
     }
 
@@ -172,11 +170,14 @@ export async function postChurchLogo(req: AuthenticatedRequest, res: Response) {
       updatedAt: new Date(),
     };
     church.markModified('branding');
-    await church.save();
-
-    if (previousKey && previousKey !== stored.key) {
-      await getBrandingLogoStore().delete(previousKey).catch(() => undefined);
+    try {
+      await church.save();
+    } catch (error) {
+      await getBrandingLogoStore().delete(stored.key).catch(() => undefined);
+      throw error;
     }
+
+    await discardUnusedLogos(churchId, { keepKey: stored.key, previousKey });
 
     return res.json(brandingResponse(church));
   } catch (error) {
@@ -216,9 +217,7 @@ export async function deleteChurchLogo(req: AuthenticatedRequest, res: Response)
     }
     await church.save();
 
-    if (previousKey) {
-      await getBrandingLogoStore().delete(previousKey).catch(() => undefined);
-    }
+    await discardUnusedLogos(String(church._id), { previousKey });
 
     return res.json(brandingResponse(church));
   } catch {

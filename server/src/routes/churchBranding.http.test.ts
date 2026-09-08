@@ -285,6 +285,68 @@ describe('troca e remoção do logotipo', () => {
     assert.equal(memory.files.get('logo-key')?.deleted, true);
   });
 
+  test('se o banco falhar após o envio, o arquivo novo é apagado', async () => {
+    const memory = createMemoryLogoStore();
+    setBrandingLogoStoreForTests(memory);
+    memory.files.set('old-key', { url: 'https://blob.test/old.png', deleted: false });
+    const church = churchDoc(churchA, {
+      branding: {
+        logoUrl: 'https://blob.test/old.png',
+        logoStorageKey: 'old-key',
+      },
+      async save() {
+        throw new Error('falha ao gravar');
+      },
+    });
+    stubMethod(Church, 'findById', async () => church);
+
+    const { res, state } = mockRes();
+    await postChurchLogo(
+      authReq({
+        file: { buffer: PNG, mimetype: 'image/png', originalname: 'novo.png', size: PNG.length },
+      } as never),
+      res
+    );
+
+    assert.equal(state.statusCode, 500);
+    assert.equal(memory.files.get('old-key')?.deleted, false);
+    const uploaded = [...memory.files.keys()].find((key) => key.startsWith(`church-branding/${churchA}/`));
+    assert.ok(uploaded);
+    assert.equal(memory.files.get(uploaded)?.deleted, true);
+  });
+
+  test('trocar o logotipo apaga o anterior e órfãos da mesma igreja', async () => {
+    const memory = createMemoryLogoStore();
+    setBrandingLogoStoreForTests(memory);
+    const orphan = `church-branding/${churchA}/orfa.png`;
+    const otherChurch = `church-branding/${churchB}/logo.png`;
+    memory.files.set('old-key', { url: 'https://blob.test/old.png', deleted: false });
+    memory.files.set(orphan, { url: `https://blob.test/${orphan}`, deleted: false });
+    memory.files.set(otherChurch, { url: `https://blob.test/${otherChurch}`, deleted: false });
+    const church = churchDoc(churchA, {
+      branding: {
+        logoUrl: 'https://blob.test/old.png',
+        logoStorageKey: 'old-key',
+      },
+    });
+    stubMethod(Church, 'findById', async () => church);
+
+    const { res, state } = mockRes();
+    await postChurchLogo(
+      authReq({
+        file: { buffer: PNG, mimetype: 'image/png', originalname: 'novo.png', size: PNG.length },
+      } as never),
+      res
+    );
+
+    assert.equal(state.statusCode, 200);
+    assert.equal(memory.files.get('old-key')?.deleted, true);
+    assert.equal(memory.files.get(orphan)?.deleted, true);
+    assert.equal(memory.files.get(otherChurch)?.deleted, false);
+    const kept = String(church.branding?.logoStorageKey);
+    assert.equal(memory.files.get(kept)?.deleted, false);
+  });
+
   test('restaurar padrão limpa cores e logotipo', async () => {
     const memory = createMemoryLogoStore();
     setBrandingLogoStoreForTests(memory);
