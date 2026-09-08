@@ -86,11 +86,13 @@ export function App() {
               <Route element={<PermissionRoute anyOf={['holyrics:read', 'holyrics:configure']} />}>
                 <Route path="/configuracoes" element={<HolyricsSettingsPage />} />
               </Route>
+              <Route element={<PermissionRoute anyOf={['panels:open', 'prayers:project']} />}>
+                <Route path="/painel/oracao" element={<PrayersPanelPage />} />
+              </Route>
               <Route element={<PermissionRoute anyOf={['panels:open']} />}>
                 <Route path="/paineis" element={<PanelsPage />} />
                 <Route path="/painel/louvores" element={<HymnsPanelPage />} />
                 <Route path="/painel/visitantes" element={<VisitorsPanelPage />} />
-                <Route path="/painel/oracao" element={<PrayersPanelPage />} />
                 <Route path="/painel/veiculos" element={<VehicleNoticesPanelPage />} />
               </Route>
             </Route>

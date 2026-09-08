@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { requireConfiguredSecret } from './configuredSecret.js';
 
 const PUBLIC_ID_PATTERN = /^[A-Za-z0-9_-]{32}$/;
 const SIGNATURE_PATTERN = /^[A-Za-z0-9_-]{43}$/;
@@ -9,10 +10,7 @@ export interface ParsedGuestToken {
 }
 
 export function getGuestAccessSecret(): string {
-  const secret = process.env.GUEST_ACCESS_SECRET;
-  if (!secret || secret.length < 32) {
-    throw new Error('GUEST_ACCESS_SECRET deve possuir pelo menos 32 caracteres');
-  }
+  const secret = requireConfiguredSecret('GUEST_ACCESS_SECRET', process.env.GUEST_ACCESS_SECRET);
   if (secret === process.env.JWT_SECRET) {
     throw new Error('GUEST_ACCESS_SECRET deve ser diferente de JWT_SECRET');
   }

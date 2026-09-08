@@ -43,6 +43,7 @@ describe('funções e permissões da equipe', () => {
     assert.equal(hasPermission(portaria, 'vehicle_notices:archive'), true);
     assert.equal(hasPermission(permissionsForRole('midia'), 'portaria_devices:read'), false);
     assert.equal(hasPermission(permissionsForRole('intercession'), 'prayers:project'), true);
+    assert.equal(hasPermission(permissionsForRole('intercession'), 'panels:open'), false);
   });
 
   test('permissões personalizadas são limitadas às do concedente', () => {

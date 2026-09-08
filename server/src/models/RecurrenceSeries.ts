@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
+import { REQUEST_ID_UNIQUE_INDEX } from '../utils/requestIdIndex.js';
 import { actorSchema, type IActor } from './Actor.js';
 
 export const RECURRENCE_FREQUENCIES = ['weekly', 'biweekly'] as const;
@@ -40,7 +41,7 @@ const recurrenceSeriesSchema = new Schema<IRecurrenceSeries>(
 );
 
 recurrenceSeriesSchema.index({ churchId: 1, active: 1, startDate: 1 });
-recurrenceSeriesSchema.index({ churchId: 1, requestId: 1 }, { unique: true, sparse: true });
+recurrenceSeriesSchema.index({ churchId: 1, requestId: 1 }, REQUEST_ID_UNIQUE_INDEX);
 
 export const RecurrenceSeries = mongoose.model<IRecurrenceSeries>(
   'RecurrenceSeries',

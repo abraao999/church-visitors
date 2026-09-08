@@ -14,6 +14,7 @@ import {
   runRetentionPolicy,
 } from '../services/retention.js';
 import { sendPrivateJson } from '../utils/publicRecord.js';
+import { isPlaceholderSecret } from '../utils/configuredSecret.js';
 import { validCronAuthorization } from '../utils/cronSecret.js';
 import { withChurch } from '../utils/tenant.js';
 import { requirePermission } from '../middleware/requirePermission.js';
@@ -58,7 +59,7 @@ async function retentionOverview(churchId: string) {
 /** Endpoint exclusivo do agendador. Nunca aceita chamadas sem segredo configurado. */
 router.get('/cron', async (req, res) => {
   const secret = process.env.CRON_SECRET;
-  if (!secret) {
+  if (!secret || isPlaceholderSecret(secret)) {
     return res.status(503).json({ error: 'CRON_SECRET não configurado.' });
   }
   if (!validCronAuthorization(req.headers.authorization, secret)) {

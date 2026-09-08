@@ -89,6 +89,7 @@ export function TeamPage() {
   }, [load]);
 
   const canInvite = hasPermission(user?.permissions, 'team:invite') || user?.role === 'owner';
+  const canUpdate = hasPermission(user?.permissions, 'team:update') || user?.role === 'owner';
   const churchName = data?.churchName || user?.churchName || 'igreja';
 
   return (
@@ -171,7 +172,7 @@ export function TeamPage() {
         ) : (
           <ul>
             {data.members.map((member) => (
-              <MemberRow key={member.id} member={member} />
+              <MemberRow key={member.id} member={member} canUpdate={canUpdate} />
             ))}
           </ul>
         )}
@@ -219,7 +220,7 @@ export function TeamPage() {
   );
 }
 
-function MemberRow({ member }: { member: TeamMember }) {
+function MemberRow({ member, canUpdate }: { member: TeamMember; canUpdate: boolean }) {
   const icon = TEAM_ROLE_ICONS[member.role] as AppIconName;
   return (
     <li className="team-row">
@@ -241,7 +242,7 @@ function MemberRow({ member }: { member: TeamMember }) {
         <span className="team-row-action team-row-action-placeholder" aria-hidden="true" />
       ) : (
         <Link to={`/igreja/equipe/${member.id}`} className="btn btn-secondary team-row-action">
-          Gerenciar
+          {canUpdate ? 'Gerenciar' : 'Ver'}
         </Link>
       )}
     </li>

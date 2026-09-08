@@ -1,7 +1,23 @@
 import dns from 'dns';
 import mongoose from 'mongoose';
+import { ensureRequestIdUniqueIndexes } from '../models/requestIdIndexes.js';
 
 const ATLAS_DB_NAME = 'church-visitors';
+let requestIdIndexesReady = false;
+
+async function ensureIndexesOnce(): Promise<void> {
+  if (requestIdIndexesReady) return;
+  try {
+    await ensureRequestIdUniqueIndexes();
+    requestIdIndexesReady = true;
+  } catch (error) {
+    console.error('Não foi possível atualizar o índice de requestId:', error);
+    throw new Error('Não foi possível atualizar os índices do banco.');
+  }
+}
+
+export const GENERIC_DATABASE_ERROR =
+  'Não foi possível conectar no banco. Confira MONGODB_URI e tente de novo.';
 
 /** Só troca o DNS do processo quando pedido: na Vercel o resolver nativo já funciona. */
 export function shouldOverrideAtlasDns(
@@ -18,7 +34,7 @@ function configureDnsForAtlas(uri: string): void {
   }
 }
 
-function atlasHelpMessage(error: unknown): string {
+export function atlasHelpMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
 
   if (message.includes('querySrv') || message.includes('ECONNREFUSED')) {
@@ -39,17 +55,24 @@ function atlasHelpMessage(error: unknown): string {
     return 'Seu IP não está liberado no Atlas. Vá em Network Access e adicione seu IP.';
   }
 
-  return message;
+  return GENERIC_DATABASE_ERROR;
+}
+
+/** Mensagem segura para o navegador: nunca devolve URI, senha ou texto cru do driver. */
+export function publicDatabaseError(error: unknown): string {
+  return atlasHelpMessage(error);
 }
 
 export async function connectDB(uri: string): Promise<void> {
   // Reaproveita conexão em ambientes serverless (Vercel)
   if (mongoose.connection.readyState === 1) {
+    await ensureIndexesOnce();
     return;
   }
 
   if (mongoose.connection.readyState === 2) {
     await mongoose.connection.asPromise();
+    await ensureIndexesOnce();
     return;
   }
 
@@ -71,4 +94,6 @@ export async function connectDB(uri: string): Promise<void> {
     const help = atlasHelpMessage(error);
     throw new Error(help);
   }
+
+  await ensureIndexesOnce();
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { shouldOverrideAtlasDns } from './db.js';
+import { atlasHelpMessage, GENERIC_DATABASE_ERROR, shouldOverrideAtlasDns } from './db.js';
 
 test('o DNS do Atlas não muda sozinho, mesmo com mongodb+srv', () => {
   assert.equal(shouldOverrideAtlasDns('mongodb+srv://u:p@cluster.mongodb.net/db', {}), false);
@@ -18,5 +18,13 @@ test('override só liga com MONGODB_DNS_OVERRIDE=1 e URI srv', () => {
       MONGODB_DNS_OVERRIDE: '1',
     }),
     false
+  );
+});
+
+test('falha de conexão não devolve URI nem texto cru do driver', () => {
+  assert.match(atlasHelpMessage(new Error('querySrv ECONNREFUSED')), /Falha na resolução DNS/);
+  assert.equal(
+    atlasHelpMessage(new Error('mongodb://usuario:senha-secreta@cluster.mongodb.net/church-visitors')),
+    GENERIC_DATABASE_ERROR
   );
 });

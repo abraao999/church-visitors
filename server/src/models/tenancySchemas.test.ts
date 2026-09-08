@@ -48,7 +48,10 @@ test('modelos privados possuem churchId obrigatório e índices compostos de iso
   assert.equal(Visitor.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(Visitor.schema.indexes(), { churchId: 1, createdAt: -1 }));
   assert.ok(
-    hasIndex(Visitor.schema.indexes(), { churchId: 1, requestId: 1 }, { unique: true, sparse: true })
+    hasIndex(Visitor.schema.indexes(), { churchId: 1, requestId: 1 }, {
+      unique: true,
+      partialFilterExpression: { requestId: { $type: 'string' } },
+    })
   );
 
   assert.equal(PrayerRequest.schema.path('churchId').isRequired, true);
@@ -57,7 +60,10 @@ test('modelos privados possuem churchId obrigatório e índices compostos de iso
     hasIndex(
       PrayerRequest.schema.indexes(),
       { churchId: 1, requestId: 1 },
-      { unique: true, sparse: true }
+      {
+        unique: true,
+        partialFilterExpression: { requestId: { $type: 'string' } },
+      }
     )
   );
 
@@ -78,7 +84,10 @@ test('modelos privados possuem churchId obrigatório e índices compostos de iso
     hasIndex(
       RecurrenceSeries.schema.indexes(),
       { churchId: 1, requestId: 1 },
-      { unique: true, sparse: true }
+      {
+        unique: true,
+        partialFilterExpression: { requestId: { $type: 'string' } },
+      }
     )
   );
 
@@ -98,7 +107,10 @@ test('modelos privados possuem churchId obrigatório e índices compostos de iso
   assert.equal(hasIndex(VehicleNotice.schema.indexes(), { plateNormalized: 1 }), false);
   assert.ok(hasIndex(VehicleNotice.schema.indexes(), { guestAccessId: 1, createdAt: -1 }));
   assert.ok(
-    hasIndex(VehicleNotice.schema.indexes(), { churchId: 1, requestId: 1 }, { unique: true, sparse: true })
+    hasIndex(VehicleNotice.schema.indexes(), { churchId: 1, requestId: 1 }, {
+      unique: true,
+      partialFilterExpression: { requestId: { $type: 'string' } },
+    })
   );
 
   assert.equal(GuestAccess.schema.path('churchId').isRequired, true);

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import { Church } from '../models/Church.js';
 import { User, type UserRole } from '../models/User.js';
+import { requireConfiguredSecret } from '../utils/configuredSecret.js';
 import { resolvePermissions, type Permission } from '../utils/permissions.js';
 import { readSessionToken } from '../utils/sessionCookie.js';
 
@@ -20,8 +21,6 @@ export interface AuthenticatedRequest extends Request {
   auth?: AuthContext;
 }
 
-const MIN_SECRET_LENGTH = 32;
-
 export const JWT_SECRET_HELP =
   'Falta configurar JWT_SECRET no servidor (.env ou variáveis da Vercel). ' +
   'Use uma chave com pelo menos 32 caracteres e diferente do GUEST_ACCESS_SECRET.';
@@ -31,10 +30,7 @@ export const JWT_SECRET_HELP =
  * qualquer igreja. A ausência da variável precisa interromper a operação.
  */
 export function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (!secret || secret.length < MIN_SECRET_LENGTH) {
-    throw new Error(`JWT_SECRET deve possuir pelo menos ${MIN_SECRET_LENGTH} caracteres`);
-  }
+  const secret = requireConfiguredSecret('JWT_SECRET', process.env.JWT_SECRET);
   if (secret === process.env.GUEST_ACCESS_SECRET) {
     throw new Error('JWT_SECRET deve ser diferente de GUEST_ACCESS_SECRET');
   }

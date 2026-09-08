@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { NAV_ITEMS } from '../components/navItems.ts';
 import {
+  hasAnyPermission,
   navItemVisible,
   PERMISSIONS,
   PERMISSION_GROUPS,
@@ -63,6 +64,10 @@ describe('menu lateral por permissão', () => {
 
     assert.deepEqual(visible('portaria'), ['/', '/visitantes', '/cultos', '/avisos-veiculos']);
     assert.deepEqual(visible('intercession'), ['/', '/oracao']);
+    assert.equal(
+      hasAnyPermission(permissionsForRole('intercession'), ['panels:open', 'prayers:project']),
+      true
+    );
     assert.deepEqual(visible('louvor'), ['/', '/cultos', '/paineis', '/configuracoes']);
     assert.deepEqual(visible('midia'), ['/', '/acessos', '/paineis']);
     assert.ok(visible('admin').includes('/igreja'));

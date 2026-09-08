@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
+import { REQUEST_ID_UNIQUE_INDEX } from '../utils/requestIdIndex.js';
 import { actorSchema, type IActor } from './Actor.js';
 import { guestOriginSchema, type IGuestOrigin } from './GuestOrigin.js';
 
@@ -42,7 +43,7 @@ const prayerRequestSchema = new Schema<IPrayerRequest>(
 prayerRequestSchema.index({ churchId: 1, createdAt: -1 });
 prayerRequestSchema.index({ churchId: 1, 'guestAccess.guestAccessId': 1 });
 prayerRequestSchema.index({ churchId: 1, allowProjection: 1, createdAt: -1 });
-prayerRequestSchema.index({ churchId: 1, requestId: 1 }, { unique: true, sparse: true });
+prayerRequestSchema.index({ churchId: 1, requestId: 1 }, REQUEST_ID_UNIQUE_INDEX);
 prayerRequestSchema.index({ churchId: 1, serviceId: 1, createdAt: -1 });
 prayerRequestSchema.index({ churchId: 1, createdAt: 1 });
 

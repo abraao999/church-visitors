@@ -67,6 +67,9 @@ test('assinatura da sessão nunca usa segredo padrão', () => {
 
     process.env.JWT_SECRET = process.env.GUEST_ACCESS_SECRET;
     assert.throws(() => signToken(session), /diferente de GUEST_ACCESS_SECRET/);
+
+    process.env.JWT_SECRET = 'troque-por-uma-chave-longa-e-aleatoria-jwt-32+';
+    assert.throws(() => signToken(session), /valor de exemplo/);
   } finally {
     process.env.JWT_SECRET = original;
   }

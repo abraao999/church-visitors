@@ -10,6 +10,7 @@ import {
   PERMISSION_GROUPS,
   TEAM_ROLE_LABELS,
   TEAM_ROLE_SUMMARIES,
+  hasPermission,
   permissionsForRole,
   type InvitableRole,
   type Permission,
@@ -69,7 +70,10 @@ export function TeamMemberPage() {
 
   const currentMember = member;
   const isOwnerMember = currentMember.role === 'owner';
-  const canEdit = !isOwnerMember && user?.id !== currentMember.id;
+  const canEdit =
+    !isOwnerMember &&
+    user?.id !== currentMember.id &&
+    (user?.role === 'owner' || hasPermission(user?.permissions, 'team:update'));
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -117,7 +121,11 @@ export function TeamMemberPage() {
       <header className="team-heading">
         <div>
           <h1>Acesso de {member.name}</h1>
-          <p>Altere a função e as áreas que esta pessoa pode utilizar.</p>
+          <p>
+            {canEdit
+              ? 'Altere a função e as áreas que esta pessoa pode utilizar.'
+              : 'Consulta o acesso desta pessoa.'}
+          </p>
         </div>
       </header>
 

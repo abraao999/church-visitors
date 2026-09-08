@@ -144,7 +144,7 @@ export async function deletePrayerRequest(req: AuthenticatedRequest, res: Respon
 
 router.get('/', requireAuth, requirePermission('prayers:read'), listPrayerRequests);
 router.get('/stats', requireAuth, requirePermission('prayers:read'), countPrayerRequests);
-router.get('/panel', requireAuth, requireAnyPermission('panels:open', 'prayers:read'), listPrayerRequestsPanel);
+router.get('/panel', requireAuth, requireAnyPermission('panels:open', 'prayers:read', 'prayers:project'), listPrayerRequestsPanel);
 router.post('/', requireAuth, requirePermission('prayers:create'), createPrayerRequest);
 router.delete('/:id', requireAuth, requirePermission('prayers:delete'), deletePrayerRequest);
 

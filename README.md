@@ -55,16 +55,17 @@ npm install --prefix client
 cp server/.env.example server/.env
 # Edite em server/.env:
 # - MONGODB_URI
-# - JWT_SECRET
-# - GUEST_ACCESS_SECRET (use uma chave diferente do JWT_SECRET)
+# - JWT_SECRET (obrigatório; não use o valor de exemplo)
+# - GUEST_ACCESS_SECRET (chave diferente do JWT_SECRET; não use o valor de exemplo)
+# - CRON_SECRET (protege a rotina diária; não use o valor de exemplo)
 # - BLOB_READ_WRITE_TOKEN (Vercel Blob, necessário para o logotipo da igreja)
 ```
 
-## Preparação para múltiplas igrejas
+## Isolamento por igreja
 
-Os modelos estão sendo preparados para isolar todos os dados por igreja. Documentos antigos podem
-ainda não possuir `churchId`; por isso, o campo só deverá se tornar obrigatório depois de uma
-migração controlada.
+Os modelos privados exigem `churchId`. A sessão da equipe define a igreja; o cliente nunca
+autoriza o identificador. `npm run tenancy:check` só diagnostica documentos antigos sem igreja
+— não altere dados em produção sem backup.
 
 Antes de qualquer migração:
 
@@ -92,15 +93,16 @@ feito imediatamente antes da aplicação e volte à versão anterior do código.
 
 ## Núcleo dos acessos convidados
 
-O backend possui acessos restritos a uma única permissão: `visitors:create`, `prayers:create`
-ou `vehicle_notices:create`.
+O backend autoriza uma lista de permissões no mesmo token (`types`): `visitors:create`,
+`prayers:create`, `vehicle_notices:create` e/ou `panels:read`. Não é permitido misturar
+escopo de painel de TV com formulário no mesmo acesso.
 O token público contém somente um `publicId` aleatório e uma assinatura HMAC; o identificador da
 igreja permanece no banco. A assinatura também considera a versão do acesso, permitindo invalidar
 um link antigo sem armazenar o token completo.
 
 Endpoints públicos disponíveis para a interface por QR Code:
 
-- `GET /api/public-access/:token`: retorna somente nome da igreja, nome e tipo do acesso.
+- `GET /api/public-access/:token`: retorna somente nome da igreja, nome e permissões do acesso.
 - `POST /api/public-access/:token/visitors`: cadastra até 10 visitantes quando autorizado.
 - `POST /api/public-access/:token/prayer-requests`: envia oração quando autorizado.
 - `POST /api/public-access/:token/vehicle-notices`: registra aviso de veículo quando autorizado.
@@ -123,9 +125,9 @@ explícita na página inicial ou na página de gerenciamento.
 
 ### Formulários públicos
 
-O endereço `/acesso/:token` valida o token antes de mostrar qualquer formulário. Um acesso de
-portaria exibe somente o cadastro de visitantes; um acesso de oração exibe somente o envio de
-oração. Essas páginas não possuem menu administrativo, login, indicadores ou listagens.
+O endereço `/acesso/:token` valida o token antes de mostrar qualquer formulário. Um acesso pode
+reunir visitantes, oração e avisos no mesmo QR; as opções que o token não autoriza ficam ocultas.
+Essas páginas não possuem menu administrativo, login, indicadores ou listagens.
 
 Depois do envio, a página confirma o recebimento sem devolver os registros privados. A URL antiga
 `/live/oracao` permanece apenas como uma orientação amigável para solicitar um novo QR Code.
@@ -139,7 +141,7 @@ npm run dev
 
 - Frontend: http://localhost:5173
 - Login: http://localhost:5173/login
-- API: http://localhost:3001
+- API: http://localhost:3002
 - Aviso do link público legado: http://localhost:5173/live/oracao
 
 ## Deploy na Vercel
@@ -162,8 +164,8 @@ Em **Network Access**, libere `0.0.0.0/0` (a Vercel usa IPs dinâmicos).
 | Nome | Onde | Exemplo |
 |------|------|---------|
 | `MONGODB_URI` | Server | connection string do Atlas |
-| `JWT_SECRET` | Server | chave longa e aleatória |
-| `GUEST_ACCESS_SECRET` | Server | outra chave longa e aleatória |
+| `JWT_SECRET` | Server | chave longa e aleatória (`openssl rand -hex 32`; não copie o exemplo) |
+| `GUEST_ACCESS_SECRET` | Server | outra chave longa e aleatória, diferente do JWT |
 | `CRON_SECRET` | Server | chave aleatória para proteger a limpeza automática diária |
 | `BLOB_READ_WRITE_TOKEN` | Server | token do Vercel Blob para o logotipo da igreja |
 

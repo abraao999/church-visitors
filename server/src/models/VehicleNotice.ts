@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
+import { REQUEST_ID_UNIQUE_INDEX } from '../utils/requestIdIndex.js';
 import { actorSchema, type IActor } from './Actor.js';
 import { guestOriginSchema, type IGuestOrigin } from './GuestOrigin.js';
 
@@ -102,7 +103,7 @@ const vehicleNoticeSchema = new Schema<IVehicleNotice>(
 vehicleNoticeSchema.index({ churchId: 1, status: 1, createdAt: -1 });
 vehicleNoticeSchema.index({ churchId: 1, plateNormalized: 1, createdAt: -1 });
 vehicleNoticeSchema.index({ guestAccessId: 1, createdAt: -1 });
-vehicleNoticeSchema.index({ churchId: 1, requestId: 1 }, { unique: true, sparse: true });
+vehicleNoticeSchema.index({ churchId: 1, requestId: 1 }, REQUEST_ID_UNIQUE_INDEX);
 vehicleNoticeSchema.index({ churchId: 1, serviceId: 1, createdAt: -1 });
 vehicleNoticeSchema.index({ churchId: 1, resolvedAt: 1 });
 vehicleNoticeSchema.index({ churchId: 1, archived: 1, updatedAt: 1 });

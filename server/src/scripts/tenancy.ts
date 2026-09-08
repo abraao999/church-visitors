@@ -2,10 +2,19 @@ import 'dotenv/config';
 import mongoose, { Types } from 'mongoose';
 import { connectDB } from '../config/db.js';
 import { Church } from '../models/Church.js';
+import { GuestAccess } from '../models/GuestAccess.js';
 import { HolyricsSettings } from '../models/HolyricsSettings.js';
+import { PortariaDevice } from '../models/PortariaDevice.js';
+import { PortariaPairing } from '../models/PortariaPairing.js';
 import { PrayerRequest } from '../models/PrayerRequest.js';
+import { RecurrenceSeries } from '../models/RecurrenceSeries.js';
+import { RetentionPolicy } from '../models/RetentionPolicy.js';
+import { RetentionRun } from '../models/RetentionRun.js';
 import { Service } from '../models/Service.js';
+import { TeamAuditEvent } from '../models/TeamAuditEvent.js';
+import { TeamInvitation } from '../models/TeamInvitation.js';
 import { User } from '../models/User.js';
+import { VehicleNotice } from '../models/VehicleNotice.js';
 import { Visitor } from '../models/Visitor.js';
 import { createChurchSlug, normalizeChurchName } from '../utils/church.js';
 
@@ -17,7 +26,21 @@ interface CollectionDiagnostic {
   withoutChurch: number;
 }
 
-const TENANT_COLLECTIONS = [Visitor, PrayerRequest, Service, HolyricsSettings] as const;
+const TENANT_COLLECTIONS = [
+  Visitor,
+  PrayerRequest,
+  Service,
+  HolyricsSettings,
+  VehicleNotice,
+  GuestAccess,
+  PortariaDevice,
+  PortariaPairing,
+  TeamInvitation,
+  TeamAuditEvent,
+  RecurrenceSeries,
+  RetentionPolicy,
+  RetentionRun,
+] as const;
 
 function argumentValue(name: string): string | undefined {
   const index = process.argv.indexOf(name);

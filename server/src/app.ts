@@ -1,5 +1,5 @@
 import express from 'express';
-import { connectDB } from './config/db.js';
+import { connectDB, publicDatabaseError } from './config/db.js';
 import { getJwtSecret } from './middleware/auth.js';
 import { createCorsMiddleware, securityHeaders } from './middleware/httpSecurity.js';
 import { getGuestAccessSecret } from './utils/guestToken.js';
@@ -66,7 +66,7 @@ export function createApp() {
     } catch (error) {
       console.error('Erro ao conectar no MongoDB:', error);
       res.status(500).json({
-        error: error instanceof Error ? error.message : 'Falha ao conectar no banco',
+        error: publicDatabaseError(error),
       });
     }
   });
