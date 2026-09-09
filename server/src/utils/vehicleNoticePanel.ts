@@ -1,3 +1,5 @@
+import { sanitizePanelText } from './panelText.js';
+
 export const VEHICLE_PANEL_PAGE_SIZE = 4;
 export const VEHICLE_PANEL_ROTATE_MS = 12_000;
 
@@ -17,16 +19,7 @@ const PANEL_INSTRUCTIONS: Record<string, string> = {
 };
 
 export function sanitizePanelInstruction(value: string, max = 80): string {
-  return value
-    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&lt;|&gt;|&amp;|&quot;|&#39;/gi, ' ')
-    // Remove caracteres de controle que quebrariam o layout da TV.
-    // eslint-disable-next-line no-control-regex -- sanitização intencional
-    .replace(/[\u0000-\u001F\u007F]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, max);
+  return sanitizePanelText(value, max);
 }
 
 export function vehiclePanelInstruction(

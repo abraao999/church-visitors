@@ -252,6 +252,8 @@ export interface Visitor {
   createdBy?: Actor;
   guestAccess?: GuestOrigin;
   serviceId?: string;
+  panelObservation?: string;
+  showObservationOnPanel?: boolean;
   createdAt: string;
 }
 
@@ -273,6 +275,8 @@ export interface CreateVisitorDto {
     name: string;
     city: string;
     relationship?: Relationship;
+    panelObservation?: string;
+    showObservationOnPanel?: boolean;
   }>;
   serviceId?: string;
 }
@@ -302,6 +306,47 @@ export interface VisitorPanelItem {
   city: string;
   visitDate: string;
   createdAt: string;
+}
+
+export interface WorshipPanelChurch {
+  name: string;
+  logoUrl?: string;
+  primaryColor?: string;
+  accentColor?: string;
+  timezone: string;
+}
+
+export interface WorshipPanelService {
+  title: string;
+  date: string;
+  status: string;
+}
+
+export interface WorshipPanelVisitorMember {
+  id: string;
+  name: string;
+  panelObservation?: string;
+}
+
+export interface WorshipPanelVisitorGroup {
+  id: string;
+  city?: string;
+  members: WorshipPanelVisitorMember[];
+}
+
+export interface WorshipPanelPrayer {
+  id: string;
+  text: string;
+  firstName?: string;
+  anonymous: boolean;
+}
+
+export interface WorshipPanelPayload {
+  church: WorshipPanelChurch;
+  service: WorshipPanelService | null;
+  visitors: WorshipPanelVisitorGroup[];
+  prayers: WorshipPanelPrayer[];
+  updatedAt: string;
 }
 
 export interface ServicePanelItem {

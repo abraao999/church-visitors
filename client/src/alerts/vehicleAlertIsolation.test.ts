@@ -11,6 +11,7 @@ test('painéis de TV e páginas públicas não carregam o provider de alertas', 
     'pages/panels/VehicleNoticesPanelPage.tsx',
     'pages/PublicAccessPage.tsx',
     'pages/panels/HymnsPanelPage.tsx',
+    'pages/panels/WorshipPanelPage.tsx',
   ];
   for (const file of files) {
     const source = readFileSync(join(root, file), 'utf8');

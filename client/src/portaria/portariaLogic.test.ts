@@ -75,6 +75,11 @@ test('requestId permanece estável e único por item', () => {
 
 test('service worker não coloca API nem token de pareamento em cache', () => {
   assert.equal(cachePolicyFor(new URL('https://igreja.test/api/visitors')), 'network-only');
+  assert.equal(cachePolicyFor(new URL('https://igreja.test/api/worship-panel')), 'network-only');
+  assert.equal(
+    cachePolicyFor(new URL('https://igreja.test/api/public-access/token/panels/worship')),
+    'network-only'
+  );
   assert.equal(cachePolicyFor(new URL('https://igreja.test/portaria?parear=abc')), 'network-only');
   assert.equal(cachePolicyFor(new URL('https://igreja.test/portaria')), 'network-first-nav');
   assert.equal(cachePolicyFor(new URL('https://igreja.test/assets/app-hash.js')), 'cache-first');

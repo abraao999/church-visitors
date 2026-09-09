@@ -55,7 +55,7 @@ export function PrayerRequestsPage() {
           <p>Registre com cuidado os pedidos compartilhados pela igreja.</p>
         </div>
         {canProject && (
-          <Link to="/painel/oracao" className="prayer-panel-link">
+          <Link to="/paineis/culto" className="prayer-panel-link">
             <AppIcon name="panels" />
             <span><strong>Ver painel</strong><small>Acompanhar pedidos de hoje</small></span>
             <AppIcon name="arrow" />

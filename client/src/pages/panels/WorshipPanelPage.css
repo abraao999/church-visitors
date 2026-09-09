@@ -1,0 +1,482 @@
+.worship-tv {
+  --tv-bg: #f4f1ea;
+  --tv-surface: #ffffff;
+  --tv-border: #e4dfd6;
+  --tv-text: #1c1917;
+  --tv-muted: #6b6560;
+  --tv-primary: #2563eb;
+  --tv-primary-soft: color-mix(in srgb, var(--tv-primary) 12%, #ffffff);
+  --tv-accent: #b45309;
+  --tv-accent-soft: color-mix(in srgb, var(--tv-accent) 14%, #ffffff);
+  --tv-success: #16a34a;
+  --tv-pad-x: clamp(1.4rem, 3.2vw, 3.4rem);
+  --tv-pad-y: clamp(1rem, 2.2vh, 1.8rem);
+
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  max-width: 100vw;
+  max-height: 100vh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: var(--tv-pad-y) var(--tv-pad-x);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--tv-primary) 8%, transparent), transparent 34%),
+    radial-gradient(circle at bottom left, color-mix(in srgb, var(--tv-accent) 8%, transparent), transparent 30%),
+    var(--tv-bg);
+  color: var(--tv-text);
+  color-scheme: light;
+  user-select: none;
+}
+
+.worship-tv *,
+.worship-tv *::before,
+.worship-tv *::after {
+  box-sizing: border-box;
+}
+
+.worship-tv-top,
+.worship-tv-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.worship-tv-brand,
+.worship-tv-meta,
+.worship-tv-date,
+.worship-tv-live {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.worship-tv-brand {
+  gap: 0.75rem;
+  font-size: clamp(1rem, 1.35vw, 1.35rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.worship-tv-logo,
+.worship-tv-brand .brand-logo-image {
+  width: clamp(2.2rem, 3vw, 3rem);
+  height: clamp(2.2rem, 3vw, 3rem);
+  border-radius: 0.6rem;
+  object-fit: contain;
+  background: var(--tv-accent-soft);
+  color: var(--tv-accent);
+}
+
+.worship-tv-meta {
+  gap: clamp(1rem, 2vw, 2rem);
+}
+
+.worship-tv-live {
+  gap: 0.5rem;
+  color: var(--tv-success);
+  font-size: clamp(0.78rem, 1vw, 0.95rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.worship-tv-live-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--tv-success);
+  box-shadow: 0 0 0 0.28rem rgba(22, 163, 74, 0.16);
+}
+
+.worship-tv-date {
+  gap: 0.7rem;
+  text-align: right;
+}
+
+.worship-tv-date .app-icon {
+  width: clamp(1.5rem, 2vw, 2.1rem);
+  height: clamp(1.5rem, 2vw, 2.1rem);
+  color: var(--tv-accent);
+}
+
+.worship-tv-date strong {
+  display: block;
+  color: var(--tv-accent);
+  font-size: clamp(0.75rem, 1vw, 0.95rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.worship-tv-date span {
+  display: block;
+  color: var(--tv-text);
+  font-size: clamp(1.05rem, 1.7vw, 1.55rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.worship-tv-heading {
+  margin-top: clamp(0.7rem, 1.6vh, 1.2rem);
+  padding-bottom: clamp(0.7rem, 1.4vh, 1.1rem);
+}
+
+.worship-tv-heading h1 {
+  margin: 0;
+  font-size: clamp(2.1rem, 4.4vw, 3.6rem);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1.02;
+}
+
+.worship-tv-heading p {
+  margin: 0.4rem 0 0;
+  color: var(--tv-muted);
+  font-size: clamp(0.95rem, 1.35vw, 1.25rem);
+}
+
+.worship-tv-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(1rem, 2vw, 1.8rem);
+  min-height: 0;
+  margin-top: clamp(0.6rem, 1.4vh, 1.1rem);
+}
+
+.worship-tv.is-visitors-empty .worship-tv-columns,
+.worship-tv.is-prayers-empty .worship-tv-columns {
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+}
+
+.worship-tv.is-visitors-empty .worship-tv-column.is-prayers.is-wide,
+.worship-tv.is-prayers-empty .worship-tv-column.is-visitors.is-wide {
+  min-width: 0;
+}
+
+.worship-tv.is-visitors-empty .worship-tv-columns {
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+}
+
+.worship-tv.is-prayers-empty .worship-tv-columns {
+  grid-template-columns: minmax(0, 1.22fr) minmax(0, 0.78fr);
+}
+
+.worship-tv-column {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(0.9rem, 1.6vh, 1.3rem);
+  border-radius: clamp(1.1rem, 1.4vw, 1.5rem);
+}
+
+.worship-tv-column.is-visitors {
+  background: color-mix(in srgb, var(--tv-primary) 8%, #ffffff);
+}
+
+.worship-tv-column.is-prayers {
+  background: color-mix(in srgb, var(--tv-accent) 9%, #ffffff);
+}
+
+.worship-tv-column-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: clamp(0.7rem, 1.3vh, 1rem);
+}
+
+.worship-tv-column-head .app-icon {
+  width: clamp(1.5rem, 2vw, 2rem);
+  height: clamp(1.5rem, 2vw, 2rem);
+}
+
+.worship-tv-column.is-visitors .worship-tv-column-head .app-icon {
+  color: var(--tv-primary);
+}
+
+.worship-tv-column.is-prayers .worship-tv-column-head .app-icon {
+  color: var(--tv-accent);
+}
+
+.worship-tv-column-head h2 {
+  margin: 0;
+  font-size: clamp(1rem, 1.5vw, 1.35rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.worship-tv-column-head p {
+  margin: 0.15rem 0 0;
+  color: var(--tv-muted);
+  font-size: clamp(0.68rem, 0.95vw, 0.82rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.worship-tv-list {
+  display: grid;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.55rem, 1.1vh, 0.9rem);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.worship-tv-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(0.7rem, 1.2vw, 1.1rem);
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(0.7rem, 1.4vh, 1.1rem) clamp(0.85rem, 1.4vw, 1.25rem);
+  overflow: hidden;
+  border-radius: clamp(0.85rem, 1.1vw, 1.15rem);
+  background: var(--tv-surface);
+  box-shadow: 0 8px 22px rgba(28, 25, 23, 0.05);
+}
+
+.worship-tv-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(2.6rem, 3.6vw, 3.5rem);
+  height: clamp(2.6rem, 3.6vw, 3.5rem);
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.worship-tv-column.is-visitors .worship-tv-avatar {
+  background: var(--tv-primary-soft);
+  color: var(--tv-primary);
+}
+
+.worship-tv-column.is-prayers .worship-tv-avatar {
+  background: var(--tv-accent-soft);
+  color: var(--tv-accent);
+}
+
+.worship-tv-avatar .app-icon {
+  width: 55%;
+  height: 55%;
+}
+
+.worship-tv-card-copy {
+  min-width: 0;
+}
+
+.worship-tv-members {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.worship-tv-card.is-group .worship-tv-members {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 0.8rem;
+}
+
+.worship-tv-members > li {
+  min-width: 0;
+}
+
+.worship-tv-card-copy h3 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--tv-text);
+  font-size: clamp(1.15rem, 1.85vw, 1.7rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.worship-tv-card.is-prayer {
+  align-items: start;
+}
+
+.worship-tv-card.is-prayer .worship-tv-avatar {
+  margin-top: 0.15rem;
+}
+
+.worship-tv-card.is-prayer h3 {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  font-size: clamp(1.05rem, 1.55vw, 1.45rem);
+  line-height: 1.25;
+}
+
+.worship-tv-card.is-group .worship-tv-card-copy h3 {
+  font-size: clamp(0.98rem, 1.5vw, 1.4rem);
+}
+
+.worship-tv-city,
+.worship-tv-note,
+.worship-tv-person {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  margin: 0.28rem 0 0;
+}
+
+.worship-tv-city span,
+.worship-tv-note span {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.worship-tv-city {
+  color: var(--tv-text);
+  font-size: clamp(0.95rem, 1.25vw, 1.15rem);
+  font-weight: 650;
+}
+
+.worship-tv-city .app-icon {
+  width: 1em;
+  height: 1em;
+  color: var(--tv-primary);
+}
+
+.worship-tv-note {
+  max-width: max-content;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: var(--tv-primary-soft);
+  color: var(--tv-primary);
+  font-size: clamp(0.78rem, 1.05vw, 0.95rem);
+  font-weight: 700;
+}
+
+.worship-tv-card.is-group .worship-tv-note {
+  max-width: 100%;
+  padding: 0.12rem 0.42rem;
+  font-size: clamp(0.68rem, 0.86vw, 0.82rem);
+}
+
+.worship-tv-note .app-icon {
+  width: 0.95em;
+  height: 0.95em;
+}
+
+.worship-tv-person {
+  color: var(--tv-muted);
+  font-size: clamp(0.9rem, 1.15vw, 1.05rem);
+  font-weight: 650;
+}
+
+.worship-tv-column-empty,
+.worship-tv-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  margin: 0;
+  color: var(--tv-muted);
+  font-size: clamp(1.05rem, 1.6vw, 1.45rem);
+  font-weight: 700;
+  text-align: center;
+}
+
+.worship-tv-center {
+  border: 1px dashed var(--tv-border);
+  border-radius: 1.2rem;
+  background: color-mix(in srgb, var(--tv-surface) 86%, transparent);
+}
+
+.worship-tv-center p,
+.worship-tv-column-empty {
+  padding: 1rem;
+}
+
+.worship-tv-footer {
+  margin-top: clamp(0.65rem, 1.4vh, 1rem);
+  padding-top: clamp(0.55rem, 1.1vh, 0.85rem);
+  color: var(--tv-muted);
+}
+
+.worship-tv-footer p {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.worship-tv-footer .app-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--tv-primary);
+}
+
+.worship-tv-footer em {
+  font-size: clamp(0.85rem, 1.05vw, 1rem);
+  font-style: normal;
+}
+
+.worship-tv-dots {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.worship-tv-dots i {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tv-text) 22%, transparent);
+}
+
+.worship-tv-dots i.is-active {
+  background: var(--tv-text);
+}
+
+.worship-tv-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+@media (max-height: 800px) {
+  .worship-tv-heading h1 {
+    font-size: clamp(1.7rem, 3.6vw, 2.5rem);
+  }
+
+  .worship-tv-card-copy h3 {
+    font-size: clamp(1.05rem, 1.6vw, 1.4rem);
+  }
+}
+
+@media (min-width: 3840px) {
+  .worship-tv {
+    --tv-pad-x: 4.5rem;
+    --tv-pad-y: 2.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .worship-tv-live-dot {
+    box-shadow: none;
+  }
+
+  .worship-tv,
+  .worship-tv * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

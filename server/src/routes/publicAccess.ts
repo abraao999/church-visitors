@@ -16,7 +16,9 @@ import {
   fetchPrayerPanel,
   fetchVehicleNoticePanel,
   fetchVisitorPanel,
+  fetchWorshipPanel,
 } from '../services/panelData.js';
+import { normalizePanelObservation, readShowObservationOnPanel } from '../utils/panelText.js';
 import { resolveActiveService } from '../services/activeService.js';
 import { parseDateOnly } from '../utils/dayRange.js';
 import { parseVehiclePlate } from '../utils/vehiclePlate.js';
@@ -104,7 +106,13 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
       const city = normalizeSingleLine(item.city, 100);
       const relationshipRaw = typeof item.relationship === 'string' ? item.relationship : 'outro';
       if (!name || !city || !isRelationship(relationshipRaw)) return null;
-      return { name, city, relationship: relationshipRaw };
+      return {
+        name,
+        city,
+        relationship: relationshipRaw,
+        panelObservation: normalizePanelObservation(item.panelObservation),
+        showObservationOnPanel: readShowObservationOnPanel(item.showObservationOnPanel),
+      };
     });
 
     const people = visitors.filter((visitor): visitor is NonNullable<typeof visitor> => visitor !== null);
@@ -157,6 +165,8 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
         name: visitor.name,
         relationship: visitor.relationship,
         city: visitor.city,
+        panelObservation: visitor.panelObservation,
+        showObservationOnPanel: visitor.showObservationOnPanel,
         visitDate: new Date(),
         source: 'guest_access' as const,
         guestAccess,
@@ -390,5 +400,6 @@ panelRoute('visitors', fetchVisitorPanel);
 panelRoute('prayers', fetchPrayerPanel);
 panelRoute('hymns', fetchHymnPanel);
 panelRoute('vehicle-notices', (churchId) => fetchVehicleNoticePanel(churchId));
+panelRoute('worship', async (churchId) => fetchWorshipPanel(churchId));
 
 export default router;

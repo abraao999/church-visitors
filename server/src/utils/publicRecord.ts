@@ -11,7 +11,7 @@ import {
  */
 
 export const VISITOR_LIST_FIELDS =
-  'name relationship city visitDate source createdBy.name guestAccess.name serviceId createdAt';
+  'name relationship city visitDate source createdBy.name guestAccess.name serviceId panelObservation showObservationOnPanel createdAt';
 
 export const PRAYER_LIST_FIELDS =
   'name request source isAnonymous allowProjection createdBy.name guestAccess.name serviceId createdAt';
@@ -47,6 +47,8 @@ export function serializeVisitor(visitor: {
   createdBy?: { name?: string } | null;
   guestAccess?: { name?: string } | null;
   serviceId?: unknown;
+  panelObservation?: string;
+  showObservationOnPanel?: boolean;
   createdAt?: Date | string;
 }) {
   return {
@@ -59,6 +61,8 @@ export function serializeVisitor(visitor: {
     createdBy: publicPersonName(visitor.createdBy),
     guestAccess: publicPersonName(visitor.guestAccess),
     serviceId: visitor.serviceId ? String(visitor.serviceId) : undefined,
+    panelObservation: visitor.panelObservation || undefined,
+    showObservationOnPanel: visitor.showObservationOnPanel === true,
     createdAt: visitor.createdAt,
   };
 }

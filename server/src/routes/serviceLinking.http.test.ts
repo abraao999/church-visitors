@@ -13,7 +13,7 @@ import { Visitor } from '../models/Visitor.js';
 import type { GuestAccessRequest } from '../middleware/guestAccess.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { permissionsForRole } from '../utils/permissions.js';
-import { fetchPrayerPanel, fetchVisitorPanel } from '../services/panelData.js';
+import { fetchPrayerPanel, fetchVisitorPanel, fetchWorshipPanel } from '../services/panelData.js';
 
 process.env.JWT_SECRET = 'teste-jwt-vinculo-culto-chave-longa-1234567890ab';
 process.env.GUEST_ACCESS_SECRET = 'teste-guest-vinculo-culto-chave-longa-098765';
@@ -237,8 +237,12 @@ describe('vínculo de registros ao culto ativo', () => {
     stubLookup(null);
     const emptyVisitors = await fetchVisitorPanel(String(churchA), new Date());
     const emptyPrayers = await fetchPrayerPanel(String(churchA), new Date());
+    const emptyWorship = await fetchWorshipPanel(String(churchA));
     assert.deepEqual(emptyVisitors, []);
     assert.deepEqual(emptyPrayers, []);
+    assert.equal(emptyWorship.service, null);
+    assert.deepEqual(emptyWorship.visitors, []);
+    assert.deepEqual(emptyWorship.prayers, []);
 
     stubLookup(activeService(churchA));
     stubMethod(Visitor, 'find', (filter: Record<string, unknown>) => {

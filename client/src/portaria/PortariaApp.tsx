@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AppIcon } from '../components/AppIcon';
+import { PanelObservationFields } from '../components/PanelObservationFields';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { RELATIONSHIPS, VEHICLE_NOTICE_ACTIONS, type PortariaOfflinePermission, type Relationship, type VehicleNoticeAction } from '../types';
 import { maskVehiclePlateInput } from '../utils/vehiclePlate';
@@ -369,7 +370,9 @@ function PortariaHome() {
 function PortariaVisitors() {
   const { session, connection, saveVisitors, capacity } = usePortaria();
   const [city, setCity] = useState('');
-  const [people, setPeople] = useState([{ id: 1, name: '', relationship: 'outro' as Relationship }]);
+  const [people, setPeople] = useState([
+    { id: 1, name: '', relationship: 'outro' as Relationship, panelObservation: '', showObservationOnPanel: false },
+  ]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -387,6 +390,8 @@ function PortariaVisitors() {
       name: person.name.trim(),
       city: city.trim(),
       relationship: person.relationship,
+      panelObservation: person.panelObservation.trim(),
+      showObservationOnPanel: person.showObservationOnPanel,
     }));
     if (!city.trim() || visitors.some((person) => !person.name)) {
       setError('Informe a cidade e o nome de cada pessoa.');
@@ -395,7 +400,9 @@ function PortariaVisitors() {
     setSaving(true);
     try {
       await saveVisitors({ visitors });
-      setPeople([{ id: Date.now(), name: '', relationship: 'outro' }]);
+      setPeople([
+        { id: Date.now(), name: '', relationship: 'outro', panelObservation: '', showObservationOnPanel: false },
+      ]);
       setCity('');
       setMessage('Cadastro salvo neste aparelho');
     } catch (err) {
@@ -458,6 +465,26 @@ function PortariaVisitors() {
                   required
                 />
               </label>
+              <PanelObservationFields
+                id={`portaria-observation-${person.id}`}
+                observation={person.panelObservation}
+                showOnPanel={person.showObservationOnPanel}
+                disabled={saving}
+                onObservationChange={(value) =>
+                  setPeople((current) =>
+                    current.map((item) =>
+                      item.id === person.id ? { ...item, panelObservation: value } : item
+                    )
+                  )
+                }
+                onShowChange={(value) =>
+                  setPeople((current) =>
+                    current.map((item) =>
+                      item.id === person.id ? { ...item, showObservationOnPanel: value } : item
+                    )
+                  )
+                }
+              />
               {people.length > 1 && (
                 <button
                   type="button"
@@ -477,7 +504,7 @@ function PortariaVisitors() {
               onClick={() =>
                 setPeople((current) => [
                   ...current,
-                  { id: Date.now(), name: '', relationship: 'outro' },
+                  { id: Date.now(), name: '', relationship: 'outro', panelObservation: '', showObservationOnPanel: false },
                 ])
               }
             >

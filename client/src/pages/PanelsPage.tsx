@@ -17,18 +17,11 @@ const PANELS: Array<{
     color: 'purple',
   },
   {
-    to: '/painel/visitantes',
-    title: 'Visitantes',
-    description: 'Acompanhe os visitantes registrados pela portaria.',
+    to: '/paineis/culto',
+    title: 'Painel do culto',
+    description: 'Visitantes e pedidos de oração no mesmo telão.',
     icon: 'users',
     color: 'blue',
-  },
-  {
-    to: '/painel/oracao',
-    title: 'Pedidos de oração',
-    description: 'Visualize os pedidos enviados pela portaria e pela live.',
-    icon: 'prayer',
-    color: 'yellow',
   },
   {
     to: '/painel/veiculos',

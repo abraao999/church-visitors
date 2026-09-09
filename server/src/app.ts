@@ -6,6 +6,7 @@ import { getGuestAccessSecret } from './utils/guestToken.js';
 import authRouter from './routes/auth.js';
 import visitorsRouter from './routes/visitors.js';
 import prayerRequestsRouter from './routes/prayerRequests.js';
+import worshipPanelRouter from './routes/worshipPanel.js';
 import servicesRouter from './routes/services.js';
 import holyricsRouter from './routes/holyrics.js';
 import publicAccessRouter from './routes/publicAccess.js';
@@ -78,6 +79,7 @@ export function createApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/visitors', visitorsRouter);
   app.use('/api/prayer-requests', prayerRequestsRouter);
+  app.use('/api/worship-panel', worshipPanelRouter);
   app.use('/api/services', servicesRouter);
   app.use('/api/holyrics', holyricsRouter);
   app.use('/api/public-access', publicAccessRouter);

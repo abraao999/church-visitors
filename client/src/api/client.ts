@@ -38,6 +38,7 @@ import type {
   VehicleNoticeStatus,
   VehiclePanelNotice,
   Visitor,
+  WorshipPanelPayload,
 } from '../types';
 
 const API_BASE = '/api';
@@ -188,6 +189,14 @@ export const api = {
       cache: 'no-store',
     });
     return handleResponse<PrayerRequestPanelItem[]>(response);
+  },
+
+  async getWorshipPanel(): Promise<WorshipPanelPayload> {
+    const response = await apiFetch(`${API_BASE}/worship-panel`, {
+      headers: authHeaders(),
+      cache: 'no-store',
+    });
+    return handleResponse<WorshipPanelPayload>(response);
   },
 
   async getVisitorsPanel(date?: string): Promise<VisitorPanelItem[]> {

@@ -29,6 +29,7 @@ import { Service } from '../models/Service.js';
 import { createGuestPublicId, createGuestToken } from '../utils/guestToken.js';
 import { withChurch } from '../utils/tenant.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
+import { listWorshipPanel } from './worshipPanel.js';
 
 process.env.GUEST_ACCESS_SECRET = 'teste-guest-isolamento-igrejas-chave-outra-654321';
 process.env.JWT_SECRET = 'teste-jwt-isolamento-igrejas-chave-longa-123456';
@@ -564,5 +565,44 @@ describe('acessos convidados', () => {
     });
 
     assert.equal(String(updateFilter?.churchId), String(churchA));
+  });
+
+  test('painel do culto só consulta a igreja da sessão e o culto ativo dela', async () => {
+    const serviceId = new Types.ObjectId();
+    stubMethod(Church, 'findById', () => ({
+      select: async () => ({ name: 'Igreja Alfa', timezone: 'America/Sao_Paulo' }),
+    }));
+    stubMethod(Service, 'updateOne', async () => ({ modifiedCount: 0 }));
+    stubMethod(Service, 'find', async () => [
+      {
+        _id: serviceId,
+        churchId: churchA,
+        title: 'Culto',
+        date: new Date(),
+        time: '19:00',
+        scheduledStartAt: new Date(Date.now() - 5 * 60_000),
+        durationMinutes: 120,
+        activationLeadMinutes: 30,
+        hymns: [],
+      },
+    ]);
+    let visitorFilter: Record<string, unknown> | undefined;
+    let prayerFilter: Record<string, unknown> | undefined;
+    stubMethod(Visitor, 'find', (filter: Record<string, unknown>) => {
+      visitorFilter = filter;
+      return { select() { return this; }, async sort() { return []; } };
+    });
+    stubMethod(PrayerRequest, 'find', (filter: Record<string, unknown>) => {
+      prayerFilter = filter;
+      return { select() { return this; }, async sort() { return []; } };
+    });
+
+    const { res, state } = mockRes();
+    await listWorshipPanel(authReq(churchA, userA), res);
+    assert.equal(state.statusCode, 200);
+    assert.equal(String(visitorFilter?.churchId), String(churchA));
+    assert.equal(String(visitorFilter?.serviceId), String(serviceId));
+    assert.equal(String(prayerFilter?.churchId), String(churchA));
+    assert.notEqual(String(visitorFilter?.churchId), String(churchB));
   });
 });

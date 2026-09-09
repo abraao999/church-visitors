@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test src/utils/publicOrigin.test.ts src/utils/permissions.test.ts src/components/navItems.test.ts src/utils/serviceSchedule.test.ts src/alerts/vehicleAlertPrefs.test.ts src/alerts/vehicleAlertLogic.test.ts src/alerts/vehicleAlertIsolation.test.ts src/portaria/portariaLogic.test.ts src/portaria/portariaIsolation.test.ts src/utils/branding.test.ts src/utils/favicon.test.ts"
+    "test": "node --experimental-strip-types --test src/utils/publicOrigin.test.ts src/utils/permissions.test.ts src/components/navItems.test.ts src/utils/serviceSchedule.test.ts src/alerts/vehicleAlertPrefs.test.ts src/alerts/vehicleAlertLogic.test.ts src/alerts/vehicleAlertIsolation.test.ts src/portaria/portariaLogic.test.ts src/portaria/portariaIsolation.test.ts src/utils/branding.test.ts src/utils/favicon.test.ts src/utils/worshipPanel.test.ts"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",

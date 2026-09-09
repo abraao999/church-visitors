@@ -14,13 +14,19 @@ export function formatTodayLabel(): string {
   });
 }
 
-export function formatPanelWeekday(date = new Date()): string {
-  return date.toLocaleDateString('pt-BR', { weekday: 'long' }).toUpperCase();
+export function formatPanelWeekday(date = new Date(), timeZone?: string): string {
+  return date
+    .toLocaleDateString('pt-BR', { weekday: 'long', ...(timeZone ? { timeZone } : {}) })
+    .toUpperCase();
 }
 
-export function formatPanelDayMonth(date = new Date()): string {
+export function formatPanelDayMonth(date = new Date(), timeZone?: string): string {
   return date
-    .toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })
+    .toLocaleDateString('pt-BR', {
+      day: 'numeric',
+      month: 'long',
+      ...(timeZone ? { timeZone } : {}),
+    })
     .toUpperCase();
 }
 

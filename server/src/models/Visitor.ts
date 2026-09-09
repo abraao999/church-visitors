@@ -21,6 +21,9 @@ export interface IVisitor extends Document {
   serviceId?: Types.ObjectId;
   capturedAt?: Date;
   anonymizedAt?: Date;
+  /** Texto autorizado para o telão. Não reutiliza observação interna. */
+  panelObservation?: string;
+  showObservationOnPanel?: boolean;
   createdAt: Date;
 }
 
@@ -48,6 +51,8 @@ const visitorSchema = new Schema<IVisitor>(
     serviceId: { type: Schema.Types.ObjectId, ref: 'Service' },
     capturedAt: { type: Date },
     anonymizedAt: { type: Date },
+    panelObservation: { type: String, trim: true, maxlength: 80, default: '' },
+    showObservationOnPanel: { type: Boolean, default: false },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

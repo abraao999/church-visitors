@@ -18,6 +18,7 @@ import {
   VISITOR_LIST_FIELDS,
 } from '../utils/publicRecord.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
+import { normalizePanelObservation, readShowObservationOnPanel } from '../utils/panelText.js';
 
 const router = Router();
 
@@ -29,6 +30,8 @@ type VisitorInput = {
   name: string;
   relationship: Relationship;
   city: string;
+  panelObservation: string;
+  showObservationOnPanel: boolean;
 };
 
 const MAX_VISITORS_PER_REQUEST = 10;
@@ -63,7 +66,13 @@ function normalizeVisitors(body: Record<string, unknown>): { data: VisitorInput[
     if (!name || name.length > 120 || !city || city.length > 100 || !relationship) {
       return { data: [], error: 'Informe o nome e a cidade de cada visitante' };
     }
-    data.push({ name, relationship, city });
+    data.push({
+      name,
+      relationship,
+      city,
+      panelObservation: normalizePanelObservation(raw.panelObservation),
+      showObservationOnPanel: readShowObservationOnPanel(raw.showObservationOnPanel),
+    });
   }
 
   return { data };
@@ -153,6 +162,8 @@ export async function createVisitors(req: AuthenticatedRequest, res: Response) {
         name: person.name,
         relationship: person.relationship,
         city: person.city,
+        panelObservation: person.panelObservation,
+        showObservationOnPanel: person.showObservationOnPanel,
         visitDate,
         source: 'owner',
         createdBy,

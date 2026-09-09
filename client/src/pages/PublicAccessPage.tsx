@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon } from '../components/AppIcon';
+import { PanelObservationFields } from '../components/PanelObservationFields';
 import { BrandMark } from '../components/BrandMark';
 import { useBranding } from '../theme/BrandingContext';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -23,6 +24,8 @@ import './PublicAccessMenu.css';
 interface PersonDraft {
   id: number;
   name: string;
+  panelObservation: string;
+  showObservationOnPanel: boolean;
 }
 
 const MAX_VISITORS = 10;
@@ -190,7 +193,9 @@ function PublicVisitorsForm({
   const requestId = useRef(createRequestId()).current;
   const nextId = useRef(2);
   const [city, setCity] = useState('');
-  const [people, setPeople] = useState<PersonDraft[]>([{ id: 1, name: '' }]);
+  const [people, setPeople] = useState<PersonDraft[]>([
+    { id: 1, name: '', panelObservation: '', showObservationOnPanel: false },
+  ]);
   const [cityError, setCityError] = useState('');
   const [nameErrors, setNameErrors] = useState<Record<number, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -210,7 +215,10 @@ function PublicVisitorsForm({
 
   function addPerson() {
     if (people.length >= MAX_VISITORS) return;
-    setPeople((current) => [...current, { id: nextId.current++, name: '' }]);
+    setPeople((current) => [
+      ...current,
+      { id: nextId.current++, name: '', panelObservation: '', showObservationOnPanel: false },
+    ]);
   }
 
   function removePerson(id: number) {
@@ -255,6 +263,8 @@ function PublicVisitorsForm({
           name: cleanLine(person.name),
           city: sharedCity,
           relationship: 'outro',
+          panelObservation: person.panelObservation.trim(),
+          showObservationOnPanel: person.showObservationOnPanel,
         })),
         requestId
       );
@@ -372,6 +382,26 @@ function PublicVisitorsForm({
                     </p>
                   )}
                 </div>
+                <PanelObservationFields
+                  id={`public-observation-${person.id}`}
+                  observation={person.panelObservation}
+                  showOnPanel={person.showObservationOnPanel}
+                  disabled={submitting}
+                  onObservationChange={(value) =>
+                    setPeople((current) =>
+                      current.map((item) =>
+                        item.id === person.id ? { ...item, panelObservation: value } : item
+                      )
+                    )
+                  }
+                  onShowChange={(value) =>
+                    setPeople((current) =>
+                      current.map((item) =>
+                        item.id === person.id ? { ...item, showObservationOnPanel: value } : item
+                      )
+                    )
+                  }
+                />
               </div>
             );
           })}

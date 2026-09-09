@@ -1,0 +1,47 @@
+.panel-observation-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+
+.panel-observation-fields label {
+  font-weight: 700;
+}
+
+.panel-observation-fields textarea {
+  width: 100%;
+  min-height: 4.2rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+}
+
+.panel-observation-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.panel-observation-switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-weight: 650;
+}
+
+.panel-observation-switch span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.panel-observation-switch .app-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--primary);
+}

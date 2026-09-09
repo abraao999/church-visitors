@@ -22,6 +22,7 @@ export const portariaSync = {
 import { clientIp, consumeRateLimit, sendRateLimited } from '../utils/rateLimit.js';
 import { getGuestAccessSecret } from '../utils/guestToken.js';
 import { parseVehiclePlate } from '../utils/vehiclePlate.js';
+import { normalizePanelObservation, readShowObservationOnPanel } from '../utils/panelText.js';
 import {
   createPortariaDeviceToken,
   createPortariaPublicId,
@@ -261,7 +262,13 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
       const city = normalizeSingleLine(item.city, 100);
       const relationshipRaw = typeof item.relationship === 'string' ? item.relationship : 'outro';
       if (!name || !city || !isRelationship(relationshipRaw)) return null;
-      return { name, city, relationship: relationshipRaw };
+      return {
+        name,
+        city,
+        relationship: relationshipRaw,
+        panelObservation: normalizePanelObservation(item.panelObservation),
+        showObservationOnPanel: readShowObservationOnPanel(item.showObservationOnPanel),
+      };
     });
 
     const people = visitors.filter((visitor): visitor is NonNullable<typeof visitor> => visitor !== null);
@@ -302,6 +309,8 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
         name: visitor.name,
         relationship: visitor.relationship,
         city: visitor.city,
+        panelObservation: visitor.panelObservation,
+        showObservationOnPanel: visitor.showObservationOnPanel,
         visitDate: captured,
         capturedAt: captured,
         source: 'portaria_device' as const,

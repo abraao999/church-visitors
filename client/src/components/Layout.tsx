@@ -21,7 +21,8 @@ export function Layout() {
   const location = useLocation();
   const isLive = location.pathname.startsWith('/live');
   const isDisplayPanel =
-    location.pathname.startsWith('/painel/') && location.pathname !== '/paineis';
+    location.pathname === '/paineis/culto' ||
+    (location.pathname.startsWith('/painel/') && location.pathname !== '/paineis');
 
   if (isLive || isDisplayPanel) {
     return (

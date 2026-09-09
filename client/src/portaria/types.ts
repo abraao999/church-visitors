@@ -7,6 +7,8 @@ export interface VisitorDraft {
   name: string;
   city: string;
   relationship: Relationship;
+  panelObservation?: string;
+  showObservationOnPanel?: boolean;
 }
 
 export interface VisitorsPayload {

@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from 'react';
 import { api } from '../api/client';
 import { AppIcon } from './AppIcon';
+import { PanelObservationFields } from './PanelObservationFields';
 import { ServiceLinkField } from './ServiceLinkField';
 import './VisitorForm.css';
 
@@ -11,6 +12,8 @@ interface Props {
 interface PersonDraft {
   id: number;
   name: string;
+  panelObservation: string;
+  showObservationOnPanel: boolean;
 }
 
 const MAX_VISITORS = 10;
@@ -27,7 +30,9 @@ export function VisitorForm({ onSuccess }: Props) {
   const nextId = useRef(2);
   const cityFieldId = useId();
   const [city, setCity] = useState('');
-  const [people, setPeople] = useState<PersonDraft[]>([{ id: 1, name: '' }]);
+  const [people, setPeople] = useState<PersonDraft[]>([
+    { id: 1, name: '', panelObservation: '', showObservationOnPanel: false },
+  ]);
   const [cityError, setCityError] = useState('');
   const [nameErrors, setNameErrors] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(false);
@@ -49,7 +54,10 @@ export function VisitorForm({ onSuccess }: Props) {
 
   function addPerson() {
     if (people.length >= MAX_VISITORS) return;
-    setPeople((prev) => [...prev, { id: nextId.current++, name: '' }]);
+    setPeople((prev) => [
+      ...prev,
+      { id: nextId.current++, name: '', panelObservation: '', showObservationOnPanel: false },
+    ]);
   }
 
   function removePerson(id: number) {
@@ -93,12 +101,16 @@ export function VisitorForm({ onSuccess }: Props) {
       name: cleanLine(person.name),
       city: sharedCity,
       relationship: 'outro' as const,
+      panelObservation: person.panelObservation.trim(),
+      showObservationOnPanel: person.showObservationOnPanel,
     }));
 
     try {
       await api.createVisitor({ visitors: validVisitors, serviceId });
       setCity('');
-      setPeople([{ id: nextId.current++, name: '' }]);
+      setPeople([
+        { id: nextId.current++, name: '', panelObservation: '', showObservationOnPanel: false },
+      ]);
       setCityError('');
       setNameErrors({});
       setSuccess(
@@ -225,6 +237,26 @@ export function VisitorForm({ onSuccess }: Props) {
                     </p>
                   )}
                 </div>
+                <PanelObservationFields
+                  id={`visitor-observation-${person.id}`}
+                  observation={person.panelObservation}
+                  showOnPanel={person.showObservationOnPanel}
+                  disabled={loading}
+                  onObservationChange={(value) =>
+                    setPeople((prev) =>
+                      prev.map((item) =>
+                        item.id === person.id ? { ...item, panelObservation: value } : item
+                      )
+                    )
+                  }
+                  onShowChange={(value) =>
+                    setPeople((prev) =>
+                      prev.map((item) =>
+                        item.id === person.id ? { ...item, showObservationOnPanel: value } : item
+                      )
+                    )
+                  }
+                />
               </div>
             );
           })}

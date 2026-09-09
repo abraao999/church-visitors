@@ -41,28 +41,21 @@ export const OPTION_LABELS: Record<GuestAccessType, string> = {
   'panels:read': 'Painéis para TV (somente leitura)',
 };
 
-export type PanelPath = 'louvores' | 'visitantes' | 'oracao' | 'veiculos';
+export type PanelPath = 'louvores' | 'culto' | 'veiculos' | 'visitantes' | 'oracao';
 
 export const PANEL_OPTIONS: Array<{
   path: PanelPath;
   title: string;
   description: string;
-  icon: 'music' | 'users' | 'prayer' | 'car';
+  icon: 'music' | 'users' | 'prayer' | 'car' | 'panels';
   tone: 'visitors' | 'prayer' | 'vehicle';
 }> = [
   {
-    path: 'visitantes',
-    title: 'Visitantes de hoje',
-    description: 'Quem chegou ao culto.',
-    icon: 'users',
+    path: 'culto',
+    title: 'Painel do culto',
+    description: 'Visitantes e pedidos de oração no mesmo telão.',
+    icon: 'panels',
     tone: 'visitors',
-  },
-  {
-    path: 'oracao',
-    title: 'Pedidos de oração',
-    description: 'Somente os pedidos autorizados.',
-    icon: 'prayer',
-    tone: 'prayer',
   },
   {
     path: 'louvores',
@@ -79,6 +72,16 @@ export const PANEL_OPTIONS: Array<{
     tone: 'vehicle',
   },
 ];
+
+export const LEGACY_PANEL_PATHS = new Set(['visitantes', 'oracao']);
+
+export function unifiedPanelPath(token: string, search = ''): string {
+  return `/painel/${token}/culto${search}`;
+}
+
+export function unifiedAuthPanelPath(search = ''): string {
+  return `/paineis/culto${search}`;
+}
 
 export function publicFormPath(token: string, type: GuestAccessType): string {
   const option = PUBLIC_ACCESS_OPTIONS.find((item) => item.type === type);
