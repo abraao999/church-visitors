@@ -21,6 +21,7 @@ import {
 } from '../utils/publicRecord.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 import { normalizePanelObservation, readShowObservationOnPanel } from '../utils/panelText.js';
+import { parseVisitKind } from '../utils/reportRange.js';
 import {
   FOLLOW_UP_DISABLED_ERROR,
   FOLLOW_UP_FORBIDDEN_ERROR,
@@ -49,6 +50,7 @@ type VisitorInput = {
   city: string;
   panelObservation: string;
   showObservationOnPanel: boolean;
+  visitKind: 'first' | 'returning' | 'unknown';
   followUp?: FollowUpDraft;
 };
 
@@ -103,6 +105,7 @@ function normalizeVisitors(body: Record<string, unknown>): { data: VisitorInput[
       city,
       panelObservation: normalizePanelObservation(raw.panelObservation),
       showObservationOnPanel: readShowObservationOnPanel(raw.showObservationOnPanel),
+      visitKind: parseVisitKind(raw.visitKind),
       followUp: parseVisitorFollowUpDraft(raw.followUp),
     });
   }
@@ -237,6 +240,7 @@ export async function createVisitors(req: AuthenticatedRequest, res: Response) {
         city: person.city,
         panelObservation: person.panelObservation,
         showObservationOnPanel: person.showObservationOnPanel,
+        visitKind: person.visitKind,
         visitDate,
         source: 'owner',
         createdBy,

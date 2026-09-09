@@ -245,6 +245,25 @@ export interface PublicAccessMetadata {
   visitorFollowUpEnabled?: boolean;
 }
 
+export const VISIT_KINDS = ['first', 'returning', 'unknown'] as const;
+export type VisitKind = (typeof VISIT_KINDS)[number];
+
+export const VISIT_KIND_LABELS: Record<VisitKind, string> = {
+  first: 'Primeira visita',
+  returning: 'Já visitou anteriormente',
+  unknown: 'Não informado',
+};
+
+export const PRAYER_CARE_STATUSES = ['new', 'acknowledged', 'in_follow_up', 'completed'] as const;
+export type PrayerCareStatus = (typeof PRAYER_CARE_STATUSES)[number];
+
+export const PRAYER_CARE_LABELS: Record<PrayerCareStatus, string> = {
+  new: 'Novo',
+  acknowledged: 'Recebido pela equipe',
+  in_follow_up: 'Em acompanhamento',
+  completed: 'Concluído',
+};
+
 export interface Visitor {
   _id: string;
   name: string;
@@ -257,6 +276,7 @@ export interface Visitor {
   serviceId?: string;
   panelObservation?: string;
   showObservationOnPanel?: boolean;
+  visitKind?: VisitKind;
   createdAt: string;
 }
 
@@ -270,6 +290,8 @@ export interface PrayerRequest {
   createdBy?: Actor;
   guestAccess?: GuestOrigin;
   serviceId?: string;
+  careStatus?: PrayerCareStatus;
+  careChangedAt?: string;
   createdAt: string;
 }
 
@@ -346,6 +368,7 @@ export interface CreateVisitorDto {
     relationship?: Relationship;
     panelObservation?: string;
     showObservationOnPanel?: boolean;
+    visitKind?: VisitKind;
     followUp?: {
       include: boolean;
       phone?: string;
@@ -675,6 +698,150 @@ export interface CreateVehicleNoticeDto {
   otherDescription?: string;
   details?: string;
   requestId?: string;
+}
+
+export const REPORT_PRESETS = [
+  'this_week',
+  'this_month',
+  'last_3_months',
+  'last_6_months',
+  'this_year',
+  'custom',
+] as const;
+export type ReportPreset = (typeof REPORT_PRESETS)[number];
+
+export const REPORT_TABS = [
+  'overview',
+  'visitors',
+  'prayers',
+  'vehicles',
+  'accesses',
+  'service',
+] as const;
+export type ReportTab = (typeof REPORT_TABS)[number];
+
+export type ReportCompare = {
+  current: number;
+  previous: number;
+  delta: number;
+  percent: number | null;
+};
+
+export type ReportSeriesPoint = { label: string; value: number };
+
+export interface ReportOverview {
+  generatedAt: string;
+  churchName: string;
+  range: { from: string; to: string; preset: ReportPreset };
+  cards: {
+    visitors: ReportCompare;
+    averagePerService: {
+      current: number | null;
+      previous: number | null;
+      delta: number | null;
+      percent: number | null;
+    };
+    prayers: ReportCompare;
+    prayersFollowed: number;
+    vehicles: ReportCompare;
+    vehiclesResolved: number;
+  };
+  charts: {
+    visitorsByWeek: ReportSeriesPoint[];
+    previousVisitorsByWeek?: ReportSeriesPoint[];
+    cities: ReportSeriesPoint[];
+    sources: ReportSeriesPoint[];
+    firstVsReturning: ReportSeriesPoint[];
+    gateHours: ReportSeriesPoint[];
+  };
+  historicRemoved?: boolean;
+}
+
+export interface ReportFollowUp {
+  included: number;
+  awaiting: number;
+  contacted: number;
+  integrating: number;
+  closed: number;
+  due: number;
+  overdue: number;
+  contacts: number;
+  assignees: ReportSeriesPoint[];
+}
+
+export interface ReportVisitors {
+  totals: ReportCompare;
+  averagePerService: number | null;
+  first: number;
+  returning: number;
+  unknown: number;
+  byDay: ReportSeriesPoint[];
+  byWeek: ReportSeriesPoint[];
+  byMonth: ReportSeriesPoint[];
+  cities: ReportSeriesPoint[];
+  sources: ReportSeriesPoint[];
+  followUps: number;
+  services: Array<{ id: string; title: string; visitors: number }>;
+  followUp?: ReportFollowUp | null;
+}
+
+export interface ReportPrayers {
+  totals: ReportCompare;
+  byStatus: Record<string, number>;
+  projected: number;
+  historicRemoved?: boolean;
+  sources: ReportSeriesPoint[];
+}
+
+export interface ReportVehicles {
+  total: number;
+  historicRemoved?: boolean;
+  pending: number;
+  announced: number;
+  resolved: number;
+  actions: ReportSeriesPoint[];
+  sources: ReportSeriesPoint[];
+  hours: ReportSeriesPoint[];
+  averageAnnounceMs: number | null;
+  averageResolveMs: number | null;
+}
+
+export interface ReportAccesses {
+  active: number;
+  expired: number;
+  expiringSoon: number;
+  lastUsed: Array<{ name: string; lastUsedAt?: string }>;
+  submissionsByAccess: Array<{ name: string; submissions: number }>;
+  purposes?: ReportSeriesPoint[];
+  opened: number;
+  started: number;
+  submitted: number;
+  completionRate: number | null;
+  qr: number;
+  sharedLink: number;
+}
+
+export interface ReportService {
+  service: {
+    id: string;
+    title: string;
+    date: string;
+    time?: string;
+    cancelledAt?: string;
+    closedAt?: string;
+    hymns: Array<{ title: string; artist?: string }>;
+  };
+  visitors: {
+    total: number;
+    first: number;
+    returning: number;
+    unknown: number;
+    cities: ReportSeriesPoint[];
+    sources: ReportSeriesPoint[];
+    hours: ReportSeriesPoint[];
+  };
+  prayers: number;
+  vehicles: ReportVehicles;
 }
 
 export function formatVisitor(visitor: Pick<Visitor, 'name' | 'relationship' | 'city'>): string {

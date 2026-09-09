@@ -15,6 +15,9 @@ import { Visitor } from '../models/Visitor.js';
 import { FollowUpContact } from '../models/FollowUpContact.js';
 import { VisitorFollowUp } from '../models/VisitorFollowUp.js';
 import { withChurch } from '../utils/tenant.js';
+import { Church } from '../models/Church.js';
+import { recordRetentionSummaries } from './reports.js';
+import { churchTimezone } from '../utils/serviceSchedule.js';
 
 export type RetentionPolicyValues = RetentionPeriods & { enabled: boolean };
 
@@ -229,8 +232,22 @@ export async function runRetentionPolicy(
   const summary = emptySummary();
 
   try {
-    const visitorsToAnonymize = await Visitor.find(filters.visitors).select('_id').lean();
+    const visitorsToAnonymize = await Visitor.find(filters.visitors)
+      .select('_id visitDate createdAt city source visitKind')
+      .lean();
     const visitorIds = visitorsToAnonymize.map((item) => item._id);
+    const prayersToDelete = await PrayerRequest.find(filters.prayers).select('createdAt').lean();
+    const vehiclesToDelete = await VehicleNotice.find(filters.vehicleNotices)
+      .select('createdAt capturedAt')
+      .lean();
+    const church = await Church.findById(churchId).select('timezone');
+    await recordRetentionSummaries(
+      churchId,
+      visitorsToAnonymize,
+      prayersToDelete,
+      vehiclesToDelete,
+      churchTimezone(church?.timezone)
+    );
     const visitors = await Visitor.updateMany(filters.visitors, {
       $set: {
         name: 'VISITANTE ANONIMIZADO',

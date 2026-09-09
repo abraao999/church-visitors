@@ -11,10 +11,10 @@ import {
  */
 
 export const VISITOR_LIST_FIELDS =
-  'name relationship city visitDate source createdBy.name guestAccess.name serviceId panelObservation showObservationOnPanel createdAt';
+  'name relationship city visitDate source createdBy.name guestAccess.name serviceId panelObservation showObservationOnPanel visitKind createdAt';
 
 export const PRAYER_LIST_FIELDS =
-  'name request source isAnonymous allowProjection createdBy.name guestAccess.name serviceId createdAt';
+  'name request source isAnonymous allowProjection createdBy.name guestAccess.name serviceId careStatus careChangedAt createdAt';
 
 export const SERVICE_LIST_FIELDS =
   'title date time hymns.title hymns.artist hymns.performedBy hymns.addedBy.name createdBy.name createdAt updatedAt recurrenceSeriesId scheduledStartAt durationMinutes activationLeadMinutes cancelledAt closedAt extendedUntil openedAt autoOpenedAt';
@@ -49,6 +49,7 @@ export function serializeVisitor(visitor: {
   serviceId?: unknown;
   panelObservation?: string;
   showObservationOnPanel?: boolean;
+  visitKind?: string;
   createdAt?: Date | string;
 }) {
   return {
@@ -63,6 +64,7 @@ export function serializeVisitor(visitor: {
     serviceId: visitor.serviceId ? String(visitor.serviceId) : undefined,
     panelObservation: visitor.panelObservation || undefined,
     showObservationOnPanel: visitor.showObservationOnPanel === true,
+    visitKind: visitor.visitKind === 'first' || visitor.visitKind === 'returning' ? visitor.visitKind : 'unknown',
     createdAt: visitor.createdAt,
   };
 }
@@ -77,6 +79,8 @@ export function serializePrayerRequest(item: {
   createdBy?: { name?: string } | null;
   guestAccess?: { name?: string } | null;
   serviceId?: unknown;
+  careStatus?: string;
+  careChangedAt?: Date | string;
   createdAt?: Date | string;
 }) {
   return {
@@ -89,6 +93,13 @@ export function serializePrayerRequest(item: {
     createdBy: publicPersonName(item.createdBy),
     guestAccess: publicPersonName(item.guestAccess),
     serviceId: item.serviceId ? String(item.serviceId) : undefined,
+    careStatus:
+      item.careStatus === 'acknowledged' ||
+      item.careStatus === 'in_follow_up' ||
+      item.careStatus === 'completed'
+        ? item.careStatus
+        : 'new',
+    careChangedAt: item.careChangedAt,
     createdAt: item.createdAt,
   };
 }

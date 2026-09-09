@@ -28,6 +28,7 @@ describe('identidade visual no cliente', () => {
         '/cultos',
         '/oracao',
         '/paineis',
+        '/relatorios',
         '/acessos',
         '/igreja',
         '/configuracoes',

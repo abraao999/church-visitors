@@ -42,6 +42,9 @@ export const PERMISSIONS = [
   'guest_accesses:revoke',
   'panels:open',
   'panels:manage',
+  'reports:read',
+  'reports:export',
+  'reports:export_sensitive',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -141,6 +144,9 @@ const ROLE_PERMISSIONS: Record<TeamRole, readonly Permission[]> = {
     'guest_accesses:revoke',
     'panels:open',
     'panels:manage',
+    'reports:read',
+    'reports:export',
+    'reports:export_sensitive',
   ],
   portaria: [
     'visitors:create',
@@ -248,6 +254,14 @@ export const PERMISSION_GROUPS: Array<{ title: string; items: Array<{ key: Permi
       { key: 'portaria_devices:create', label: 'Preparar aparelho da portaria' },
       { key: 'portaria_devices:update', label: 'Renomear aparelho da portaria' },
       { key: 'portaria_devices:revoke', label: 'Desativar aparelho da portaria' },
+    ],
+  },
+  {
+    title: 'Relatórios',
+    items: [
+      { key: 'reports:read', label: 'Visualizar relatórios' },
+      { key: 'reports:export', label: 'Exportar relatórios sem dados pessoais' },
+      { key: 'reports:export_sensitive', label: 'Exportar nomes, telefones e acompanhamento' },
     ],
   },
 ];

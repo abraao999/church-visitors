@@ -18,6 +18,9 @@ import { VehicleNotice } from '../models/VehicleNotice.js';
 import { Visitor } from '../models/Visitor.js';
 import { VisitorFollowUp } from '../models/VisitorFollowUp.js';
 import { FollowUpContact } from '../models/FollowUpContact.js';
+import { PublicAccessEvent } from '../models/PublicAccessEvent.js';
+import { ReportDailySummary } from '../models/ReportDailySummary.js';
+import { ReportExportAudit } from '../models/ReportExportAudit.js';
 import { createChurchSlug, normalizeChurchName } from '../utils/church.js';
 
 type Command = 'check' | 'migrate';
@@ -44,6 +47,9 @@ const TENANT_COLLECTIONS = [
   RetentionRun,
   VisitorFollowUp,
   FollowUpContact,
+  PublicAccessEvent,
+  ReportDailySummary,
+  ReportExportAudit,
 ] as const;
 
 function argumentValue(name: string): string | undefined {

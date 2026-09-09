@@ -11,6 +11,8 @@ import { VehicleNotice } from '../models/VehicleNotice.js';
 import { Visitor } from '../models/Visitor.js';
 import { FollowUpContact } from '../models/FollowUpContact.js';
 import { VisitorFollowUp } from '../models/VisitorFollowUp.js';
+import { Church } from '../models/Church.js';
+import { ReportDailySummary } from '../models/ReportDailySummary.js';
 import {
   buildRetentionFilters,
   defaultRetentionPolicy,
@@ -105,10 +107,31 @@ test('execução anonimiza visitantes, exclui categorias vencidas e não guarda 
     stubMethod(Visitor, 'find', () => ({
       select() {
         return {
-          lean: async () => [{ _id: new Types.ObjectId() }, { _id: new Types.ObjectId() }],
+          lean: async () => [
+            { _id: new Types.ObjectId(), city: 'Umuarama', source: 'owner', visitKind: 'first', visitDate: new Date('2024-01-01') },
+            { _id: new Types.ObjectId(), city: 'Cianorte', source: 'owner', visitKind: 'unknown', visitDate: new Date('2024-01-02') },
+          ],
         };
       },
     })),
+    stubMethod(PrayerRequest, 'find', () => ({
+      select() {
+        return { lean: async () => [{ createdAt: new Date('2024-01-01') }] };
+      },
+    })),
+    stubMethod(VehicleNotice, 'find', () => ({
+      select() {
+        return { lean: async () => [{ createdAt: new Date('2024-01-01') }] };
+      },
+    })),
+    stubMethod(Church, 'findById', () => ({
+      select: async () => ({ timezone: 'America/Sao_Paulo' }),
+    })),
+    stubMethod(ReportDailySummary, 'findOne', async () => null),
+    stubMethod(ReportDailySummary, 'updateOne', async (_filter: never, update: never) => {
+      seen.summaryUpdate = update;
+      return { modifiedCount: 1 };
+    }),
     stubMethod(Visitor, 'updateMany', async (filter: never, update: never) => {
       seen.visitorFilter = filter;
       seen.visitorUpdate = update;
@@ -156,6 +179,22 @@ test('execução anonimiza visitantes, exclui categorias vencidas e não guarda 
     assert.equal(visitorUpdate.$set.name, 'VISITANTE ANONIMIZADO');
     assert.equal(visitorUpdate.$unset.createdBy, 1);
     assert.equal(visitorUpdate.$unset.guestAccess, 1);
+    const summaryUpdate = seen.summaryUpdate as {
+      $inc?: Record<string, number>;
+      $set?: { cities?: Record<string, number>; visitorSources?: Record<string, number> };
+    };
+    assert.ok(summaryUpdate.$inc);
+    assert.equal('name' in (summaryUpdate.$inc || {}), false);
+    assert.equal('phone' in (summaryUpdate.$set || {}), false);
+    assert.equal('request' in (summaryUpdate.$inc || {}), false);
+    assert.deepEqual(Object.keys(summaryUpdate.$inc || {}).sort(), [
+      'firstVisits',
+      'prayers',
+      'returningVisits',
+      'unknownVisits',
+      'vehicleNotices',
+      'visitors',
+    ]);
 
     const run = seen.run as Record<string, unknown>;
     assert.deepEqual(Object.keys(run).sort(), [

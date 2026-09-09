@@ -243,7 +243,7 @@ export function ServiceOccurrencePage() {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => navigator.clipboard.writeText(guestAccessUrl(portal.token, portal.types))}
+                  onClick={() => navigator.clipboard.writeText(guestAccessUrl(portal.token, portal.types, 'shared_link'))}
                 >
                   <AppIcon name="copy" /> Copiar link
                 </button>

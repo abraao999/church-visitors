@@ -79,7 +79,7 @@ export function GuestAccessOverview() {
   async function copy(access: GuestAccess) {
     setError('');
     try {
-      await navigator.clipboard.writeText(guestAccessUrl(access.token, accessTypes(access)));
+      await navigator.clipboard.writeText(guestAccessUrl(access.token, accessTypes(access), 'shared_link'));
       setFeedback(`Link de “${access.name}” copiado.`);
     } catch {
       setError('Não foi possível copiar o link automaticamente.');
@@ -127,7 +127,7 @@ export function GuestAccessOverview() {
               </div>
               <span><AppIcon name="calendar" />{labelDate(portal.expiresAt)}</span>
               <input
-                value={guestAccessUrl(portal.token)}
+                value={guestAccessUrl(portal.token, [], 'shared_link')}
                 readOnly
                 aria-label={`Link de ${portal.name}`}
                 onFocus={(event) => event.currentTarget.select()}

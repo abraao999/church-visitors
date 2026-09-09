@@ -22,6 +22,7 @@ describe('menu lateral por permissão', () => {
         'Cultos',
         'Pedidos de oração',
         'Painéis',
+        'Relatórios',
         'Acessos sem login',
         'Igreja',
         'Holyrics',
@@ -37,6 +38,7 @@ describe('menu lateral por permissão', () => {
         '/cultos',
         '/oracao',
         '/paineis',
+        '/relatorios',
         '/acessos',
         '/igreja',
         '/configuracoes',
@@ -93,6 +95,8 @@ describe('menu lateral por permissão', () => {
     assert.deepEqual(visible('midia'), ['/', '/paineis', '/acessos']);
     assert.ok(visible('admin').includes('/igreja'));
     assert.ok(visible('admin').includes('/configuracoes'));
+    assert.ok(visible('admin').includes('/relatorios'));
+    assert.equal(visible('portaria').includes('/relatorios'), false);
   });
 });
 

@@ -6,6 +6,9 @@ import { guestOriginSchema, type IGuestOrigin } from './GuestOrigin.js';
 
 export type VisitorSource = 'owner' | 'guest_access' | 'portaria_device';
 
+export const VISIT_KINDS = ['first', 'returning', 'unknown'] as const;
+export type VisitKind = (typeof VISIT_KINDS)[number];
+
 export interface IVisitor extends Document {
   churchId: Types.ObjectId;
   name: string;
@@ -24,6 +27,7 @@ export interface IVisitor extends Document {
   /** Texto autorizado para o telão. Não reutiliza observação interna. */
   panelObservation?: string;
   showObservationOnPanel?: boolean;
+  visitKind?: VisitKind;
   createdAt: Date;
 }
 
@@ -53,6 +57,7 @@ const visitorSchema = new Schema<IVisitor>(
     anonymizedAt: { type: Date },
     panelObservation: { type: String, trim: true, maxlength: 80, default: '' },
     showObservationOnPanel: { type: Boolean, default: false },
+    visitKind: { type: String, enum: VISIT_KINDS, default: 'unknown' },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

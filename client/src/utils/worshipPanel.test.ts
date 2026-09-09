@@ -80,6 +80,7 @@ test('o menu lateral mantém exatamente os mesmos itens, textos e ordem', () => 
       { to: '/cultos', label: 'Cultos', short: 'Cultos', icon: 'calendar' },
       { to: '/oracao', label: 'Pedidos de oração', short: 'Oração', icon: 'prayer' },
       { to: '/paineis', label: 'Painéis', short: 'Painéis', icon: 'panels' },
+      { to: '/relatorios', label: 'Relatórios', short: 'Relat.', icon: 'chart' },
       { to: '/acessos', label: 'Acessos sem login', short: 'Acessos', icon: 'link' },
       { to: '/igreja', label: 'Igreja', short: 'Igreja', icon: 'pin' },
       { to: '/configuracoes', label: 'Holyrics', short: 'Holyrics', icon: 'music' },

@@ -40,6 +40,9 @@ export const PERMISSIONS = [
   'guest_accesses:revoke',
   'panels:open',
   'panels:manage',
+  'reports:read',
+  'reports:export',
+  'reports:export_sensitive',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -130,6 +133,9 @@ const ROLE_PERMISSIONS: Record<TeamRole, readonly Permission[]> = {
     'guest_accesses:revoke',
     'panels:open',
     'panels:manage',
+    'reports:read',
+    'reports:export',
+    'reports:export_sensitive',
   ],
   portaria: [
     'visitors:create',
@@ -255,6 +261,7 @@ export function permissionSummaries(permissions: readonly Permission[]): string[
     [['team:read', 'team:invite'], 'Equipe'],
     [['church:update'], 'Dados da igreja'],
     [['retention:manage'], 'Retenção'],
+    [['reports:read', 'reports:export'], 'Relatórios'],
     [['portaria_devices:read', 'portaria_devices:create'], 'Aparelhos da portaria'],
   ];
   return labels

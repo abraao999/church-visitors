@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon } from '../components/AppIcon';
 import { PanelObservationFields } from '../components/PanelObservationFields';
 import { BrandMark } from '../components/BrandMark';
 import { useBranding } from '../theme/BrandingContext';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { type PublicAccessMetadata, type VehicleNoticeAction } from '../types';
+import { type PublicAccessMetadata, type VehicleNoticeAction, type VisitKind } from '../types';
+import { VisitKindField } from '../components/VisitKindField';
 import {
   isPanelAccessType,
   panelMenuPath,
@@ -27,6 +28,7 @@ interface PersonDraft {
   name: string;
   panelObservation: string;
   showObservationOnPanel: boolean;
+  visitKind: VisitKind;
 }
 
 const MAX_VISITORS = 10;
@@ -193,9 +195,11 @@ function PublicVisitorsForm({
 }) {
   const requestId = useRef(createRequestId()).current;
   const nextId = useRef(2);
+  const [searchParams] = useSearchParams();
+  const channel = searchParams.get('origem') === 'qr' ? 'qr' as const : 'shared_link' as const;
   const [city, setCity] = useState('');
   const [people, setPeople] = useState<PersonDraft[]>([
-    { id: 1, name: '', panelObservation: '', showObservationOnPanel: false },
+    { id: 1, name: '', panelObservation: '', showObservationOnPanel: false, visitKind: 'unknown' },
   ]);
   const [cityError, setCityError] = useState('');
   const [nameErrors, setNameErrors] = useState<Record<number, string>>({});
@@ -222,7 +226,7 @@ function PublicVisitorsForm({
     if (people.length >= MAX_VISITORS) return;
     setPeople((current) => [
       ...current,
-      { id: nextId.current++, name: '', panelObservation: '', showObservationOnPanel: false },
+      { id: nextId.current++, name: '', panelObservation: '', showObservationOnPanel: false, visitKind: 'unknown' },
     ]);
   }
 
@@ -275,11 +279,13 @@ function PublicVisitorsForm({
           relationship: 'outro',
           panelObservation: person.panelObservation.trim(),
           showObservationOnPanel: person.showObservationOnPanel,
+          visitKind: person.visitKind,
         })),
         {
           requestId,
           contactConsent: followUpEnabled && contactConsent,
           phone: followUpEnabled && contactConsent ? phone.replace(/\D/g, '') : undefined,
+          channel,
         }
       );
       onSuccess();
@@ -396,6 +402,16 @@ function PublicVisitorsForm({
                     </p>
                   )}
                 </div>
+                <VisitKindField
+                  id={`public-kind-${person.id}`}
+                  value={person.visitKind}
+                  disabled={submitting}
+                  onChange={(visitKind) =>
+                    setPeople((current) =>
+                      current.map((item) => (item.id === person.id ? { ...item, visitKind } : item))
+                    )
+                  }
+                />
                 <PanelObservationFields
                   id={`public-observation-${person.id}`}
                   observation={person.panelObservation}
@@ -617,7 +633,9 @@ function PublicPrayerForm({
 
 export function PublicAccessPage() {
   const { token = '' } = useParams();
+  const [searchParams] = useSearchParams();
   const location = useLocation();
+  const accessChannel = searchParams.get('origem') === 'qr' ? 'qr' : 'shared_link';
   const navigate = useNavigate();
   const { setPublicBranding } = useBranding();
   const [metadata, setMetadata] = useState<PublicAccessMetadata | null>(null);
@@ -646,6 +664,18 @@ export function PublicAccessPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!token || !metadata) return;
+    void api.recordPublicAccessEvent(token, { type: 'opened', channel: accessChannel });
+  }, [token, metadata, accessChannel]);
+
+  useEffect(() => {
+    if (!token || !metadata) return;
+    const currentSection = typeFromPublicPath(location.pathname);
+    if (currentSection === 'menu' || !currentSection) return;
+    void api.recordPublicAccessEvent(token, { type: 'form_started', channel: accessChannel });
+  }, [token, metadata, accessChannel, location.pathname]);
 
   useEffect(() => {
     if (!metadata) {

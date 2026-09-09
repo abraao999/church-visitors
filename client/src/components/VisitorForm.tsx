@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
-import { RELATIONSHIPS, type FollowUpPreset, type Relationship } from '../types';
+import { RELATIONSHIPS, type FollowUpPreset, type Relationship, type VisitKind } from '../types';
+import { VisitKindField } from './VisitKindField';
 import { todayLocalISO } from '../utils/date';
 import { hasPermission } from '../utils/permissions';
 import { FOLLOW_UP_PRESET_LABELS, maskPhoneInput, shouldShowFollowUpBlock } from '../utils/visitorFollowUp';
@@ -23,6 +24,7 @@ interface PersonDraft {
   panelObservation: string;
   showObservationOnPanel: boolean;
   includeFollowUp: boolean;
+  visitKind: VisitKind;
 }
 
 interface Assignee {
@@ -49,6 +51,7 @@ function emptyPerson(id: number, city = ''): PersonDraft {
     panelObservation: '',
     showObservationOnPanel: false,
     includeFollowUp: false,
+    visitKind: 'unknown',
   };
 }
 
@@ -201,6 +204,7 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
       relationship: person.relationship,
       panelObservation: person.panelObservation.trim(),
       showObservationOnPanel: person.showObservationOnPanel,
+      visitKind: person.visitKind,
       ...(followUpEnabled && includeFollowUp && selected.some((item) => item.id === person.id)
         ? {
             followUp: {
@@ -367,6 +371,13 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
                 )}
               </div>
             </div>
+
+            <VisitKindField
+              id={`visitor-kind-${person.id}`}
+              value={person.visitKind}
+              onChange={(visitKind) => updatePerson(person.id, { visitKind })}
+              disabled={loading}
+            />
 
             <PanelObservationFields
               id={`visitor-observation-${person.id}`}

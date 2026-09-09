@@ -5,6 +5,9 @@ import { guestOriginSchema, type IGuestOrigin } from './GuestOrigin.js';
 
 export type PrayerSource = 'owner' | 'guest_access' | 'porteiro' | 'live';
 
+export const PRAYER_CARE_STATUSES = ['new', 'acknowledged', 'in_follow_up', 'completed'] as const;
+export type PrayerCareStatus = (typeof PRAYER_CARE_STATUSES)[number];
+
 export interface IPrayerRequest extends Document {
   churchId: Types.ObjectId;
   name: string;
@@ -17,6 +20,14 @@ export interface IPrayerRequest extends Document {
   guestAccess?: IGuestOrigin;
   requestId?: string;
   serviceId?: Types.ObjectId;
+  careStatus?: PrayerCareStatus;
+  careChangedAt?: Date;
+  careChangedBy?: IActor;
+  careHistory?: Array<{
+    status: PrayerCareStatus;
+    changedAt: Date;
+    changedBy?: IActor;
+  }>;
   createdAt: Date;
 }
 
@@ -36,6 +47,19 @@ const prayerRequestSchema = new Schema<IPrayerRequest>(
     guestAccess: { type: guestOriginSchema, required: false },
     requestId: { type: String, trim: true, maxlength: 64 },
     serviceId: { type: Schema.Types.ObjectId, ref: 'Service' },
+    careStatus: { type: String, enum: PRAYER_CARE_STATUSES, default: 'new' },
+    careChangedAt: { type: Date },
+    careChangedBy: { type: actorSchema, required: false },
+    careHistory: {
+      type: [
+        {
+          status: { type: String, enum: PRAYER_CARE_STATUSES, required: true },
+          changedAt: { type: Date, required: true },
+          changedBy: { type: actorSchema, required: false },
+        },
+      ],
+      default: undefined,
+    },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
@@ -46,5 +70,6 @@ prayerRequestSchema.index({ churchId: 1, allowProjection: 1, createdAt: -1 });
 prayerRequestSchema.index({ churchId: 1, requestId: 1 }, REQUEST_ID_UNIQUE_INDEX);
 prayerRequestSchema.index({ churchId: 1, serviceId: 1, createdAt: -1 });
 prayerRequestSchema.index({ churchId: 1, createdAt: 1 });
+prayerRequestSchema.index({ churchId: 1, careStatus: 1, createdAt: -1 });
 
 export const PrayerRequest = mongoose.model<IPrayerRequest>('PrayerRequest', prayerRequestSchema);

@@ -29,6 +29,7 @@ import { ServicesPage } from './pages/ServicesPage';
 import { VehicleNoticesPage } from './pages/VehicleNoticesPage';
 import { VisitorsPage } from './pages/VisitorsPage';
 import { FollowUpPage } from './pages/FollowUpPage';
+import { ReportsPage } from './pages/ReportsPage';
 import { PortariaApp } from './portaria/PortariaApp';
 
 export function App() {
@@ -65,6 +66,9 @@ export function App() {
               </Route>
               <Route element={<PermissionRoute anyOf={['prayers:read', 'prayers:create']} />}>
                 <Route path="/oracao" element={<PrayerRequestsPage />} />
+              </Route>
+              <Route element={<PermissionRoute anyOf={['reports:read']} />}>
+                <Route path="/relatorios" element={<ReportsPage />} />
               </Route>
               <Route element={<PermissionRoute anyOf={['guest_accesses:read']} />}>
                 <Route path="/acessos" element={<GuestAccessesPage />} />

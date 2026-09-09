@@ -1,4 +1,4 @@
-import type { PortariaOfflinePermission, Relationship, VehicleNoticeAction } from '../types';
+import type { PortariaOfflinePermission, Relationship, VehicleNoticeAction, VisitKind } from '../types';
 
 export type QueueItemType = 'visitors' | 'vehicle_notice';
 export type QueueItemStatus = 'queued' | 'syncing' | 'sent' | 'review' | 'blocked';
@@ -9,6 +9,7 @@ export interface VisitorDraft {
   relationship: Relationship;
   panelObservation?: string;
   showObservationOnPanel?: boolean;
+  visitKind?: VisitKind;
 }
 
 export interface VisitorsPayload {

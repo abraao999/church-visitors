@@ -13,7 +13,8 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { AppIcon } from '../components/AppIcon';
 import { PanelObservationFields } from '../components/PanelObservationFields';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { RELATIONSHIPS, VEHICLE_NOTICE_ACTIONS, type PortariaOfflinePermission, type Relationship, type VehicleNoticeAction } from '../types';
+import { RELATIONSHIPS, VEHICLE_NOTICE_ACTIONS, type PortariaOfflinePermission, type Relationship, type VehicleNoticeAction, type VisitKind } from '../types';
+import { VisitKindField } from '../components/VisitKindField';
 import { maskVehiclePlateInput } from '../utils/vehiclePlate';
 import { claimPairing, inspectPairing, isPortariaApiError } from './api';
 import { capturedAtFrom } from './clock';
@@ -371,7 +372,7 @@ function PortariaVisitors() {
   const { session, connection, saveVisitors, capacity } = usePortaria();
   const [city, setCity] = useState('');
   const [people, setPeople] = useState([
-    { id: 1, name: '', relationship: 'outro' as Relationship, panelObservation: '', showObservationOnPanel: false },
+    { id: 1, name: '', relationship: 'outro' as Relationship, panelObservation: '', showObservationOnPanel: false, visitKind: 'unknown' as VisitKind },
   ]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -392,6 +393,7 @@ function PortariaVisitors() {
       relationship: person.relationship,
       panelObservation: person.panelObservation.trim(),
       showObservationOnPanel: person.showObservationOnPanel,
+      visitKind: person.visitKind,
     }));
     if (!city.trim() || visitors.some((person) => !person.name)) {
       setError('Informe a cidade e o nome de cada pessoa.');
@@ -401,7 +403,7 @@ function PortariaVisitors() {
     try {
       await saveVisitors({ visitors });
       setPeople([
-        { id: Date.now(), name: '', relationship: 'outro', panelObservation: '', showObservationOnPanel: false },
+        { id: Date.now(), name: '', relationship: 'outro', panelObservation: '', showObservationOnPanel: false, visitKind: 'unknown' as VisitKind },
       ]);
       setCity('');
       setMessage('Cadastro salvo neste aparelho');
@@ -465,6 +467,16 @@ function PortariaVisitors() {
                   required
                 />
               </label>
+              <VisitKindField
+                id={`portaria-kind-${person.id}`}
+                value={person.visitKind}
+                disabled={saving}
+                onChange={(visitKind) =>
+                  setPeople((current) =>
+                    current.map((item) => (item.id === person.id ? { ...item, visitKind } : item))
+                  )
+                }
+              />
               <PanelObservationFields
                 id={`portaria-observation-${person.id}`}
                 observation={person.panelObservation}
@@ -504,7 +516,7 @@ function PortariaVisitors() {
               onClick={() =>
                 setPeople((current) => [
                   ...current,
-                  { id: Date.now(), name: '', relationship: 'outro', panelObservation: '', showObservationOnPanel: false },
+                  { id: Date.now(), name: '', relationship: 'outro', panelObservation: '', showObservationOnPanel: false, visitKind: 'unknown' as VisitKind },
                 ])
               }
             >

@@ -23,6 +23,7 @@ import { clientIp, consumeRateLimit, sendRateLimited } from '../utils/rateLimit.
 import { getGuestAccessSecret } from '../utils/guestToken.js';
 import { parseVehiclePlate } from '../utils/vehiclePlate.js';
 import { normalizePanelObservation, readShowObservationOnPanel } from '../utils/panelText.js';
+import { parseVisitKind } from '../utils/reportRange.js';
 import {
   createPortariaDeviceToken,
   createPortariaPublicId,
@@ -268,6 +269,7 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
         relationship: relationshipRaw,
         panelObservation: normalizePanelObservation(item.panelObservation),
         showObservationOnPanel: readShowObservationOnPanel(item.showObservationOnPanel),
+        visitKind: parseVisitKind(item.visitKind),
       };
     });
 
@@ -311,6 +313,7 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
         city: visitor.city,
         panelObservation: visitor.panelObservation,
         showObservationOnPanel: visitor.showObservationOnPanel,
+        visitKind: visitor.visitKind,
         visitDate: captured,
         capturedAt: captured,
         source: 'portaria_device' as const,

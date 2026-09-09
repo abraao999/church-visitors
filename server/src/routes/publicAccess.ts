@@ -32,6 +32,14 @@ import {
   resolveNextContactAt,
 } from '../utils/visitorFollowUp.js';
 import { CHURCH_TIMEZONE } from '../utils/dayRange.js';
+import {
+  PUBLIC_ACCESS_CHANNELS,
+  PUBLIC_ACCESS_EVENT_TYPES,
+  PublicAccessEvent,
+  type PublicAccessChannel,
+  type PublicAccessEventType,
+} from '../models/PublicAccessEvent.js';
+import { parseVisitKind } from '../utils/reportRange.js';
 
 const router = Router();
 const MAX_VISITORS_PER_REQUEST = 10;
@@ -82,9 +90,52 @@ async function activeServiceId(churchId: string) {
   return active?._id;
 }
 
+function parseAccessChannel(value: unknown): PublicAccessChannel {
+  if (value === 'qr' || value === 'shared_link') return value;
+  if (value === 'link') return 'shared_link';
+  return 'shared_link';
+}
+
+async function recordPublicEvent(
+  req: GuestAccessRequest,
+  type: PublicAccessEventType,
+  channel?: PublicAccessChannel
+) {
+  const access = req.guestAccess!;
+  await PublicAccessEvent.create({
+    churchId: access.churchId,
+    guestAccessId: access.guestAccessId,
+    purpose: access.scope,
+    type,
+    channel: channel || parseAccessChannel(req.query.origem ?? req.body?.channel ?? req.body?.origem),
+  });
+}
+
+export async function createPublicAccessEvent(req: GuestAccessRequest, res: Response) {
+  try {
+    if (rejectsClientChurchId(req.body)) {
+      return res.status(400).json({ error: 'O identificador da igreja não deve ser enviado.' });
+    }
+    const type = req.body?.type;
+    if (!PUBLIC_ACCESS_EVENT_TYPES.includes(type as PublicAccessEventType)) {
+      return res.status(400).json({ error: 'Informe um evento válido.' });
+    }
+    const channel = parseAccessChannel(req.body?.channel ?? req.body?.origem ?? req.query.origem);
+    if (!PUBLIC_ACCESS_CHANNELS.includes(channel)) {
+      return res.status(400).json({ error: 'Informe a origem do acesso.' });
+    }
+    await recordPublicEvent(req, type, channel);
+    return res.status(201).json({ success: true });
+  } catch {
+    return res.status(500).json({ error: 'Não foi possível registrar o evento.' });
+  }
+}
+
 router.get('/:token', requireGuestAccess(), (req: GuestAccessRequest, res: Response) => {
   res.json(publicAccessMetadata(req.guestAccess!));
 });
+
+router.post('/:token/events', requireGuestAccess(), createPublicAccessEvent);
 
 function parseRequestId(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
@@ -135,6 +186,7 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
         relationship: relationshipRaw,
         panelObservation: normalizePanelObservation(item.panelObservation),
         showObservationOnPanel: readShowObservationOnPanel(item.showObservationOnPanel),
+        visitKind: parseVisitKind(item.visitKind),
       };
     });
 
@@ -196,6 +248,7 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
         city: visitor.city,
         panelObservation: visitor.panelObservation,
         showObservationOnPanel: visitor.showObservationOnPanel,
+        visitKind: visitor.visitKind,
         visitDate: new Date(),
         source: 'guest_access' as const,
         guestAccess,
@@ -219,6 +272,7 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
     }
 
     await markGuestAccessUsed(access).catch(() => undefined);
+    await recordPublicEvent(req, 'submitted').catch(() => undefined);
     return res.status(201).json({ success: true, message: 'Informações enviadas' });
   } catch (error) {
     if (isDuplicateKey(error)) {
@@ -290,6 +344,7 @@ export async function createPublicPrayerRequest(req: GuestAccessRequest, res: Re
     });
 
     await markGuestAccessUsed(access).catch(() => undefined);
+    await recordPublicEvent(req, 'submitted').catch(() => undefined);
     return res.status(201).json({ success: true, message: 'Informações enviadas' });
   } catch (error) {
     if (isDuplicateKey(error)) {
@@ -397,6 +452,7 @@ export async function createPublicVehicleNotice(req: GuestAccessRequest, res: Re
     });
 
     await markGuestAccessUsed(access).catch(() => undefined);
+    await recordPublicEvent(req, 'submitted').catch(() => undefined);
     return res.status(201).json({ success: true, message: 'Aviso enviado' });
   } catch (error) {
     if (isDuplicateKey(error)) {

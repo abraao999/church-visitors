@@ -22,8 +22,16 @@ import type {
   HolyricsSyncResponse,
   PortariaDevice,
   PortariaPairing,
+  PrayerCareStatus,
   PrayerRequest,
   PrayerRequestPanelItem,
+  ReportAccesses,
+  ReportOverview,
+  ReportPrayers,
+  ReportPreset,
+  ReportService,
+  ReportVehicles,
+  ReportVisitors,
   PublicInvitation,
   RetentionOverview,
   RetentionPolicy,
@@ -85,6 +93,24 @@ export function todayISO(): string {
 
 export interface AuthResponse {
   user: AuthUser;
+}
+
+export type ReportQuery = {
+  preset?: ReportPreset;
+  from?: string;
+  to?: string;
+  serviceId?: string;
+  source?: 'all' | 'owner' | 'guest_access' | 'portaria_device';
+};
+
+function reportQuery(params: ReportQuery): string {
+  const search = new URLSearchParams();
+  if (params.preset) search.set('preset', params.preset);
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.serviceId) search.set('serviceId', params.serviceId);
+  if (params.source && params.source !== 'all') search.set('source', params.source);
+  return search.toString();
 }
 
 export const api = {
@@ -306,6 +332,15 @@ export const api = {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify(data),
+    });
+    return handleResponse<PrayerRequest>(response);
+  },
+
+  async updatePrayerCareStatus(id: string, status: PrayerCareStatus): Promise<PrayerRequest> {
+    const response = await apiFetch(`${API_BASE}/prayer-requests/${id}/care`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ status }),
     });
     return handleResponse<PrayerRequest>(response);
   },
@@ -813,10 +848,10 @@ export const api = {
   async submitPublicVisitors(
     token: string,
     visitors: CreateVisitorDto['visitors'],
-    extras?: { requestId?: string; contactConsent?: boolean; phone?: string }
+    extras?: { requestId?: string; contactConsent?: boolean; phone?: string; channel?: 'qr' | 'shared_link' }
   ): Promise<{ success: true; message: string }> {
     const response = await apiFetch(
-      `${API_BASE}/public-access/${encodeURIComponent(token)}/visitors`,
+      `${API_BASE}/public-access/${encodeURIComponent(token)}/visitors${extras?.channel ? `?origem=${extras.channel === 'qr' ? 'qr' : 'link'}` : ''}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -834,10 +869,11 @@ export const api = {
     token: string,
     data: Pick<CreatePrayerDto, 'name' | 'request' | 'isAnonymous' | 'allowProjection'> & {
       requestId?: string;
+      channel?: 'qr' | 'shared_link';
     }
   ): Promise<{ success: true; message: string }> {
     const response = await apiFetch(
-      `${API_BASE}/public-access/${encodeURIComponent(token)}/prayer-requests`,
+      `${API_BASE}/public-access/${encodeURIComponent(token)}/prayer-requests${data.channel ? `?origem=${data.channel === 'qr' ? 'qr' : 'link'}` : ''}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -914,6 +950,63 @@ export const api = {
       body: JSON.stringify({ status, updatedAt }),
     });
     return handleResponse<VehicleNotice>(response);
+  },
+
+  async getReportOverview(params: ReportQuery): Promise<ReportOverview> {
+    return handleResponse(await apiFetch(`${API_BASE}/reports/overview?${reportQuery(params)}`, { headers: authHeaders() }));
+  },
+
+  async getReportVisitors(params: ReportQuery): Promise<ReportVisitors> {
+    return handleResponse(await apiFetch(`${API_BASE}/reports/visitors?${reportQuery(params)}`, { headers: authHeaders() }));
+  },
+
+  async getReportPrayers(params: ReportQuery): Promise<ReportPrayers> {
+    return handleResponse(await apiFetch(`${API_BASE}/reports/prayers?${reportQuery(params)}`, { headers: authHeaders() }));
+  },
+
+  async getReportVehicles(params: ReportQuery): Promise<ReportVehicles> {
+    return handleResponse(await apiFetch(`${API_BASE}/reports/vehicles?${reportQuery(params)}`, { headers: authHeaders() }));
+  },
+
+  async getReportAccesses(params: ReportQuery): Promise<ReportAccesses> {
+    return handleResponse(await apiFetch(`${API_BASE}/reports/accesses?${reportQuery(params)}`, { headers: authHeaders() }));
+  },
+
+  async getReportService(serviceId: string, params: ReportQuery): Promise<ReportService> {
+    return handleResponse(
+      await apiFetch(`${API_BASE}/reports/services/${encodeURIComponent(serviceId)}?${reportQuery(params)}`, {
+        headers: authHeaders(),
+      })
+    );
+  },
+
+  async exportReport(data: ReportQuery & {
+    format: 'pdf' | 'csv' | 'xlsx' | 'follow_up_list' | 'service';
+    detailed?: boolean;
+  }): Promise<{ blob: Blob; filename: string }> {
+    const response = await apiFetch(`${API_BASE}/reports/exports`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || 'Não foi possível exportar o relatório.');
+    }
+    const header = response.headers.get('Content-Disposition') || '';
+    const filename = /filename="([^"]+)"/.exec(header)?.[1] || 'relatorio.bin';
+    return { blob: await response.blob(), filename };
+  },
+
+  async recordPublicAccessEvent(
+    token: string,
+    data: { type: 'opened' | 'form_started' | 'submitted'; channel?: 'qr' | 'shared_link' }
+  ): Promise<void> {
+    await apiFetch(`${API_BASE}/public-access/${encodeURIComponent(token)}/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
   },
 
   async archiveVehicleNotice(id: string): Promise<{ success: true; message: string }> {

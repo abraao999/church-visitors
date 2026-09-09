@@ -16,6 +16,8 @@ describe('funções e permissões da equipe', () => {
     assert.equal(hasPermission(owner, 'follow_up:read'), true);
     assert.equal(hasPermission(owner, 'church:update'), true);
     assert.equal(hasPermission(owner, 'prayers:read'), true);
+    assert.equal(hasPermission(owner, 'reports:read'), true);
+    assert.equal(hasPermission(owner, 'reports:export_sensitive'), true);
   });
 
   test('portaria não lê pedidos privados', () => {
@@ -37,6 +39,8 @@ describe('funções e permissões da equipe', () => {
     assert.equal(hasPermission(permissionsForRole('admin'), 'church:update'), true);
     assert.equal(hasPermission(permissionsForRole('admin'), 'holyrics:configure'), true);
     assert.equal(hasPermission(permissionsForRole('admin'), 'retention:manage'), true);
+    assert.equal(hasPermission(permissionsForRole('admin'), 'reports:export'), true);
+    assert.equal(hasPermission(permissionsForRole('portaria'), 'reports:read'), false);
   });
 
   test('portaria gerencia aparelhos e cultos de consulta, mídia não', () => {

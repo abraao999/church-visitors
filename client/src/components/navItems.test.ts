@@ -22,6 +22,7 @@ const EXPECTED_ITEMS = [
   { to: '/cultos', label: 'Cultos', section: 'worship', icon: 'calendar' },
   { to: '/oracao', label: 'Pedidos de oração', section: 'worship', icon: 'prayer' },
   { to: '/paineis', label: 'Painéis', section: 'worship', icon: 'panels' },
+  { to: '/relatorios', label: 'Relatórios', section: 'admin', icon: 'chart' },
   { to: '/acessos', label: 'Acessos sem login', section: 'admin', icon: 'link' },
   { to: '/igreja', label: 'Igreja', section: 'admin', icon: 'pin' },
   { to: '/configuracoes', label: 'Holyrics', section: 'admin', icon: 'music' },
@@ -63,7 +64,7 @@ test('desktop e mobile usam a mesma lista filtrada e a mesma ordem', () => {
       { id: 'home', label: null, items: ['/'] },
       { id: 'portaria', label: 'PORTARIA', items: ['/visitantes', '/acompanhamento', '/avisos-veiculos'] },
       { id: 'worship', label: 'CULTO E EXIBIÇÃO', items: ['/cultos', '/oracao', '/paineis'] },
-      { id: 'admin', label: 'ADMINISTRAÇÃO', items: ['/acessos', '/igreja', '/configuracoes'] },
+      { id: 'admin', label: 'ADMINISTRAÇÃO', items: ['/relatorios', '/acessos', '/igreja', '/configuracoes'] },
     ]
   );
 });

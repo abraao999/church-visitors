@@ -44,7 +44,8 @@ export type AppIconName =
   | 'checkPlain'
   | 'clipboard'
   | 'close'
-  | 'menu';
+  | 'menu'
+  | 'chart';
 
 export function AppIcon({ name, className = '' }: { name: AppIconName; className?: string }) {
   const content = {
@@ -94,6 +95,7 @@ export function AppIcon({ name, className = '' }: { name: AppIconName; className
     clipboard: <><rect x="7" y="4" width="10" height="16" rx="2" /><path d="M9 4.5h6V6a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V4.5Z" /><path d="M10 11h4m-4 3h4" /></>,
     close: <><path d="M6 6l12 12M18 6 6 18" /></>,
     menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
+    chart: <><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-5" /><path d="M12 16V8" /><path d="M16 16v-3" /></>,
   }[name];
 
   return (

@@ -9,10 +9,10 @@ export type NavBadge = 'vehicleNotices';
 export type NavFeatureFlag = 'visitorFollowUpEnabled';
 
 export type NavItem = {
-  to: '/' | '/visitantes' | '/acompanhamento' | '/avisos-veiculos' | '/cultos' | '/oracao' | '/paineis' | '/acessos' | '/igreja' | '/configuracoes';
+  to: '/' | '/visitantes' | '/acompanhamento' | '/avisos-veiculos' | '/cultos' | '/oracao' | '/paineis' | '/relatorios' | '/acessos' | '/igreja' | '/configuracoes';
   label: string;
   short: string;
-  icon: 'home' | 'users' | 'heartHand' | 'car' | 'calendar' | 'prayer' | 'panels' | 'link' | 'pin' | 'music';
+  icon: 'home' | 'users' | 'heartHand' | 'car' | 'calendar' | 'prayer' | 'panels' | 'chart' | 'link' | 'pin' | 'music';
   section: NavSectionId;
   permissions: readonly Permission[];
   requiresFeature?: NavFeatureFlag;
@@ -83,6 +83,14 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: 'panels',
     section: 'worship',
     permissions: ['panels:open'],
+  },
+  {
+    to: '/relatorios',
+    label: 'Relatórios',
+    short: 'Relat.',
+    icon: 'chart',
+    section: 'admin',
+    permissions: ['reports:read'],
   },
   {
     to: '/acessos',

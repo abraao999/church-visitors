@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
 import { PrayerForm } from '../components/PrayerForm';
 import { PrayerList } from '../components/PrayerList';
-import type { PrayerRequest } from '../types';
+import type { PrayerCareStatus, PrayerRequest } from '../types';
 import { todayLocalISO } from '../utils/date';
 import { hasPermission } from '../utils/permissions';
 import './PrayerRequestsPage.css';
@@ -35,6 +35,15 @@ export function PrayerRequestsPage() {
     const interval = window.setInterval(loadRequests, 30000);
     return () => window.clearInterval(interval);
   }, [loadRequests]);
+
+  async function updateCare(id: string, status: PrayerCareStatus) {
+    try {
+      await api.updatePrayerCareStatus(id, status);
+      await loadRequests();
+    } catch (error) {
+      setRecordsError(error instanceof Error ? error.message : 'Não foi possível atualizar o acompanhamento.');
+    }
+  }
 
   async function removeRequest(id: string) {
     if (!window.confirm('Deseja remover este pedido de oração? Esta ação não poderá ser desfeita.')) return;
@@ -87,7 +96,7 @@ export function PrayerRequestsPage() {
         {loadingRecords ? (
           <div className="private-record-list card"><p className="empty-state">Carregando pedidos...</p></div>
         ) : (
-          <PrayerList requests={requests} onDelete={removeRequest} />
+          <PrayerList requests={requests} onDelete={removeRequest} onCareChange={updateCare} />
         )}
       </section>
     </div>

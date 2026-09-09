@@ -22,8 +22,15 @@ function currentPublicOrigin() {
   );
 }
 
-export function guestAccessUrl(token: string, types: GuestAccessType[] = []): string {
-  return `${currentPublicOrigin().origin}${accessEntryPath(token, types)}`;
+export function guestAccessUrl(
+  token: string,
+  types: GuestAccessType[] = [],
+  channel?: 'qr' | 'shared_link'
+): string {
+  const path = `${currentPublicOrigin().origin}${accessEntryPath(token, types)}`;
+  if (channel === 'qr') return `${path}${path.includes('?') ? '&' : '?'}origem=qr`;
+  if (channel === 'shared_link') return `${path}${path.includes('?') ? '&' : '?'}origem=link`;
+  return path;
 }
 
 function safeFilename(name: string): string {
@@ -41,7 +48,7 @@ export function GuestAccessQr({ token, name, types = [], size = 240, compact = f
   const [dataUrl, setDataUrl] = useState('');
   const [error, setError] = useState(false);
   const link = useMemo(
-    () => guestAccessUrl(token, types),
+    () => guestAccessUrl(token, types, 'qr'),
     // types muda de identidade a cada render do pai; a chave real é o conteúdo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [token, types.join(',')]

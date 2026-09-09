@@ -1,10 +1,12 @@
-import type { PrayerRequest } from '../types';
+import type { PrayerCareStatus, PrayerRequest } from '../types';
+import { PRAYER_CARE_LABELS, PRAYER_CARE_STATUSES } from '../types';
 import { AppIcon } from './AppIcon';
 import './PrivateRecords.css';
 
 interface Props {
   requests: PrayerRequest[];
   onDelete: (id: string) => void;
+  onCareChange?: (id: string, status: PrayerCareStatus) => void;
 }
 
 function formatTime(dateStr: string) {
@@ -25,7 +27,7 @@ function originLabel(item: PrayerRequest): string {
   return 'Registro anterior da portaria';
 }
 
-export function PrayerList({ requests, onDelete }: Props) {
+export function PrayerList({ requests, onDelete, onCareChange }: Props) {
   if (requests.length === 0) {
     return (
       <div className="private-record-list card">
@@ -51,6 +53,21 @@ export function PrayerList({ requests, onDelete }: Props) {
                 <AppIcon name="clock" /> {formatTime(item.createdAt)} · {originLabel(item)} ·{' '}
                 {item.allowProjection ? 'Autorizado para o telão' : 'Não vai ao telão'}
               </p>
+              {onCareChange && (
+                <label className="private-record-care">
+                  <span>Acompanhamento</span>
+                  <select
+                    value={item.careStatus || 'new'}
+                    onChange={(event) => onCareChange(item._id, event.target.value as PrayerCareStatus)}
+                  >
+                    {PRAYER_CARE_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {PRAYER_CARE_LABELS[status]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </div>
             <button
               type="button"

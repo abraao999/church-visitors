@@ -218,7 +218,7 @@ export function GuestAccessesPage() {
   async function copyAccess(access: GuestAccess) {
     setError('');
     try {
-      await copyText(guestAccessUrl(access.token, accessTypes(access)));
+      await copyText(guestAccessUrl(access.token, accessTypes(access), 'shared_link'));
       setFeedback(`Link de “${access.name}” copiado.`);
     } catch {
       setError('Não foi possível copiar. Selecione o endereço e copie manualmente.');
@@ -373,7 +373,7 @@ export function GuestAccessesPage() {
             const currentTypes = accessTypes(access);
             const panel = isPanel(access);
             const portal = isPortal(access);
-            const link = guestAccessUrl(access.token, currentTypes);
+            const link = guestAccessUrl(access.token, currentTypes, 'shared_link');
             return (
               <article className="guest-access-card card" key={access.id}>
                 <div className="guest-access-card-main">

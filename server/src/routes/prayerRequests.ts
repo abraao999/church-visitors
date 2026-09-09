@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { PrayerRequest } from '../models/PrayerRequest.js';
+import { PrayerRequest, PRAYER_CARE_STATUSES, type PrayerCareStatus } from '../models/PrayerRequest.js';
 import {
   requireAuth,
   toActor,
@@ -125,6 +125,45 @@ export async function createPrayerRequest(req: AuthenticatedRequest, res: Respon
   }
 }
 
+export async function updatePrayerCareStatus(req: AuthenticatedRequest, res: Response) {
+  try {
+    const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
+    if (!filter) {
+      return res.status(404).json({ error: 'Pedido não encontrado' });
+    }
+    const status = req.body?.status;
+    if (!PRAYER_CARE_STATUSES.includes(status as PrayerCareStatus)) {
+      return res.status(400).json({ error: 'Informe um estado de acompanhamento válido.' });
+    }
+    const actor = toActor(req.auth!);
+    const now = new Date();
+    const updated = await PrayerRequest.findOneAndUpdate(
+      filter,
+      {
+        $set: {
+          careStatus: status as PrayerCareStatus,
+          careChangedAt: now,
+          careChangedBy: actor,
+        },
+        $push: {
+          careHistory: {
+            status,
+            changedAt: now,
+            changedBy: actor,
+          },
+        },
+      },
+      { new: true }
+    ).select(PRAYER_LIST_FIELDS);
+    if (!updated) {
+      return res.status(404).json({ error: 'Pedido não encontrado' });
+    }
+    return sendPrivateJson(res, serializePrayerRequest(updated));
+  } catch {
+    res.status(500).json({ error: 'Erro ao atualizar o acompanhamento do pedido' });
+  }
+}
+
 export async function deletePrayerRequest(req: AuthenticatedRequest, res: Response) {
   try {
     const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
@@ -146,6 +185,7 @@ router.get('/', requireAuth, requirePermission('prayers:read'), listPrayerReques
 router.get('/stats', requireAuth, requirePermission('prayers:read'), countPrayerRequests);
 router.get('/panel', requireAuth, requireAnyPermission('panels:open', 'prayers:read', 'prayers:project'), listPrayerRequestsPanel);
 router.post('/', requireAuth, requirePermission('prayers:create'), createPrayerRequest);
+router.patch('/:id/care', requireAuth, requirePermission('prayers:read'), updatePrayerCareStatus);
 router.delete('/:id', requireAuth, requirePermission('prayers:delete'), deletePrayerRequest);
 
 export default router;
