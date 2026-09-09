@@ -9,6 +9,7 @@ export interface SyncResult {
   state: ConnectionState;
   sent: number;
   remaining: number;
+  visitorFollowUpEnabled?: boolean;
   error?: string;
 }
 
@@ -52,6 +53,7 @@ export async function syncQueue(session: DeviceCredential): Promise<SyncResult> 
     try {
       const heartbeat = await fetchDeviceSession(session.credential);
       await writeClockOffset(clockOffsetFrom(heartbeat.serverTime));
+      const visitorFollowUpEnabled = heartbeat.visitorFollowUpEnabled === true;
 
       const items = (await pendingItems(session.publicId)).filter(
         (item) => item.status === 'queued' || item.status === 'syncing'
@@ -77,6 +79,7 @@ export async function syncQueue(session: DeviceCredential): Promise<SyncResult> 
               state: 'revoked',
               sent,
               remaining: (await pendingItems(session.publicId)).length,
+              visitorFollowUpEnabled,
               error: 'Este aparelho não possui mais acesso.',
             };
           }
@@ -95,6 +98,7 @@ export async function syncQueue(session: DeviceCredential): Promise<SyncResult> 
               state: 'revoked',
               sent,
               remaining: (await pendingItems(session.publicId)).length,
+              visitorFollowUpEnabled,
               error: error.message,
             };
           }
@@ -108,13 +112,14 @@ export async function syncQueue(session: DeviceCredential): Promise<SyncResult> 
             state: 'failed',
             sent,
             remaining: (await pendingItems(session.publicId)).length,
+            visitorFollowUpEnabled,
             error: 'Não foi possível enviar. Seus cadastros continuam guardados neste aparelho.',
           };
         }
       }
 
       const remaining = (await pendingItems(session.publicId)).length;
-      return { state: remaining ? 'online' : 'online', sent, remaining };
+      return { state: 'online', sent, remaining, visitorFollowUpEnabled };
     } catch (error) {
       if (isPortariaApiError(error) && error.code === 'revoked') {
         return {
@@ -139,13 +144,15 @@ export async function syncQueue(session: DeviceCredential): Promise<SyncResult> 
   });
 }
 
-export async function probeConnection(credential: string): Promise<'online' | 'offline' | 'revoked'> {
+export async function probeConnection(
+  credential: string
+): Promise<{ state: 'online' | 'offline' | 'revoked'; visitorFollowUpEnabled?: boolean }> {
   try {
     const session = await fetchDeviceSession(credential);
     await writeClockOffset(clockOffsetFrom(session.serverTime));
-    return 'online';
+    return { state: 'online', visitorFollowUpEnabled: session.visitorFollowUpEnabled === true };
   } catch (error) {
-    if (isPortariaApiError(error) && error.code === 'revoked') return 'revoked';
-    return 'offline';
+    if (isPortariaApiError(error) && error.code === 'revoked') return { state: 'revoked' };
+    return { state: 'offline' };
   }
 }

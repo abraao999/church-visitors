@@ -69,7 +69,7 @@ export async function createFollowUpRecord(input: {
   source: FollowUpSource;
   createdBy?: { name: string };
 }) {
-  const visitorFilter = tenantRecordFilter(input.churchId, input.visitorId);
+  const visitorFilter = tenantRecordFilter(input.churchId, String(input.visitorId));
   if (!visitorFilter) {
     return { error: 'Visitante não encontrado', status: 404 as const };
   }

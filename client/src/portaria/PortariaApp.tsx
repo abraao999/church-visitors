@@ -15,6 +15,7 @@ import { PanelObservationFields } from '../components/PanelObservationFields';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { RELATIONSHIPS, VEHICLE_NOTICE_ACTIONS, type PortariaOfflinePermission, type Relationship, type VehicleNoticeAction, type VisitKind } from '../types';
 import { VisitKindField } from '../components/VisitKindField';
+import { maskPhoneInput } from '../utils/visitorFollowUp';
 import { maskVehiclePlateInput } from '../utils/vehiclePlate';
 import { claimPairing, inspectPairing, isPortariaApiError } from './api';
 import { capturedAtFrom } from './clock';
@@ -120,10 +121,17 @@ function PortariaProvider({ children }: { children: ReactNode }) {
     if (!stored || syncingRef.current || connectionRef.current === 'revoked') return;
     syncingRef.current = true;
     setConnection('syncing');
-    const result = await syncQueue(stored);
-    setConnection(result.state);
-    setItems(await pendingItems(stored.publicId));
-    syncingRef.current = false;
+      const result = await syncQueue(stored);
+      setConnection(result.state);
+      if (typeof result.visitorFollowUpEnabled === 'boolean') {
+        const next = { ...stored, visitorFollowUpEnabled: result.visitorFollowUpEnabled };
+        if (next.visitorFollowUpEnabled !== stored.visitorFollowUpEnabled) {
+          await writeCredential(next);
+          setSession(next);
+        }
+      }
+      setItems(await pendingItems(stored.publicId));
+      syncingRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -140,13 +148,21 @@ function PortariaProvider({ children }: { children: ReactNode }) {
     const boot = async () => {
       const probe = await probeConnection(session.credential);
       if (cancelled) return;
-      if (probe === 'revoked') {
+      if (probe.state === 'revoked') {
         setConnection('revoked');
         return;
       }
-      if (probe === 'offline') {
+      if (probe.state === 'offline') {
         setConnection('offline');
         return;
+      }
+      if (typeof probe.visitorFollowUpEnabled === 'boolean') {
+        const stored = await readCredential();
+        if (stored && stored.visitorFollowUpEnabled !== probe.visitorFollowUpEnabled) {
+          const next = { ...stored, visitorFollowUpEnabled: probe.visitorFollowUpEnabled };
+          await writeCredential(next);
+          setSession(next);
+        }
       }
       await runSync();
     };
@@ -368,16 +384,29 @@ function PortariaHome() {
   );
 }
 
+function emptyPortariaPerson(id: number) {
+  return {
+    id,
+    name: '',
+    relationship: 'outro' as Relationship,
+    panelObservation: '',
+    showObservationOnPanel: false,
+    visitKind: 'unknown' as VisitKind,
+    includeFollowUp: false,
+  };
+}
+
 function PortariaVisitors() {
   const { session, connection, saveVisitors, capacity } = usePortaria();
   const [city, setCity] = useState('');
-  const [people, setPeople] = useState([
-    { id: 1, name: '', relationship: 'outro' as Relationship, panelObservation: '', showObservationOnPanel: false, visitKind: 'unknown' as VisitKind },
-  ]);
+  const [people, setPeople] = useState([emptyPortariaPerson(1)]);
+  const [includeFollowUp, setIncludeFollowUp] = useState(false);
+  const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const offline = connection === 'offline' || connection === 'failed';
+  const followUpEnabled = session?.visitorFollowUpEnabled === true;
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -387,6 +416,17 @@ function PortariaVisitors() {
       setError('Este aparelho possui muitos cadastros aguardando envio. Conecte-se à internet antes de continuar.');
       return;
     }
+    const selected = people.filter((person) =>
+      people.length === 1 ? includeFollowUp : person.includeFollowUp
+    );
+    if (followUpEnabled && includeFollowUp && people.length > 1 && selected.length === 0) {
+      setError('Escolha quem entra no acompanhamento.');
+      return;
+    }
+    if (followUpEnabled && includeFollowUp && phone.replace(/\D/g, '').length < 10) {
+      setError('Informe o telefone ou WhatsApp para o contato.');
+      return;
+    }
     const visitors = people.map((person) => ({
       name: person.name.trim(),
       city: city.trim(),
@@ -394,6 +434,7 @@ function PortariaVisitors() {
       panelObservation: person.panelObservation.trim(),
       showObservationOnPanel: person.showObservationOnPanel,
       visitKind: person.visitKind,
+      includeFollowUp: followUpEnabled && includeFollowUp && selected.some((item) => item.id === person.id),
     }));
     if (!city.trim() || visitors.some((person) => !person.name)) {
       setError('Informe a cidade e o nome de cada pessoa.');
@@ -401,12 +442,21 @@ function PortariaVisitors() {
     }
     setSaving(true);
     try {
-      await saveVisitors({ visitors });
-      setPeople([
-        { id: Date.now(), name: '', relationship: 'outro', panelObservation: '', showObservationOnPanel: false, visitKind: 'unknown' as VisitKind },
-      ]);
+      await saveVisitors({
+        visitors,
+        ...(followUpEnabled && includeFollowUp
+          ? { contactConsent: true, phone: phone.replace(/\D/g, '') }
+          : {}),
+      });
+      setPeople([emptyPortariaPerson(Date.now())]);
       setCity('');
-      setMessage('Cadastro salvo neste aparelho');
+      setIncludeFollowUp(false);
+      setPhone('');
+      setMessage(
+        followUpEnabled && includeFollowUp
+          ? 'Cadastro e acompanhamento salvos neste aparelho'
+          : 'Cadastro salvo neste aparelho'
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível guardar o cadastro.');
     } finally {
@@ -497,6 +547,22 @@ function PortariaVisitors() {
                   )
                 }
               />
+              {followUpEnabled && includeFollowUp && people.length > 1 && (
+                <label className="portaria-choice">
+                  <input
+                    type="checkbox"
+                    checked={person.includeFollowUp}
+                    onChange={(event) =>
+                      setPeople((current) =>
+                        current.map((item) =>
+                          item.id === person.id ? { ...item, includeFollowUp: event.target.checked } : item
+                        )
+                      )
+                    }
+                  />
+                  Incluir {person.name.trim() || `visitante ${index + 1}`} no acompanhamento
+                </label>
+              )}
               {people.length > 1 && (
                 <button
                   type="button"
@@ -506,7 +572,6 @@ function PortariaVisitors() {
                   Remover
                 </button>
               )}
-              {index === 0 && people.length === 1 ? null : null}
             </div>
           ))}
           {people.length < MAX_VISITORS && (
@@ -514,16 +579,50 @@ function PortariaVisitors() {
               type="button"
               className="portaria-secondary"
               onClick={() =>
-                setPeople((current) => [
-                  ...current,
-                  { id: Date.now(), name: '', relationship: 'outro', panelObservation: '', showObservationOnPanel: false, visitKind: 'unknown' as VisitKind },
-                ])
+                setPeople((current) => [...current, emptyPortariaPerson(Date.now())])
               }
             >
               <AppIcon name="plus" /> Adicionar pessoa
             </button>
           )}
         </fieldset>
+        {followUpEnabled && (
+          <fieldset className="portaria-follow">
+            <legend>Acompanhamento</legend>
+            <label className="portaria-choice">
+              <input
+                type="checkbox"
+                checked={includeFollowUp}
+                onChange={(event) => {
+                  setIncludeFollowUp(event.target.checked);
+                  if (!event.target.checked) {
+                    setPhone('');
+                    setPeople((current) => current.map((item) => ({ ...item, includeFollowUp: false })));
+                  }
+                }}
+              />
+              Autoriza a igreja a entrar em contato?
+            </label>
+            {includeFollowUp && (
+              <>
+                <label>
+                  Telefone ou WhatsApp
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    placeholder="(00) 00000-0000"
+                    value={phone}
+                    onChange={(event) => setPhone(maskPhoneInput(event.target.value))}
+                  />
+                </label>
+                <p className="portaria-field-hint">
+                  O mesmo telefone vale para todas as pessoas marcadas. O primeiro contato fica para amanhã.
+                </p>
+              </>
+            )}
+          </fieldset>
+        )}
         {offline && (
           <p className="portaria-note">
             Este cadastro ficará guardado neste aparelho até a internet voltar.
@@ -827,6 +926,7 @@ function PortariaPairing() {
         churchName: claimed.churchName,
         deviceName: claimed.deviceName,
         permissions: claimed.permissions,
+        visitorFollowUpEnabled: claimed.visitorFollowUpEnabled === true,
         createdAt: new Date().toISOString(),
         formatVersion: 1,
       });

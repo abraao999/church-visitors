@@ -205,6 +205,7 @@ export interface PortariaDeviceSession {
   deviceName: string;
   publicId: string;
   permissions: PortariaOfflinePermission[];
+  visitorFollowUpEnabled?: boolean;
   serverTime: string;
 }
 
@@ -213,6 +214,7 @@ export interface PortariaClaimResult {
   deviceName: string;
   publicId: string;
   permissions: PortariaOfflinePermission[];
+  visitorFollowUpEnabled?: boolean;
   serverTime: string;
   credential: string;
 }

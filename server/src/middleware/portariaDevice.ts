@@ -20,6 +20,8 @@ export interface PortariaDeviceContext {
   deviceName: string;
   publicId: string;
   permissions: PortariaDevicePermission[];
+  visitorFollowUpEnabled?: boolean;
+  timezone?: string;
 }
 
 export interface PortariaDeviceRequest extends Request {
@@ -100,7 +102,7 @@ export function requirePortariaDevice(requiredPermission?: PortariaDevicePermiss
       }
 
       const church = await Church.findOne({ _id: device.churchId, active: true })
-        .select('name')
+        .select('name timezone visitorFollowUpEnabled')
         .lean();
       if (!church) return rejectInvalid(res);
 
@@ -111,6 +113,8 @@ export function requirePortariaDevice(requiredPermission?: PortariaDevicePermiss
         deviceName: device.name,
         publicId: device.publicId,
         permissions: device.permissions,
+        visitorFollowUpEnabled: church.visitorFollowUpEnabled === true,
+        timezone: church.timezone,
       };
       next();
     } catch {

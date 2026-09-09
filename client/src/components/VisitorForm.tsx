@@ -498,7 +498,8 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
               )}
               <p className="visitor-follow-privacy">
                 <AppIcon name="info" />
-                Essas informações ficam visíveis somente para pessoas autorizadas.
+                Telefone, responsável e primeiro contato valem para todas as pessoas marcadas.
+                O primeiro contato padrão é amanhã.
               </p>
             </>
           )}

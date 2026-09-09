@@ -301,4 +301,49 @@ describe('acompanhamento isolado por igreja', () => {
     assert.equal(state.statusCode, 201);
     assert.equal(createdFollowUp, 0);
   });
+
+  test('família no acesso público compartilha um telefone e um consentimento', async () => {
+    stubPublicVisitorWrite();
+    const phones: string[] = [];
+    stubMethod(Visitor, 'exists', async () => null);
+    stubMethod(Visitor, 'insertMany', async (docs: Array<Record<string, unknown>>) =>
+      docs.map((doc) => ({ ...doc, _id: new Types.ObjectId() }))
+    );
+    stubMethod(Visitor, 'findOne', () => ({
+      select: async () => ({ _id: new Types.ObjectId(), name: 'João' }),
+    }));
+    stubMethod(VisitorFollowUp, 'findOne', () => ({
+      select: async () => null,
+    }));
+    stubMethod(VisitorFollowUp, 'create', async (doc: Record<string, unknown>) => {
+      phones.push(String(doc.phone || ''));
+      return { _id: new Types.ObjectId() };
+    });
+    const { res, state } = mockRes();
+    await createPublicVisitors(
+      {
+        body: {
+          visitors: [
+            { name: 'João', city: 'Umuarama', relationship: 'outro' },
+            { name: 'Maria', city: 'Umuarama', relationship: 'esposa' },
+          ],
+          contactConsent: true,
+          phone: '44988887777',
+        },
+        guestAccess: {
+          churchId: String(churchA),
+          churchName: 'Alfa',
+          guestAccessId: String(new Types.ObjectId()),
+          accessName: 'Portaria',
+          scope: 'visitors:create',
+          scopes: ['visitors:create'],
+          visitorFollowUpEnabled: true,
+          timezone: 'America/Sao_Paulo',
+        },
+      } as unknown as GuestAccessRequest,
+      res
+    );
+    assert.equal(state.statusCode, 201);
+    assert.deepEqual(phones, ['44988887777', '44988887777']);
+  });
 });

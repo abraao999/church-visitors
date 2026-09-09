@@ -4,6 +4,7 @@ import type { Response } from 'express';
 import { Types } from 'mongoose';
 import type { PortariaDeviceRequest } from '../middleware/portariaDevice.js';
 import { Visitor } from '../models/Visitor.js';
+import { VisitorFollowUp } from '../models/VisitorFollowUp.js';
 import { VehicleNotice } from '../models/VehicleNotice.js';
 import { PortariaDevice } from '../models/PortariaDevice.js';
 import { PortariaPairing } from '../models/PortariaPairing.js';
@@ -176,6 +177,7 @@ describe('sincronização da portaria', () => {
       inserted.push(...docs);
       return docs;
     });
+    stubMethod(PortariaDevice, 'updateOne', async () => ({ modifiedCount: 1 }));
     stubMethod(portariaSync, 'resolveServiceAtCapture', async (churchId: string, at: Date) => {
       assert.equal(churchId, String(churchA));
       assert.equal(at.toISOString(), capturedAt.toISOString());
@@ -212,6 +214,7 @@ describe('sincronização da portaria', () => {
       inserted.push(...docs);
       return docs;
     });
+    stubMethod(PortariaDevice, 'updateOne', async () => ({ modifiedCount: 1 }));
     stubMethod(portariaSync, 'resolveServiceAtCapture', async () => null);
 
     const { res, state } = mockRes();
@@ -247,6 +250,93 @@ describe('sincronização da portaria', () => {
     assert.equal(state.statusCode, 422);
     assert.equal(state.body.code, 'review');
     assert.equal(created, 0);
+  });
+
+  test('acompanhamento offline usa um telefone para as pessoas marcadas', async () => {
+    const createdFollowUps: Array<Record<string, unknown>> = [];
+    stubMethod(Visitor, 'exists', async () => null);
+    stubMethod(Visitor, 'findOne', () => ({
+      select: async () => ({ _id: new Types.ObjectId(), name: 'Carlos' }),
+    }));
+    stubMethod(Visitor, 'insertMany', async (docs: Array<Record<string, unknown>>) =>
+      docs.map((doc) => ({ ...doc, _id: new Types.ObjectId() }))
+    );
+    stubMethod(VisitorFollowUp, 'findOne', () => ({
+      select: async () => null,
+    }));
+    stubMethod(VisitorFollowUp, 'create', async (doc: Record<string, unknown>) => {
+      createdFollowUps.push(doc);
+      return { ...doc, _id: new Types.ObjectId() };
+    });
+    stubMethod(Church, 'findById', () => ({
+      select: () => ({
+        lean: async () => ({
+          visitorFollowUpEnabled: true,
+          timezone: 'America/Sao_Paulo',
+        }),
+      }),
+    }));
+    stubMethod(PortariaDevice, 'updateOne', async () => ({ modifiedCount: 1 }));
+    stubMethod(portariaSync, 'resolveServiceAtCapture', async () => null);
+
+    const { res, state } = mockRes();
+    await createPortariaVisitors(
+      deviceReq({
+        visitors: [
+          { name: 'Carlos', city: 'Umuarama', relationship: 'outro', includeFollowUp: true },
+          { name: 'Mariana', city: 'Umuarama', relationship: 'esposa', includeFollowUp: false },
+        ],
+        contactConsent: true,
+        phone: '44988887777',
+        requestId: 'req-follow-1',
+        capturedAt: new Date().toISOString(),
+      }),
+      res
+    );
+
+    assert.equal(state.statusCode, 201);
+    assert.equal(createdFollowUps.length, 1);
+    assert.equal(createdFollowUps[0]?.source, 'portaria_device');
+    assert.equal(createdFollowUps[0]?.phone, '44988887777');
+    assert.equal(createdFollowUps[0]?.consent, true);
+    assert.equal(String(createdFollowUps[0]?.churchId), String(churchA));
+  });
+
+  test('portaria recusa responsável interno e não cria acompanhamento sem consentimento', async () => {
+    let createdFollowUp = 0;
+    stubMethod(VisitorFollowUp, 'create', async () => {
+      createdFollowUp += 1;
+    });
+    const staff = mockRes();
+    await createPortariaVisitors(
+      deviceReq({
+        visitors: [{ name: 'Ana', city: 'Umuarama', relationship: 'outro' }],
+        contactConsent: true,
+        phone: '44988887777',
+        assignedToId: String(new Types.ObjectId()),
+        capturedAt: new Date().toISOString(),
+      }),
+      staff.res
+    );
+    assert.equal(staff.state.statusCode, 400);
+    assert.equal(createdFollowUp, 0);
+
+    stubMethod(Visitor, 'exists', async () => null);
+    stubMethod(Visitor, 'insertMany', async (docs: Array<Record<string, unknown>>) =>
+      docs.map((doc) => ({ ...doc, _id: new Types.ObjectId() }))
+    );
+    stubMethod(PortariaDevice, 'updateOne', async () => ({ modifiedCount: 1 }));
+    stubMethod(portariaSync, 'resolveServiceAtCapture', async () => null);
+    const noConsent = mockRes();
+    await createPortariaVisitors(
+      deviceReq({
+        visitors: [{ name: 'Ana', city: 'Umuarama', relationship: 'outro' }],
+        capturedAt: new Date().toISOString(),
+      }),
+      noConsent.res
+    );
+    assert.equal(noConsent.state.statusCode, 201);
+    assert.equal(createdFollowUp, 0);
   });
 });
 

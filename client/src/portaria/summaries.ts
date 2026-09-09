@@ -3,10 +3,15 @@ import type { QueueItemType, VehiclePayload, VisitorsPayload } from './types';
 
 export function visitorsSummary(payload: VisitorsPayload): string {
   const names = payload.visitors.map((person) => person.name).filter(Boolean);
-  if (names.length === 0) return 'Visitantes';
-  if (names.length === 1) return names[0];
-  if (names.length === 2) return `${names[0]} e ${names[1]}`;
-  return `${names[0]} e mais ${names.length - 1}`;
+  const base =
+    names.length === 0
+      ? 'Visitantes'
+      : names.length === 1
+        ? names[0]
+        : names.length === 2
+          ? `${names[0]} e ${names[1]}`
+          : `${names[0]} e mais ${names.length - 1}`;
+  return payload.contactConsent ? `${base} · acompanhamento` : base;
 }
 
 export function visitorsDetail(payload: VisitorsPayload): string {

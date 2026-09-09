@@ -15,6 +15,14 @@ import {
 } from '../models/VehicleNotice.js';
 import type { Relationship } from '../constants/relationships.js';
 import { resolveServiceAtCapture } from '../services/activeService.js';
+import { createFollowUpRecord } from '../services/visitorFollowUp.js';
+import { CHURCH_TIMEZONE } from '../utils/dayRange.js';
+import {
+  FOLLOW_UP_PHONE_REQUIRED_ERROR,
+  isValidFollowUpPhone,
+  normalizeFollowUpPhone,
+  resolveNextContactAt,
+} from '../utils/visitorFollowUp.js';
 
 export const portariaSync = {
   resolveServiceAtCapture,
@@ -54,6 +62,18 @@ function rejectsClientChurchId(body: unknown): boolean {
 
 function rejectsClientServiceId(body: unknown): boolean {
   return Boolean(body && typeof body === 'object' && 'serviceId' in body);
+}
+
+function bodyHasStaffFollowUpFields(body: unknown): boolean {
+  if (!body || typeof body !== 'object') return false;
+  const value = body as Record<string, unknown>;
+  return (
+    'assignedToId' in value ||
+    'status' in value ||
+    'history' in value ||
+    'nextContactAt' in value ||
+    'responsible' in value
+  );
 }
 
 function normalizeSingleLine(value: unknown, maxLength: number): string | null {
@@ -96,7 +116,7 @@ async function loadValidPairing(token: unknown) {
   }
 
   const church = await Church.findOne({ _id: pairing.churchId, active: true })
-    .select('name')
+    .select('name visitorFollowUpEnabled')
     .lean();
   if (!church) return { error: 'invalid' as const, pairing: null, church: null };
 
@@ -139,6 +159,7 @@ export async function inspectPortariaPairing(req: PortariaDeviceRequest, res: Re
     return res.json({
       valid: true,
       churchName: loaded.church.name,
+      visitorFollowUpEnabled: loaded.church.visitorFollowUpEnabled === true,
       expiresAt: loaded.pairing.expiresAt,
     });
   } catch {
@@ -203,6 +224,7 @@ export async function claimPortariaPairing(req: PortariaDeviceRequest, res: Resp
       deviceName: device.name,
       publicId: device.publicId,
       permissions: device.permissions,
+      visitorFollowUpEnabled: loaded.church.visitorFollowUpEnabled === true,
       serverTime: new Date().toISOString(),
       credential: createPortariaDeviceToken(device.publicId, device.credentialVersion),
     });
@@ -220,6 +242,7 @@ export async function getPortariaDevice(req: PortariaDeviceRequest, res: Respons
     deviceName: device.deviceName,
     publicId: device.publicId,
     permissions: device.permissions,
+    visitorFollowUpEnabled: device.visitorFollowUpEnabled === true,
     serverTime: new Date().toISOString(),
   });
 }
@@ -236,6 +259,9 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
     }
     if (rejectsClientServiceId(req.body)) {
       return res.status(400).json({ error: 'O culto não pode ser escolhido neste envio.' });
+    }
+    if (bodyHasStaffFollowUpFields(req.body)) {
+      return res.status(400).json({ error: 'Estas informações não podem ser enviadas neste acesso.' });
     }
 
     const body =
@@ -270,6 +296,7 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
         panelObservation: normalizePanelObservation(item.panelObservation),
         showObservationOnPanel: readShowObservationOnPanel(item.showObservationOnPanel),
         visitKind: parseVisitKind(item.visitKind),
+        includeFollowUp: item.includeFollowUp === true,
       };
     });
 
@@ -294,6 +321,38 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
     const device = req.portariaDevice!;
     const churchId = new Types.ObjectId(device.churchId);
     const requestId = parseRequestId(body.requestId);
+    let followUpPhone = '';
+    let followUpIndexes: number[] = [];
+    let followUpAt: Date | undefined;
+    if (body.contactConsent === true) {
+      const church = await Church.findById(device.churchId).select('visitorFollowUpEnabled timezone').lean();
+      if (church?.visitorFollowUpEnabled === true) {
+        followUpPhone = normalizeFollowUpPhone(body.phone);
+        if (!isValidFollowUpPhone(followUpPhone)) {
+          return res.status(422).json({
+            code: 'review',
+            error: FOLLOW_UP_PHONE_REQUIRED_ERROR,
+            fields: { phone: FOLLOW_UP_PHONE_REQUIRED_ERROR },
+          });
+        }
+        followUpIndexes = people
+          .map((person, index) => (people.length === 1 || person.includeFollowUp ? index : -1))
+          .filter((index) => index >= 0);
+        if (followUpIndexes.length === 0) {
+          return res.status(422).json({
+            code: 'review',
+            error: 'Escolha quem entra no acompanhamento.',
+            fields: { visitors: 'Escolha quem entra no acompanhamento.' },
+          });
+        }
+        followUpAt = resolveNextContactAt(
+          'tomorrow',
+          undefined,
+          captured,
+          church.timezone || CHURCH_TIMEZONE
+        ).date;
+      }
+    }
 
     if (requestId) {
       const replayed = await Visitor.exists({ churchId, requestId });
@@ -305,7 +364,7 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
     const serviceId = await linkedServiceId(device.churchId, captured);
     const origin = { deviceId: device.deviceId, name: device.deviceName };
 
-    await Visitor.insertMany(
+    const created = await Visitor.insertMany(
       people.map((visitor, index) => ({
         churchId: device.churchId,
         name: visitor.name,
@@ -322,6 +381,21 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
         ...(index === 0 && requestId ? { requestId } : {}),
       }))
     );
+
+    if (followUpAt && followUpIndexes.length > 0) {
+      for (const index of followUpIndexes) {
+        const visitor = created[index];
+        if (!visitor) continue;
+        await createFollowUpRecord({
+          churchId: device.churchId,
+          visitorId: visitor._id,
+          phone: followUpPhone,
+          nextContactAt: followUpAt,
+          consent: true,
+          source: 'portaria_device',
+        });
+      }
+    }
 
     await markPortariaDeviceUsed(device).catch(() => undefined);
     return res.status(201).json({

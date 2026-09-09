@@ -11,10 +11,14 @@ import {
   PORTARIA_START_URL,
   queueCapacity,
 } from './constants.ts';
-function visitorsSummary(payload: { visitors: Array<{ name: string }> }): string {
+function visitorsSummary(payload: {
+  visitors: Array<{ name: string }>;
+  contactConsent?: boolean;
+}): string {
   const names = payload.visitors.map((person) => person.name).filter(Boolean);
-  if (names.length <= 2) return names.join(' e ');
-  return `${names[0]} e mais ${names.length - 1}`;
+  const base =
+    names.length <= 2 ? names.join(' e ') : `${names[0]} e mais ${names.length - 1}`;
+  return payload.contactConsent ? `${base} · acompanhamento` : base;
 }
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -51,6 +55,19 @@ test('conteúdo da fila é criptografado com IV distinto', async () => {
   const second = await encryptPayload(key, payload);
   assert.notEqual(Buffer.from(first.iv).toString('hex'), Buffer.from(second.iv).toString('hex'));
   assert.deepEqual(await decryptPayload(key, first.iv, first.data), payload);
+});
+
+test('resumo da família marca acompanhamento quando houver consentimento', () => {
+  assert.equal(
+    visitorsSummary({
+      visitors: [
+        { name: 'Carlos', city: 'Umuarama', relationship: 'outro' },
+        { name: 'Mariana', city: 'Umuarama', relationship: 'esposa' },
+      ],
+      contactConsent: true,
+    }),
+    'Carlos e Mariana · acompanhamento'
+  );
 });
 
 test('resumo da família não lista todos os nomes', () => {

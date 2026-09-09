@@ -10,10 +10,13 @@ export interface VisitorDraft {
   panelObservation?: string;
   showObservationOnPanel?: boolean;
   visitKind?: VisitKind;
+  includeFollowUp?: boolean;
 }
 
 export interface VisitorsPayload {
   visitors: VisitorDraft[];
+  contactConsent?: boolean;
+  phone?: string;
 }
 
 export interface VehiclePayload {
@@ -49,6 +52,7 @@ export interface DeviceCredential {
   churchName: string;
   deviceName: string;
   permissions: PortariaOfflinePermission[];
+  visitorFollowUpEnabled?: boolean;
   createdAt: string;
   formatVersion: number;
 }
