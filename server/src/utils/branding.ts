@@ -86,6 +86,7 @@ export function publicAccessMetadata(access: {
   accessName: string;
   scope: string;
   scopes: string[];
+  visitorFollowUpEnabled?: boolean;
   logoUrl?: string;
   primaryColor?: string;
   accentColor?: string;
@@ -96,6 +97,7 @@ export function publicAccessMetadata(access: {
     accessName: access.accessName,
     type: access.scope,
     types: access.scopes,
+    visitorFollowUpEnabled: access.visitorFollowUpEnabled === true,
     ...(access.logoUrl ? { logoUrl: access.logoUrl } : {}),
     ...(access.primaryColor ? { primaryColor: access.primaryColor } : {}),
     ...(access.accentColor ? { accentColor: access.accentColor } : {}),

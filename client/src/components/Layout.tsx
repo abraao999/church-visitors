@@ -61,7 +61,9 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
   const brandName = branding?.name?.trim() || user?.churchName?.trim() || 'Church Visitors';
   const logoUrl = branding?.logoUrl;
   const navItems = NAV_ITEMS.filter((item) =>
-    navItemVisible(item.to, user?.role, user?.permissions)
+    navItemVisible(item.to, user?.role, user?.permissions, {
+      visitorFollowUpEnabled: user?.visitorFollowUpEnabled === true,
+    })
   );
   const { primary, admin } = drawerSections(navItems);
 

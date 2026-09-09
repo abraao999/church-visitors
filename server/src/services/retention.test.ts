@@ -9,6 +9,8 @@ import { RetentionRun } from '../models/RetentionRun.js';
 import { TeamInvitation } from '../models/TeamInvitation.js';
 import { VehicleNotice } from '../models/VehicleNotice.js';
 import { Visitor } from '../models/Visitor.js';
+import { FollowUpContact } from '../models/FollowUpContact.js';
+import { VisitorFollowUp } from '../models/VisitorFollowUp.js';
 import {
   buildRetentionFilters,
   defaultRetentionPolicy,
@@ -100,11 +102,20 @@ test('execução anonimiza visitantes, exclui categorias vencidas e não guarda 
       return { _id: policyId, churchId, ...defaultRetentionPolicy(), enabled: true };
     }),
     stubMethod(RetentionPolicy, 'updateOne', async () => ({ modifiedCount: 1 })),
+    stubMethod(Visitor, 'find', () => ({
+      select() {
+        return {
+          lean: async () => [{ _id: new Types.ObjectId() }, { _id: new Types.ObjectId() }],
+        };
+      },
+    })),
     stubMethod(Visitor, 'updateMany', async (filter: never, update: never) => {
       seen.visitorFilter = filter;
       seen.visitorUpdate = update;
       return { modifiedCount: 2 };
     }),
+    stubMethod(FollowUpContact, 'deleteMany', async () => ({ deletedCount: 2 })),
+    stubMethod(VisitorFollowUp, 'updateMany', async () => ({ modifiedCount: 2 })),
     stubMethod(PrayerRequest, 'deleteMany', async (filter: never) => {
       seen.prayerFilter = filter;
       return { deletedCount: 3 };

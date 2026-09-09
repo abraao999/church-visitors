@@ -25,6 +25,8 @@ export interface GuestAccessContext {
   accessName: string;
   scope: GuestAccessType;
   scopes: GuestAccessType[];
+  visitorFollowUpEnabled?: boolean;
+  timezone?: string;
   logoUrl?: string;
   primaryColor?: string;
   accentColor?: string;
@@ -110,7 +112,7 @@ export function requireGuestAccess(requiredScope?: GuestAccessType) {
       }
 
       const church = await Church.findOne({ _id: access.churchId, active: true })
-        .select('name branding.logoUrl branding.primaryColor branding.accentColor')
+        .select('name timezone visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor')
         .lean();
       if (!church) return rejectInvalid(res);
 
@@ -124,6 +126,8 @@ export function requireGuestAccess(requiredScope?: GuestAccessType) {
         accessName: access.name,
         scope,
         scopes,
+        visitorFollowUpEnabled: church.visitorFollowUpEnabled === true,
+        timezone: church.timezone || 'America/Sao_Paulo',
         ...(branding.logoUrl ? { logoUrl: branding.logoUrl } : {}),
         ...(branding.primaryColor ? { primaryColor: branding.primaryColor } : {}),
         ...(branding.accentColor ? { accentColor: branding.accentColor } : {}),

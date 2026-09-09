@@ -28,6 +28,7 @@ import { ServiceOccurrencePage } from './pages/ServiceOccurrencePage';
 import { ServicesPage } from './pages/ServicesPage';
 import { VehicleNoticesPage } from './pages/VehicleNoticesPage';
 import { VisitorsPage } from './pages/VisitorsPage';
+import { FollowUpPage } from './pages/FollowUpPage';
 import { PortariaApp } from './portaria/PortariaApp';
 
 export function App() {
@@ -58,6 +59,9 @@ export function App() {
               <Route path="/" element={<HomePage />} />
               <Route element={<PermissionRoute anyOf={['visitors:read', 'visitors:create']} />}>
                 <Route path="/visitantes" element={<VisitorsPage />} />
+              </Route>
+              <Route element={<PermissionRoute anyOf={['follow_up:read']} requireFollowUp />}>
+                <Route path="/acompanhamento" element={<FollowUpPage />} />
               </Route>
               <Route element={<PermissionRoute anyOf={['prayers:read', 'prayers:create']} />}>
                 <Route path="/oracao" element={<PrayerRequestsPage />} />

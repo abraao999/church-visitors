@@ -23,6 +23,7 @@ describe('identidade visual no cliente', () => {
       [
         '/',
         '/visitantes',
+        '/acompanhamento',
         '/oracao',
         '/acessos',
         '/cultos',

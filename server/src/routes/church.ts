@@ -37,6 +37,7 @@ function publicChurch(church: {
   phone?: string;
   address?: string;
   active: boolean;
+  visitorFollowUpEnabled?: boolean;
 }) {
   return {
     id: String(church._id),
@@ -46,6 +47,7 @@ function publicChurch(church: {
     phone: church.phone || '',
     address: church.address || '',
     active: church.active,
+    visitorFollowUpEnabled: church.visitorFollowUpEnabled === true,
   };
 }
 
@@ -77,6 +79,9 @@ router.patch('/', requireAuth, requirePermission('church:update'), async (req: A
     church.city = normalizeOptionalLine(req.body?.city, 100);
     church.phone = normalizeOptionalLine(req.body?.phone, 40);
     church.address = normalizeOptionalLine(req.body?.address, 200);
+    if (typeof req.body?.visitorFollowUpEnabled === 'boolean') {
+      church.visitorFollowUpEnabled = req.body.visitorFollowUpEnabled === true;
+    }
     await church.save();
 
     return res.json(publicChurch(church));
@@ -84,5 +89,27 @@ router.patch('/', requireAuth, requirePermission('church:update'), async (req: A
     return res.status(500).json({ error: 'Não foi possível salvar os dados da igreja.' });
   }
 });
+
+router.patch(
+  '/visitor-follow-up',
+  requireAuth,
+  requirePermission('church:update'),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (req.body && typeof req.body === 'object' && 'churchId' in req.body) {
+        return res.status(400).json({ error: 'O identificador da igreja não deve ser enviado.' });
+      }
+      const church = await Church.findById(req.auth!.churchId);
+      if (!church || !church.active) {
+        return res.status(404).json({ error: 'Igreja não encontrada.' });
+      }
+      church.visitorFollowUpEnabled = req.body?.visitorFollowUpEnabled === true;
+      await church.save();
+      return res.json(publicChurch(church));
+    } catch {
+      return res.status(500).json({ error: 'Não foi possível salvar o acompanhamento de visitantes.' });
+    }
+  }
+);
 
 export default router;

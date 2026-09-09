@@ -8,6 +8,7 @@ test('a barra de navegação permanece com os mesmos itens, textos e ordem', () 
     [
       { to: '/', label: 'Início', short: 'Início', icon: 'home' },
       { to: '/visitantes', label: 'Visitantes', short: 'Visit.', icon: 'users' },
+      { to: '/acompanhamento', label: 'Acompanhamento', short: 'Acomp.', icon: 'heartHand' },
       { to: '/oracao', label: 'Oração', short: 'Oração', icon: 'prayer' },
       { to: '/acessos', label: 'Acessos', short: 'Acessos', icon: 'link' },
       { to: '/cultos', label: 'Cultos', short: 'Cultos', icon: 'calendar' },
@@ -32,6 +33,7 @@ test('a gaveta mobile reaproveita os itens atuais com textos completos e ordem p
     [
       { to: '/', label: 'Início' },
       { to: '/visitantes', label: 'Visitantes' },
+      { to: '/acompanhamento', label: 'Acompanhamento' },
       { to: '/oracao', label: 'Pedidos de oração' },
       { to: '/cultos', label: 'Cultos' },
       { to: '/avisos-veiculos', label: 'Avisos de veículos' },

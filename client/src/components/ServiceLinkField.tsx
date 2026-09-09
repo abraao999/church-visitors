@@ -8,9 +8,10 @@ import { longDateLabel, serviceDateKey } from '../utils/serviceSchedule';
 interface Props {
   value?: string;
   onChange: (serviceId: string | undefined) => void;
+  label?: string;
 }
 
-export function ServiceLinkField({ value, onChange }: Props) {
+export function ServiceLinkField({ value, onChange, label = 'Culto associado' }: Props) {
   const { user } = useAuth();
   const canChoose = hasPermission(user?.permissions, 'services:read') || user?.role === 'owner';
   const [active, setActive] = useState<Service | null>(null);
@@ -67,7 +68,7 @@ export function ServiceLinkField({ value, onChange }: Props) {
 
   return (
     <div className="form-group service-field">
-      <label htmlFor="linkedService">Culto associado</label>
+      <label htmlFor="linkedService">{label}</label>
       <select
         id="linkedService"
         value={value || ''}

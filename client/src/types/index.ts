@@ -50,6 +50,7 @@ export interface AuthUser {
   role: TeamRole;
   permissions: string[];
   branding?: ChurchBranding;
+  visitorFollowUpEnabled?: boolean;
 }
 
 export interface TeamMember {
@@ -111,6 +112,7 @@ export interface ChurchProfile {
   phone: string;
   address: string;
   active: boolean;
+  visitorFollowUpEnabled?: boolean;
 }
 
 export interface RetentionPolicy {
@@ -240,6 +242,7 @@ export interface PublicAccessMetadata {
   logoUrl?: string;
   primaryColor?: string;
   accentColor?: string;
+  visitorFollowUpEnabled?: boolean;
 }
 
 export interface Visitor {
@@ -270,6 +273,72 @@ export interface PrayerRequest {
   createdAt: string;
 }
 
+export const FOLLOW_UP_STATUSES = ['awaiting', 'contacted', 'integrating', 'closed'] as const;
+export type FollowUpStatus = (typeof FOLLOW_UP_STATUSES)[number];
+
+export const FOLLOW_UP_PRESETS = ['today', 'tomorrow', 'in_3_days', 'in_7_days', 'custom'] as const;
+export type FollowUpPreset = (typeof FOLLOW_UP_PRESETS)[number];
+
+export const FOLLOW_UP_CONTACT_TYPES = ['call', 'whatsapp', 'visit', 'other'] as const;
+export type FollowUpContactType = (typeof FOLLOW_UP_CONTACT_TYPES)[number];
+
+export interface FollowUpAssignee {
+  id: string;
+  name: string;
+}
+
+export interface FollowUpVisitorOption {
+  id: string;
+  name: string;
+  city: string;
+  visitDate: string;
+}
+
+export interface FollowUpListItem {
+  id: string;
+  visitorId: string;
+  visitorName: string;
+  city: string;
+  visitDate?: string;
+  status: FollowUpStatus;
+  assignedToId?: string;
+  assignedToName?: string;
+  nextContactAt?: string;
+  nextContactIsToday?: boolean;
+  consent?: boolean;
+  phone?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FollowUpSummary {
+  awaiting: number;
+  today: number;
+  integrating: number;
+}
+
+export interface FollowUpListResponse {
+  summary: FollowUpSummary;
+  items: FollowUpListItem[];
+}
+
+export interface FollowUpContactRecord {
+  id: string;
+  contactedAt: string;
+  type: FollowUpContactType;
+  result: string;
+  note?: string;
+  nextContactAt?: string;
+  status: FollowUpStatus;
+  createdBy?: Actor;
+  createdAt: string;
+}
+
+export interface FollowUpDetail {
+  followUp: FollowUpListItem;
+  contacts: FollowUpContactRecord[];
+}
+
 export interface CreateVisitorDto {
   visitors: Array<{
     name: string;
@@ -277,8 +346,16 @@ export interface CreateVisitorDto {
     relationship?: Relationship;
     panelObservation?: string;
     showObservationOnPanel?: boolean;
+    followUp?: {
+      include: boolean;
+      phone?: string;
+      assignedToId?: string;
+      firstContact?: FollowUpPreset;
+      firstContactDate?: string;
+    };
   }>;
   serviceId?: string;
+  visitDate?: string;
 }
 
 export interface CreatePrayerDto {

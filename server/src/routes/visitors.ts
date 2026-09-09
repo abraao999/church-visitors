@@ -7,10 +7,12 @@ import {
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
 import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
+import { Church } from '../models/Church.js';
 import { resolveLinkedServiceId } from '../services/activeService.js';
 import { fetchVisitorPanel } from '../services/panelData.js';
+import { createFollowUpRecord, removeFollowUpForVisitor } from '../services/visitorFollowUp.js';
 import { hasPermission } from '../utils/permissions.js';
-import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
+import { CHURCH_TIMEZONE, endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
 import {
   sendPrivateJson,
   serializeVisitor,
@@ -19,6 +21,13 @@ import {
 } from '../utils/publicRecord.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 import { normalizePanelObservation, readShowObservationOnPanel } from '../utils/panelText.js';
+import {
+  FOLLOW_UP_DISABLED_ERROR,
+  FOLLOW_UP_FORBIDDEN_ERROR,
+  isValidFollowUpPhone,
+  normalizeFollowUpPhone,
+  resolveNextContactAt,
+} from '../utils/visitorFollowUp.js';
 
 const router = Router();
 
@@ -26,15 +35,37 @@ function isRelationship(value: string): value is Relationship {
   return RELATIONSHIPS.includes(value as Relationship);
 }
 
+type FollowUpDraft = {
+  include: boolean;
+  phone: string;
+  assignedToId?: unknown;
+  firstContact?: unknown;
+  firstContactDate?: unknown;
+};
+
 type VisitorInput = {
   name: string;
   relationship: Relationship;
   city: string;
   panelObservation: string;
   showObservationOnPanel: boolean;
+  followUp?: FollowUpDraft;
 };
 
 const MAX_VISITORS_PER_REQUEST = 10;
+
+function parseVisitorFollowUpDraft(raw: unknown): FollowUpDraft | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const value = raw as Record<string, unknown>;
+  if (value.include !== true) return undefined;
+  return {
+    include: true,
+    phone: typeof value.phone === 'string' ? value.phone : '',
+    assignedToId: value.assignedToId,
+    firstContact: value.firstContact,
+    firstContactDate: value.firstContactDate,
+  };
+}
 
 function normalizeVisitors(body: Record<string, unknown>): { data: VisitorInput[]; error?: string } {
   const rawList = Array.isArray(body.visitors)
@@ -72,6 +103,7 @@ function normalizeVisitors(body: Record<string, unknown>): { data: VisitorInput[
       city,
       panelObservation: normalizePanelObservation(raw.panelObservation),
       showObservationOnPanel: readShowObservationOnPanel(raw.showObservationOnPanel),
+      followUp: parseVisitorFollowUpDraft(raw.followUp),
     });
   }
 
@@ -148,14 +180,55 @@ export async function createVisitors(req: AuthenticatedRequest, res: Response) {
     }
 
     const createdBy = toActor(req.auth!);
-    const visitDate = new Date();
     const body = req.body && typeof req.body === 'object' ? (req.body as Record<string, unknown>) : {};
+    const visitDate =
+      typeof body.visitDate === 'string' && body.visitDate
+        ? parseDateOnly(body.visitDate)
+        : new Date();
+    if (!visitDate) {
+      return res.status(400).json({ error: 'Informe uma data de visita válida.' });
+    }
+
+    const followUps = normalized.data
+      .map((person, index) => ({ person, index }))
+      .filter((entry) => entry.person.followUp?.include === true);
+
+    let timezone = CHURCH_TIMEZONE;
+    if (followUps.length > 0) {
+      if (!hasPermission(req.auth!.permissions, 'follow_up:create')) {
+        return res.status(403).json({ error: FOLLOW_UP_FORBIDDEN_ERROR });
+      }
+      const church = await Church.findById(req.auth!.churchId).select(
+        'visitorFollowUpEnabled timezone active'
+      );
+      if (!church || church.active === false || church.visitorFollowUpEnabled !== true) {
+        return res.status(403).json({ error: FOLLOW_UP_DISABLED_ERROR });
+      }
+      timezone = church.timezone || CHURCH_TIMEZONE;
+      for (const entry of followUps) {
+        const phone = normalizeFollowUpPhone(entry.person.followUp?.phone);
+        if (entry.person.followUp?.phone?.trim() && !isValidFollowUpPhone(phone)) {
+          return res.status(400).json({ error: 'Informe um telefone válido com DDD.' });
+        }
+        const next = resolveNextContactAt(
+          entry.person.followUp?.firstContact,
+          entry.person.followUp?.firstContactDate,
+          new Date(),
+          timezone
+        );
+        if (next.error) {
+          return res.status(400).json({ error: next.error });
+        }
+      }
+    }
+
     const linked = await resolveLinkedServiceId(req.auth!.churchId, body.serviceId, {
       allowChoose: hasPermission(req.auth!.permissions, 'services:read'),
     });
     if (linked.error) {
       return res.status(400).json({ error: linked.error });
     }
+
     const created = await Visitor.insertMany(
       normalized.data.map((person) => ({
         churchId: req.auth!.churchId,
@@ -170,6 +243,29 @@ export async function createVisitors(req: AuthenticatedRequest, res: Response) {
         ...(linked.serviceId ? { serviceId: linked.serviceId } : {}),
       }))
     );
+
+    if (followUps.length > 0) {
+      for (const entry of followUps) {
+        const person = created[entry.index];
+        if (!person) continue;
+        const next = resolveNextContactAt(
+          entry.person.followUp?.firstContact,
+          entry.person.followUp?.firstContactDate,
+          new Date(),
+          timezone
+        );
+        await createFollowUpRecord({
+          churchId: req.auth!.churchId,
+          visitorId: person._id,
+          phone: entry.person.followUp?.phone,
+          assignedToId: entry.person.followUp?.assignedToId,
+          nextContactAt: next.date,
+          consent: true,
+          source: 'owner',
+          createdBy,
+        });
+      }
+    }
 
     const payload = created.map(serializeVisitor);
     return sendPrivateJson(res, payload.length === 1 ? payload[0] : payload, 201);
@@ -189,6 +285,7 @@ export async function deleteVisitor(req: AuthenticatedRequest, res: Response) {
     if (!deleted) {
       return res.status(404).json({ error: 'Visitante não encontrado' });
     }
+    await removeFollowUpForVisitor(req.auth!.churchId, deleted._id);
     res.json({ message: 'Visitante removido' });
   } catch {
     res.status(500).json({ error: 'Erro ao remover visitante' });

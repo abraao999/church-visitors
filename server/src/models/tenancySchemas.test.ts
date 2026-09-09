@@ -10,6 +10,8 @@ import { RecurrenceSeries } from './RecurrenceSeries.js';
 import { Service } from './Service.js';
 import { User } from './User.js';
 import { Visitor } from './Visitor.js';
+import { VisitorFollowUp } from './VisitorFollowUp.js';
+import { FollowUpContact } from './FollowUpContact.js';
 import { VehicleNotice } from './VehicleNotice.js';
 import { PortariaDevice } from './PortariaDevice.js';
 import { PortariaPairing } from './PortariaPairing.js';
@@ -92,9 +94,18 @@ test('modelos privados possuem churchId obrigatório e índices compostos de iso
   );
 
   assert.ok(hasIndex(Visitor.schema.indexes(), { churchId: 1, serviceId: 1, createdAt: -1 }));
+
+  assert.equal(VisitorFollowUp.schema.path('churchId').isRequired, true);
+  assert.equal(VisitorFollowUp.schema.path('visitorId').isRequired, true);
+  assert.ok(hasIndex(VisitorFollowUp.schema.indexes(), { churchId: 1, visitorId: 1 }, { unique: true }));
+  assert.ok(hasIndex(VisitorFollowUp.schema.indexes(), { churchId: 1, status: 1, nextContactAt: 1 }));
+  assert.equal(FollowUpContact.schema.path('churchId').isRequired, true);
+  assert.equal(FollowUpContact.schema.path('followUpId').isRequired, true);
+  assert.ok(hasIndex(FollowUpContact.schema.indexes(), { churchId: 1, followUpId: 1, createdAt: -1 }));
   assert.ok(hasIndex(PrayerRequest.schema.indexes(), { churchId: 1, serviceId: 1, createdAt: -1 }));
   assert.ok(hasIndex(VehicleNotice.schema.indexes(), { churchId: 1, serviceId: 1, createdAt: -1 }));
   assert.ok(Church.schema.path('timezone'));
+  assert.ok(Church.schema.path('visitorFollowUpEnabled'));
 
   assert.equal(HolyricsSettings.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(HolyricsSettings.schema.indexes(), { churchId: 1 }, { unique: true }));

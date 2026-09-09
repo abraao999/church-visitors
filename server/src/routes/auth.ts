@@ -56,7 +56,8 @@ function publicUser(
     permissionsCustomized?: boolean;
   },
   churchName: string,
-  branding?: PublicChurchBranding
+  branding?: PublicChurchBranding,
+  visitorFollowUpEnabled = false
 ) {
   const role = user.role || 'owner';
   return {
@@ -68,6 +69,7 @@ function publicUser(
     role,
     permissions: resolvePermissions(user),
     branding: branding || { name: churchName },
+    visitorFollowUpEnabled: visitorFollowUpEnabled === true,
   };
 }
 
@@ -86,7 +88,8 @@ function issueSession(
     tokenVersion?: number;
   },
   churchName: string,
-  branding?: PublicChurchBranding
+  branding?: PublicChurchBranding,
+  visitorFollowUpEnabled = false
 ) {
   const payload: AuthContext = {
     userId: String(user._id),
@@ -98,7 +101,7 @@ function issueSession(
     tokenVersion: user.tokenVersion ?? 0,
   };
   setSessionCookie(req, res, signToken(payload));
-  return { user: publicUser(user, churchName, branding) };
+  return { user: publicUser(user, churchName, branding, visitorFollowUpEnabled) };
 }
 
 export async function registerAccount(
@@ -217,7 +220,7 @@ export async function loginAccount(
     }
 
     const church = await Church.findOne({ _id: user.churchId, active: true }).select(
-      'name branding.logoUrl branding.primaryColor branding.accentColor'
+      'name visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor'
     );
     if (!church) {
       return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
@@ -232,7 +235,8 @@ export async function loginAccount(
         res,
         user as IUser & { churchId: Types.ObjectId },
         church.name,
-        publicChurchBranding(church)
+        publicChurchBranding(church),
+        church.visitorFollowUpEnabled === true
       )
     );
   } catch (error) {
@@ -273,7 +277,7 @@ export async function changePassword(req: AuthenticatedRequest, res: Response) {
     }
 
     const church = await Church.findOne({ _id: user.churchId, active: true }).select(
-      'name branding.logoUrl branding.primaryColor branding.accentColor'
+      'name visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor'
     );
     if (!church) {
       return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
@@ -289,7 +293,8 @@ export async function changePassword(req: AuthenticatedRequest, res: Response) {
         res,
         user as IUser & { churchId: Types.ObjectId },
         church.name,
-        publicChurchBranding(church)
+        publicChurchBranding(church),
+        church.visitorFollowUpEnabled === true
       )
     );
   } catch (error) {
@@ -326,7 +331,7 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
     }
 
     const church = await Church.findOne({ _id: req.auth!.churchId, active: true }).select(
-      'name branding.logoUrl branding.primaryColor branding.accentColor'
+      'name visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor'
     );
     if (!church) {
       return res.status(403).json({ error: 'O acesso desta igreja está indisponível.' });
@@ -335,7 +340,14 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
     user.lastSeenAt = new Date();
     await user.save();
 
-    res.json({ user: publicUser(user, church.name, publicChurchBranding(church)) });
+    res.json({
+      user: publicUser(
+        user,
+        church.name,
+        publicChurchBranding(church),
+        church.visitorFollowUpEnabled === true
+      ),
+    });
   } catch {
     res.status(500).json({ error: 'Erro ao buscar usuário' });
   }

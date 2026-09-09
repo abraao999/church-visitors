@@ -16,6 +16,7 @@ export interface IChurch extends Document {
   address?: string;
   timezone?: string;
   active: boolean;
+  visitorFollowUpEnabled?: boolean;
   branding?: ChurchBranding;
   createdAt: Date;
   updatedAt: Date;
@@ -31,6 +32,7 @@ const churchSchema = new Schema<IChurch>(
     address: { type: String, trim: true, maxlength: 200, default: '' },
     timezone: { type: String, trim: true, default: 'America/Sao_Paulo', maxlength: 64 },
     active: { type: Boolean, default: true, index: true },
+    visitorFollowUpEnabled: { type: Boolean, default: false },
     branding: {
       type: new Schema(
         {

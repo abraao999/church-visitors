@@ -75,6 +75,7 @@ test('o menu lateral mantém exatamente os mesmos itens, textos e ordem', () => 
     [
       { to: '/', label: 'Início', short: 'Início', icon: 'home' },
       { to: '/visitantes', label: 'Visitantes', short: 'Visit.', icon: 'users' },
+      { to: '/acompanhamento', label: 'Acompanhamento', short: 'Acomp.', icon: 'heartHand' },
       { to: '/oracao', label: 'Oração', short: 'Oração', icon: 'prayer' },
       { to: '/acessos', label: 'Acessos', short: 'Acessos', icon: 'link' },
       { to: '/cultos', label: 'Cultos', short: 'Cultos', icon: 'calendar' },

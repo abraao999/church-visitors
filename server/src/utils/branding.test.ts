@@ -84,7 +84,9 @@ describe('campos públicos e churchId do cliente', () => {
       'type',
       'types',
       'valid',
+      'visitorFollowUpEnabled',
     ].sort());
+    assert.equal(payload.visitorFollowUpEnabled, false);
     assert.equal('churchId' in payload, false);
     assert.equal('address' in payload, false);
     assert.equal('phone' in payload, false);

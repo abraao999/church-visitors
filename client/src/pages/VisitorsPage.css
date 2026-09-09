@@ -76,7 +76,7 @@
 
 .visitors-form-wrap {
   width: 100%;
-  max-width: 720px;
+  max-width: 960px;
 }
 
 .private-records-section {
@@ -146,6 +146,7 @@
 @media (max-width: 768px) {
   .visitors-page {
     max-width: none;
+    padding-inline: 0.375rem;
   }
 
   .visitors-form-wrap {

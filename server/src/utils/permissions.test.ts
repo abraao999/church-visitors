@@ -13,6 +13,7 @@ describe('funções e permissões da equipe', () => {
   test('proprietário recebe o conjunto completo', () => {
     const owner = permissionsForRole('owner');
     assert.equal(hasPermission(owner, 'team:invite'), true);
+    assert.equal(hasPermission(owner, 'follow_up:read'), true);
     assert.equal(hasPermission(owner, 'church:update'), true);
     assert.equal(hasPermission(owner, 'prayers:read'), true);
   });
@@ -20,7 +21,9 @@ describe('funções e permissões da equipe', () => {
   test('portaria não lê pedidos privados', () => {
     const portaria = permissionsForRole('portaria');
     assert.equal(hasPermission(portaria, 'visitors:create'), true);
-    assert.equal(hasPermission(portaria, 'prayers:read'), false);
+    assert.equal(hasPermission(portaria, 'follow_up:create'), true);
+    assert.equal(hasPermission(portaria, 'follow_up:read'), false);
+    assert.equal(hasPermission(permissionsForRole('admin'), 'follow_up:close'), true);
     assert.equal(hasPermission(portaria, 'church:update'), false);
   });
 

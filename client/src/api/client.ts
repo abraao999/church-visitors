@@ -7,6 +7,14 @@ import type {
   CreateServiceResponse,
   CreateVehicleNoticeDto,
   CreateVisitorDto,
+  FollowUpAssignee,
+  FollowUpContactRecord,
+  FollowUpContactType,
+  FollowUpDetail,
+  FollowUpListResponse,
+  FollowUpPreset,
+  FollowUpStatus,
+  FollowUpVisitorOption,
   GuestAccess,
   GuestAccessType,
   HolyricsLocalToken,
@@ -156,6 +164,82 @@ export const api = {
       body: JSON.stringify(data),
     });
     return handleResponse<Visitor | Visitor[]>(response);
+  },
+
+  async getFollowUps(params?: { q?: string; status?: string }): Promise<FollowUpListResponse> {
+    const search = new URLSearchParams();
+    if (params?.q) search.set('q', params.q);
+    if (params?.status) search.set('status', params.status);
+    const query = search.toString();
+    const response = await apiFetch(`${API_BASE}/follow-up${query ? `?${query}` : ''}`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<FollowUpListResponse>(response);
+  },
+
+  async getFollowUpAssignees(): Promise<FollowUpAssignee[]> {
+    const response = await apiFetch(`${API_BASE}/follow-up/assignees`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<FollowUpAssignee[]>(response);
+  },
+
+  async getAvailableFollowUpVisitors(q?: string): Promise<FollowUpVisitorOption[]> {
+    const query = q ? `?q=${encodeURIComponent(q)}` : '';
+    const response = await apiFetch(`${API_BASE}/follow-up/available-visitors${query}`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<FollowUpVisitorOption[]>(response);
+  },
+
+  async createFollowUp(data: {
+    visitorId: string;
+    phone?: string;
+    assignedToId?: string;
+    firstContact?: FollowUpPreset;
+    firstContactDate?: string;
+  }) {
+    const response = await apiFetch(`${API_BASE}/follow-up`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  async getFollowUp(id: string): Promise<FollowUpDetail> {
+    const response = await apiFetch(`${API_BASE}/follow-up/${id}`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<FollowUpDetail>(response);
+  },
+
+  async updateFollowUp(id: string, data: { assignedToId?: string | null; status?: FollowUpStatus }) {
+    const response = await apiFetch(`${API_BASE}/follow-up/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  async createFollowUpContact(
+    id: string,
+    data: {
+      contactedAt: string;
+      type: FollowUpContactType;
+      result: string;
+      note?: string;
+      nextContactAt?: string;
+      status: FollowUpStatus;
+    }
+  ): Promise<FollowUpContactRecord> {
+    const response = await apiFetch(`${API_BASE}/follow-up/${id}/contacts`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<FollowUpContactRecord>(response);
   },
 
   async deleteVisitor(id: string): Promise<void> {
@@ -469,6 +553,15 @@ export const api = {
     return handleResponse<AuthResponse>(response);
   },
 
+  async updateChurchVisitorFollowUp(enabled: boolean): Promise<ChurchProfile> {
+    const response = await apiFetch(`${API_BASE}/church/visitor-follow-up`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ visitorFollowUpEnabled: enabled }),
+    });
+    return handleResponse<ChurchProfile>(response);
+  },
+
   async updateChurch(data: {
     name: string;
     city?: string;
@@ -720,14 +813,18 @@ export const api = {
   async submitPublicVisitors(
     token: string,
     visitors: CreateVisitorDto['visitors'],
-    requestId?: string
+    extras?: { requestId?: string; contactConsent?: boolean; phone?: string }
   ): Promise<{ success: true; message: string }> {
     const response = await apiFetch(
       `${API_BASE}/public-access/${encodeURIComponent(token)}/visitors`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitors, requestId }),
+        body: JSON.stringify({
+          visitors,
+          requestId: extras?.requestId,
+          ...(extras?.contactConsent ? { contactConsent: true, phone: extras.phone } : {}),
+        }),
       }
     );
     return handleResponse(response);

@@ -1,0 +1,56 @@
+.follow-up-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  overflow: auto;
+  background: color-mix(in srgb, #020617 55%, transparent);
+}
+
+.follow-up-create .visitor-field,
+.follow-up-modal .visitor-field {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.75rem;
+  font-weight: 700;
+}
+  width: 100%;
+  min-height: 48px;
+  margin-top: 0.35rem;
+  padding: 0.75rem 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.follow-up-modal textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.follow-up-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.follow-up-history-list li {
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.follow-up-history-list span,
+.follow-up-history-list small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}

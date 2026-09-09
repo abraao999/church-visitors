@@ -123,6 +123,21 @@ describe('checagem de permissão nas APIs', () => {
     assert.equal(ok, true);
   });
 
+  test('portaria não lê acompanhamento e o administrador lê', () => {
+    const portaria = mockRes();
+    requirePermission('follow_up:read')(authReq('portaria'), portaria.res, () => {
+      assert.fail('portaria não deveria ler acompanhamento');
+    });
+    assert.equal(portaria.state.statusCode, 403);
+
+    const admin = mockRes();
+    let adminOk = false;
+    requirePermission('follow_up:read')(authReq('admin'), admin.res, () => {
+      adminOk = true;
+    });
+    assert.equal(adminOk, true);
+  });
+
   test('administrador altera dados da igreja e a portaria não', () => {
     const admin = mockRes();
     let adminOk = false;

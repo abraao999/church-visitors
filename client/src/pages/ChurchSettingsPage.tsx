@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
 import { ChurchSectionNav } from '../components/ChurchSectionNav';
 import { RetentionPolicySection } from '../components/RetentionPolicySection';
+import { VisitorFollowUpSettings } from '../components/VisitorFollowUpSettings';
 import { hasPermission } from '../utils/permissions';
 import './ChurchSettingsPage.css';
 
@@ -219,6 +220,10 @@ export function ChurchSettingsPage() {
             </Link>
           </div>
         </section>
+      )}
+
+      {(hasPermission(user?.permissions, 'church:update') || user?.role === 'owner' || hasPermission(user?.permissions, 'church:read')) && (
+        <VisitorFollowUpSettings />
       )}
 
       {(hasPermission(user?.permissions, 'retention:manage') || user?.role === 'owner') && (

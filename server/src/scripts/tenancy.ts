@@ -16,6 +16,8 @@ import { TeamInvitation } from '../models/TeamInvitation.js';
 import { User } from '../models/User.js';
 import { VehicleNotice } from '../models/VehicleNotice.js';
 import { Visitor } from '../models/Visitor.js';
+import { VisitorFollowUp } from '../models/VisitorFollowUp.js';
+import { FollowUpContact } from '../models/FollowUpContact.js';
 import { createChurchSlug, normalizeChurchName } from '../utils/church.js';
 
 type Command = 'check' | 'migrate';
@@ -40,6 +42,8 @@ const TENANT_COLLECTIONS = [
   RecurrenceSeries,
   RetentionPolicy,
   RetentionRun,
+  VisitorFollowUp,
+  FollowUpContact,
 ] as const;
 
 function argumentValue(name: string): string | undefined {

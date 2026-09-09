@@ -12,6 +12,8 @@ import { RetentionRun, type RetentionSummary } from '../models/RetentionRun.js';
 import { TeamInvitation } from '../models/TeamInvitation.js';
 import { VehicleNotice } from '../models/VehicleNotice.js';
 import { Visitor } from '../models/Visitor.js';
+import { FollowUpContact } from '../models/FollowUpContact.js';
+import { VisitorFollowUp } from '../models/VisitorFollowUp.js';
 import { withChurch } from '../utils/tenant.js';
 
 export type RetentionPolicyValues = RetentionPeriods & { enabled: boolean };
@@ -227,6 +229,8 @@ export async function runRetentionPolicy(
   const summary = emptySummary();
 
   try {
+    const visitorsToAnonymize = await Visitor.find(filters.visitors).select('_id').lean();
+    const visitorIds = visitorsToAnonymize.map((item) => item._id);
     const visitors = await Visitor.updateMany(filters.visitors, {
       $set: {
         name: 'VISITANTE ANONIMIZADO',
@@ -243,6 +247,23 @@ export async function runRetentionPolicy(
       },
     });
     summary.visitorsAnonymized = visitors.modifiedCount;
+
+    if (visitorIds.length > 0) {
+      await FollowUpContact.deleteMany(withChurch(churchId, { visitorId: { $in: visitorIds } }));
+      await VisitorFollowUp.updateMany(withChurch(churchId, { visitorId: { $in: visitorIds } }), {
+        $set: {
+          phone: '',
+          assignedToName: '',
+          anonymizedAt: now,
+          status: 'closed',
+        },
+        $unset: {
+          assignedTo: 1,
+          createdBy: 1,
+          updatedBy: 1,
+        },
+      });
+    }
 
     summary.prayersDeleted = (await PrayerRequest.deleteMany(filters.prayers)).deletedCount;
     summary.vehicleNoticesDeleted = (

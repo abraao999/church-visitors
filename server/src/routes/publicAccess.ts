@@ -24,6 +24,14 @@ import { parseDateOnly } from '../utils/dayRange.js';
 import { parseVehiclePlate } from '../utils/vehiclePlate.js';
 import { Types } from 'mongoose';
 import { publicAccessMetadata } from '../utils/branding.js';
+import { createFollowUpRecord } from '../services/visitorFollowUp.js';
+import {
+  FOLLOW_UP_PHONE_REQUIRED_ERROR,
+  isValidFollowUpPhone,
+  normalizeFollowUpPhone,
+  resolveNextContactAt,
+} from '../utils/visitorFollowUp.js';
+import { CHURCH_TIMEZONE } from '../utils/dayRange.js';
 
 const router = Router();
 const MAX_VISITORS_PER_REQUEST = 10;
@@ -57,6 +65,18 @@ function rejectsClientServiceId(body: unknown): boolean {
   return Boolean(body && typeof body === 'object' && 'serviceId' in body);
 }
 
+function bodyHasStaffFollowUpFields(body: unknown): boolean {
+  if (!body || typeof body !== 'object') return false;
+  const value = body as Record<string, unknown>;
+  return (
+    'assignedToId' in value ||
+    'status' in value ||
+    'history' in value ||
+    'nextContactAt' in value ||
+    'responsible' in value
+  );
+}
+
 async function activeServiceId(churchId: string) {
   const active = await resolveActiveService(churchId);
   return active?._id;
@@ -84,6 +104,9 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
     }
     if (rejectsClientServiceId(req.body)) {
       return res.status(400).json({ error: 'O culto não pode ser escolhido neste envio.' });
+    }
+    if (bodyHasStaffFollowUpFields(req.body)) {
+      return res.status(400).json({ error: 'Estas informações não podem ser enviadas neste acesso.' });
     }
 
     const body =
@@ -158,8 +181,14 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
     }
 
     const serviceId = await activeServiceId(access.churchId);
+    const followUpEnabled = access.visitorFollowUpEnabled === true;
+    const contactConsent = followUpEnabled && body.contactConsent === true;
+    const phone = contactConsent ? normalizeFollowUpPhone(body.phone) : '';
+    if (contactConsent && !isValidFollowUpPhone(phone)) {
+      return res.status(400).json({ error: FOLLOW_UP_PHONE_REQUIRED_ERROR });
+    }
 
-    await Visitor.insertMany(
+    const created = await Visitor.insertMany(
       people.map((visitor, index) => ({
         churchId: access.churchId,
         name: visitor.name,
@@ -174,6 +203,20 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
         ...(index === 0 && requestId ? { requestId } : {}),
       }))
     );
+
+    if (contactConsent) {
+      const next = resolveNextContactAt('tomorrow', undefined, new Date(), access.timezone || CHURCH_TIMEZONE);
+      for (const visitor of created) {
+        await createFollowUpRecord({
+          churchId: access.churchId,
+          visitorId: visitor._id,
+          phone,
+          nextContactAt: next.date,
+          consent: true,
+          source: 'guest_access',
+        });
+      }
+    }
 
     await markGuestAccessUsed(access).catch(() => undefined);
     return res.status(201).json({ success: true, message: 'Informações enviadas' });

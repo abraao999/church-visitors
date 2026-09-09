@@ -9,6 +9,11 @@ export const PERMISSIONS = [
   'visitors:create',
   'visitors:read',
   'visitors:delete',
+  'follow_up:read',
+  'follow_up:create',
+  'follow_up:contact',
+  'follow_up:reassign',
+  'follow_up:close',
   'prayers:create',
   'prayers:read',
   'prayers:delete',
@@ -103,6 +108,11 @@ const ROLE_PERMISSIONS: Record<TeamRole, readonly Permission[]> = {
     'visitors:create',
     'visitors:read',
     'visitors:delete',
+    'follow_up:read',
+    'follow_up:create',
+    'follow_up:contact',
+    'follow_up:reassign',
+    'follow_up:close',
     'prayers:create',
     'prayers:read',
     'prayers:delete',
@@ -133,6 +143,7 @@ const ROLE_PERMISSIONS: Record<TeamRole, readonly Permission[]> = {
   portaria: [
     'visitors:create',
     'visitors:read',
+    'follow_up:create',
     'services:read',
     'vehicle_notices:create',
     'vehicle_notices:read',
@@ -184,6 +195,11 @@ export const PERMISSION_GROUPS: Array<{ title: string; items: Array<{ key: Permi
       { key: 'visitors:create', label: 'Registrar visitantes' },
       { key: 'visitors:read', label: 'Consultar visitantes' },
       { key: 'visitors:delete', label: 'Remover visitantes' },
+      { key: 'follow_up:read', label: 'Visualizar acompanhamentos' },
+      { key: 'follow_up:create', label: 'Criar acompanhamento' },
+      { key: 'follow_up:contact', label: 'Registrar contato' },
+      { key: 'follow_up:reassign', label: 'Reatribuir responsável' },
+      { key: 'follow_up:close', label: 'Encerrar acompanhamento' },
     ],
   },
   {
@@ -252,7 +268,21 @@ export function hasAnyPermission(
   return permissions.some((permission) => hasPermission(granted, permission));
 }
 
-export function navItemVisible(path: string, role?: TeamRole, permissions?: readonly string[]): boolean {
+export type NavFeatures = {
+  visitorFollowUpEnabled?: boolean;
+};
+
+export function navItemVisible(
+  path: string,
+  role?: TeamRole,
+  permissions?: readonly string[],
+  features?: NavFeatures
+): boolean {
+  if (path === '/acompanhamento') {
+    if (features?.visitorFollowUpEnabled !== true) return false;
+    if (role === 'owner') return true;
+    return hasPermission(permissions, 'follow_up:read');
+  }
   if (role === 'owner') return true;
   const needed: Record<string, Permission[]> = {
     '/': [],

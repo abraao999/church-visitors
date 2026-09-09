@@ -16,6 +16,7 @@ import {
   typeFromPublicPath,
 } from '../utils/publicAccess';
 import { createRequestId } from '../utils/requestId';
+import { maskPhoneInput } from '../utils/visitorFollowUp';
 import { PublicAccessMenu } from './PublicAccessMenu';
 import { PublicVehicleNoticeForm, PublicVehicleSuccess } from './PublicVehicleNotice';
 import './PublicAccessPage.css';
@@ -200,6 +201,10 @@ function PublicVisitorsForm({
   const [nameErrors, setNameErrors] = useState<Record<number, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [contactConsent, setContactConsent] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const followUpEnabled = metadata.visitorFollowUpEnabled === true;
 
   function updatePerson(id: number, name: string) {
     setPeople((current) =>
@@ -241,6 +246,11 @@ function PublicVisitorsForm({
     }
     setCityError(nextCityError);
     setNameErrors(nextNameErrors);
+    if (followUpEnabled && contactConsent && phone.replace(/\D/g, '').length < 10) {
+      setPhoneError('Informe o telefone ou WhatsApp para o contato.');
+      return false;
+    }
+    setPhoneError('');
     return !nextCityError && Object.keys(nextNameErrors).length === 0;
   }
 
@@ -266,7 +276,11 @@ function PublicVisitorsForm({
           panelObservation: person.panelObservation.trim(),
           showObservationOnPanel: person.showObservationOnPanel,
         })),
-        requestId
+        {
+          requestId,
+          contactConsent: followUpEnabled && contactConsent,
+          phone: followUpEnabled && contactConsent ? phone.replace(/\D/g, '') : undefined,
+        }
       );
       onSuccess();
     } catch (err) {
@@ -417,6 +431,46 @@ function PublicVisitorsForm({
           </button>
           <p className="public-field-hint centered">Para famílias ou grupos que chegaram juntos.</p>
         </section>
+
+        {followUpEnabled && (
+          <section className="public-person-card card">
+            <label className="public-anonymous-control">
+              <input
+                type="checkbox"
+                checked={contactConsent}
+                onChange={(event) => {
+                  setContactConsent(event.target.checked);
+                  if (!event.target.checked) {
+                    setPhone('');
+                    setPhoneError('');
+                  }
+                }}
+              />
+              <span className="public-switch" aria-hidden="true" />
+              <span>
+                <strong>Autoriza a igreja a entrar em contato?</strong>
+              </span>
+            </label>
+            {contactConsent && (
+              <div className={`public-field${phoneError ? ' has-error' : ''}`}>
+                <label htmlFor="public-follow-phone">Telefone ou WhatsApp</label>
+                <input
+                  id="public-follow-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  placeholder="(00) 00000-0000"
+                  value={phone}
+                  onChange={(event) => {
+                    setPhone(maskPhoneInput(event.target.value));
+                    if (phoneError) setPhoneError('');
+                  }}
+                />
+                {phoneError && <p className="public-field-error" role="alert">{phoneError}</p>}
+              </div>
+            )}
+          </section>
+        )}
 
         <button type="submit" className="public-primary-button" disabled={submitting}>
           {!submitting && <AppIcon name="check" />}

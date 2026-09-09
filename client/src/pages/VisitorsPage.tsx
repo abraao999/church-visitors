@@ -41,29 +41,17 @@ export function VisitorsPage() {
     }
   }
 
+  function viewList() {
+    document.getElementById('visitors-records')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   return (
     <div className="visitors-page">
-      <section className="visitors-hero">
-        <div className="visitors-hero-copy">
-          <h1>Registrar visitantes</h1>
-          <p>Preencha os dados das pessoas que estão nos visitando.</p>
-        </div>
-        <svg className="church-illustration" viewBox="0 0 180 130" aria-hidden="true">
-          <path className="church-heart" d="M90 119C35 85 27 54 43 37c14-15 36-10 47 7 11-17 33-22 47-7 16 17 8 48-47 82Z" />
-          <path className="church-cross" d="M90 15v27M80 25h20" />
-          <path className="church-roof" d="m45 79 45-42 45 42" />
-          <path className="church-building" d="M55 73v44h70V73L90 42 55 73Z" />
-          <path className="church-door" d="M80 117V91a10 10 0 0 1 20 0v26" />
-          <path className="church-window" d="M65 84h9v16h-9zm41 0h9v16h-9z" />
-          <path className="church-ground" d="M35 118h110" />
-        </svg>
-      </section>
-
       <div className="visitors-form-wrap">
-        <VisitorForm onSuccess={loadVisitors} />
+        <VisitorForm onSuccess={loadVisitors} onViewList={viewList} />
       </div>
 
-      <section className="private-records-section" aria-labelledby="visitors-records-title">
+      <section id="visitors-records" className="private-records-section" aria-labelledby="visitors-records-title">
         <div className="private-records-heading">
           <div>
             <span className="private-records-eyebrow"><AppIcon name="users" /> Consulta privada</span>

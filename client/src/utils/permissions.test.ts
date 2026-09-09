@@ -17,6 +17,7 @@ describe('menu lateral por permissão', () => {
       [
         'Início',
         'Visitantes',
+        'Acompanhamento',
         'Oração',
         'Acessos',
         'Cultos',
@@ -31,6 +32,7 @@ describe('menu lateral por permissão', () => {
       [
         '/',
         '/visitantes',
+        '/acompanhamento',
         '/oracao',
         '/acessos',
         '/cultos',
@@ -50,10 +52,29 @@ describe('menu lateral por permissão', () => {
     );
   });
 
-  test('o proprietário vê todos os itens atuais', () => {
+  test('o proprietário vê todos os itens atuais quando o acompanhamento está ativo', () => {
     for (const item of NAV_ITEMS) {
-      assert.equal(navItemVisible(item.to, 'owner', permissionsForRole('owner')), true);
+      assert.equal(
+        navItemVisible(item.to, 'owner', permissionsForRole('owner'), { visitorFollowUpEnabled: true }),
+        true
+      );
     }
+  });
+
+  test('o item de acompanhamento some quando a função está desativada', () => {
+    assert.equal(navItemVisible('/acompanhamento', 'owner', permissionsForRole('owner')), false);
+    assert.equal(
+      navItemVisible('/acompanhamento', 'admin', permissionsForRole('admin'), {
+        visitorFollowUpEnabled: true,
+      }),
+      true
+    );
+    assert.equal(
+      navItemVisible('/acompanhamento', 'portaria', permissionsForRole('portaria'), {
+        visitorFollowUpEnabled: true,
+      }),
+      false
+    );
   });
 
   test('cada função vê somente as áreas autorizadas', () => {

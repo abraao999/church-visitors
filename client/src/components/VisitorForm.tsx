@@ -1,5 +1,10 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { api } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
+import { RELATIONSHIPS, type FollowUpPreset, type Relationship } from '../types';
+import { todayLocalISO } from '../utils/date';
+import { hasPermission } from '../utils/permissions';
+import { FOLLOW_UP_PRESET_LABELS, maskPhoneInput, shouldShowFollowUpBlock } from '../utils/visitorFollowUp';
 import { AppIcon } from './AppIcon';
 import { PanelObservationFields } from './PanelObservationFields';
 import { ServiceLinkField } from './ServiceLinkField';
@@ -7,13 +12,22 @@ import './VisitorForm.css';
 
 interface Props {
   onSuccess: () => void;
+  onViewList?: () => void;
 }
 
 interface PersonDraft {
   id: number;
   name: string;
+  relationship: Relationship;
+  city: string;
   panelObservation: string;
   showObservationOnPanel: boolean;
+  includeFollowUp: boolean;
+}
+
+interface Assignee {
+  id: string;
+  name: string;
 }
 
 const MAX_VISITORS = 10;
@@ -26,63 +40,143 @@ function asUpperCase(value: string): string {
   return value.toLocaleUpperCase('pt-BR');
 }
 
-export function VisitorForm({ onSuccess }: Props) {
+function emptyPerson(id: number, city = ''): PersonDraft {
+  return {
+    id,
+    name: '',
+    relationship: 'outro',
+    city,
+    panelObservation: '',
+    showObservationOnPanel: false,
+    includeFollowUp: false,
+  };
+}
+
+function personHasData(person: PersonDraft): boolean {
+  return Boolean(
+    person.name.trim() ||
+      person.city.trim() ||
+      person.panelObservation.trim() ||
+      person.relationship !== 'outro'
+  );
+}
+
+export function VisitorForm({ onSuccess, onViewList }: Props) {
+  const { user } = useAuth();
+  const followUpEnabled = shouldShowFollowUpBlock(
+    user?.visitorFollowUpEnabled === true,
+    hasPermission(user?.permissions, 'follow_up:create') || user?.role === 'owner'
+  );
   const nextId = useRef(2);
-  const cityFieldId = useId();
-  const [city, setCity] = useState('');
-  const [people, setPeople] = useState<PersonDraft[]>([
-    { id: 1, name: '', panelObservation: '', showObservationOnPanel: false },
-  ]);
-  const [cityError, setCityError] = useState('');
+  const visitDateId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [people, setPeople] = useState<PersonDraft[]>([emptyPerson(1)]);
+  const [visitDate, setVisitDate] = useState(todayLocalISO());
   const [nameErrors, setNameErrors] = useState<Record<number, string>>({});
+  const [cityErrors, setCityErrors] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [serviceId, setServiceId] = useState<string | undefined>();
+  const [includeFollowUp, setIncludeFollowUp] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [assignedToId, setAssignedToId] = useState('');
+  const [firstContact, setFirstContact] = useState<FollowUpPreset>('tomorrow');
+  const [firstContactDate, setFirstContactDate] = useState('');
+  const [assignees, setAssignees] = useState<Assignee[]>([]);
+  const [focusInvalid, setFocusInvalid] = useState(false);
 
-  function updatePerson(id: number, name: string) {
-    setPeople((prev) =>
-      prev.map((person) => (person.id === id ? { ...person, name: asUpperCase(name) } : person))
-    );
-    setNameErrors((prev) => {
-      if (!prev[id]) return prev;
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
+  useEffect(() => {
+    if (!followUpEnabled || !includeFollowUp) return;
+    let cancelled = false;
+    api
+      .getFollowUpAssignees()
+      .then((list) => {
+        if (!cancelled) setAssignees(list);
+      })
+      .catch(() => {
+        if (!cancelled) setAssignees([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [followUpEnabled, includeFollowUp]);
+
+  useEffect(() => {
+    if (!focusInvalid) return;
+    const field = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+    field?.focus();
+    setFocusInvalid(false);
+  }, [focusInvalid, nameErrors, cityErrors]);
+
+  function updatePerson(id: number, patch: Partial<PersonDraft>) {
+    setPeople((prev) => prev.map((person) => (person.id === id ? { ...person, ...patch } : person)));
+    if (patch.name != null) {
+      setNameErrors((prev) => {
+        if (!prev[id]) return prev;
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
+    if (patch.city != null) {
+      setCityErrors((prev) => {
+        if (!prev[id]) return prev;
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
   }
 
   function addPerson() {
     if (people.length >= MAX_VISITORS) return;
-    setPeople((prev) => [
-      ...prev,
-      { id: nextId.current++, name: '', panelObservation: '', showObservationOnPanel: false },
-    ]);
+    const sharedCity = people.find((person) => person.city.trim())?.city || '';
+    setPeople((prev) => [...prev, emptyPerson(nextId.current++, sharedCity)]);
   }
 
-  function removePerson(id: number) {
-    setPeople((prev) => (prev.length > 1 ? prev.filter((person) => person.id !== id) : prev));
-    setNameErrors((prev) => {
-      if (!prev[id]) return prev;
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-  }
-
-  function validate(): boolean {
-    const nextCityError = cleanLine(city) ? '' : 'Informe a cidade.';
-    const nextNameErrors: Record<number, string> = {};
-
-    for (const person of people) {
-      if (!cleanLine(person.name)) {
-        nextNameErrors[person.id] = 'Informe o nome do visitante.';
-      }
+  function removePerson(id: number, index: number) {
+    if (index === 0) return;
+    const person = people.find((item) => item.id === id);
+    if (person && personHasData(person) && !window.confirm('Remover este visitante? Os dados preenchidos serão perdidos.')) {
+      return;
     }
+    setPeople((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
+  }
 
-    setCityError(nextCityError);
+  function resetForm() {
+    setPeople([emptyPerson(nextId.current++)]);
+    setVisitDate(todayLocalISO());
+    setNameErrors({});
+    setCityErrors({});
+    setIncludeFollowUp(false);
+    setPhone('');
+    setAssignedToId('');
+    setFirstContact('tomorrow');
+    setFirstContactDate('');
+    setError('');
+    setSuccess('');
+  }
+
+  function validate(): string | null {
+    const nextNameErrors: Record<number, string> = {};
+    const nextCityErrors: Record<number, string> = {};
+    for (const person of people) {
+      if (!cleanLine(person.name)) nextNameErrors[person.id] = 'Informe o nome do visitante.';
+      if (!cleanLine(person.city)) nextCityErrors[person.id] = 'Informe a cidade.';
+    }
     setNameErrors(nextNameErrors);
-    return !nextCityError && Object.keys(nextNameErrors).length === 0;
+    setCityErrors(nextCityErrors);
+    if (Object.keys(nextNameErrors).length || Object.keys(nextCityErrors).length) {
+      return 'Confira os campos destacados antes de cadastrar.';
+    }
+    if (includeFollowUp && people.length > 1 && !people.some((person) => person.includeFollowUp)) {
+      return 'Escolha quem entra no acompanhamento.';
+    }
+    if (includeFollowUp && firstContact === 'custom' && !firstContactDate) {
+      return 'Escolha a data do primeiro contato.';
+    }
+    return null;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -90,33 +184,48 @@ export function VisitorForm({ onSuccess }: Props) {
     setError('');
     setSuccess('');
 
-    if (!validate()) {
-      setError('Confira os campos destacados antes de cadastrar.');
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
+      setFocusInvalid(true);
       return;
     }
 
     setLoading(true);
-    const sharedCity = cleanLine(city);
+    const selected = people.filter((person) =>
+      people.length === 1 ? includeFollowUp : person.includeFollowUp
+    );
     const validVisitors = people.map((person) => ({
       name: cleanLine(person.name),
-      city: sharedCity,
-      relationship: 'outro' as const,
+      city: cleanLine(person.city),
+      relationship: person.relationship,
       panelObservation: person.panelObservation.trim(),
       showObservationOnPanel: person.showObservationOnPanel,
+      ...(followUpEnabled && includeFollowUp && selected.some((item) => item.id === person.id)
+        ? {
+            followUp: {
+              include: true as const,
+              phone: phone.replace(/\D/g, ''),
+              assignedToId: assignedToId || undefined,
+              firstContact,
+              firstContactDate: firstContact === 'custom' ? firstContactDate : undefined,
+            },
+          }
+        : {}),
     }));
 
     try {
-      await api.createVisitor({ visitors: validVisitors, serviceId });
-      setCity('');
-      setPeople([
-        { id: nextId.current++, name: '', panelObservation: '', showObservationOnPanel: false },
-      ]);
-      setCityError('');
-      setNameErrors({});
+      await api.createVisitor({ visitors: validVisitors, serviceId, visitDate });
+      const included = followUpEnabled && includeFollowUp && selected.length > 0;
+      resetForm();
       setSuccess(
-        validVisitors.length === 1
-          ? 'Visitante cadastrado'
-          : `${validVisitors.length} visitantes cadastrados`
+        included
+          ? selected.length === 1
+            ? 'Visitante cadastrado e incluído no acompanhamento.'
+            : 'Visitantes cadastrados e incluídos no acompanhamento.'
+          : validVisitors.length === 1
+            ? 'Visitantes cadastrados com sucesso.'
+            : 'Visitantes cadastrados com sucesso.'
       );
       onSuccess();
     } catch (err) {
@@ -127,164 +236,272 @@ export function VisitorForm({ onSuccess }: Props) {
   }
 
   const submitLabel =
-    people.length === 1
-      ? 'Cadastrar visitante'
-      : `Cadastrar ${people.length} visitantes`;
+    people.length === 1 ? 'Cadastrar visitantes' : `Cadastrar ${people.length} visitantes`;
 
   return (
-    <form onSubmit={handleSubmit} className="visitor-form" noValidate>
+    <form ref={formRef} onSubmit={handleSubmit} className="visitor-form" noValidate>
+      <div className="visitor-page-heading">
+        <div>
+          <h1>Cadastrar visitantes</h1>
+          <p>Registre quem chegou e organize o acolhimento.</p>
+        </div>
+        {onViewList && (
+          <button type="button" className="visitor-secondary-action" onClick={onViewList}>
+            <AppIcon name="users" />
+            Ver visitantes
+          </button>
+        )}
+      </div>
+
       <div className="visitor-feedback" aria-live="polite">
-        {error && <p className="error-message" role="alert">{error}</p>}
+        {error && (
+          <p className="error-message" role="alert">
+            {error}
+          </p>
+        )}
         {success && <p className="success-message">{success}</p>}
       </div>
 
       <section className="visitor-section card" aria-labelledby="visitor-visit-title">
         <div className="visitor-section-heading">
           <span className="visitor-section-icon" aria-hidden="true">
-            <AppIcon name="pin" />
+            <AppIcon name="calendar" />
           </span>
           <div>
-            <h2 id="visitor-visit-title">Informações da visita</h2>
+            <span className="visitor-section-eyebrow">Dados da visita</span>
+            <h2 id="visitor-visit-title">Informações do culto</h2>
           </div>
         </div>
 
-        <ServiceLinkField value={serviceId} onChange={setServiceId} />
-
-        <div className={`visitor-field${cityError ? ' has-error' : ''}`}>
-          <label htmlFor={cityFieldId}>Cidade da visita *</label>
-          <div className="visitor-input-with-icon">
-            <AppIcon name="pin" />
+        <div className="visitor-field-grid">
+          <ServiceLinkField value={serviceId} onChange={setServiceId} label="Culto" />
+          <div className="visitor-field">
+            <label htmlFor={visitDateId}>Data da visita</label>
             <input
-              id={cityFieldId}
-              value={city}
-              onChange={(e) => {
-                setCity(asUpperCase(e.target.value));
-                if (cityError) setCityError('');
-              }}
-              placeholder="Ex.: UMUARAMA"
-              autoComplete="address-level2"
-              autoCapitalize="characters"
-              className="visitor-input-uppercase"
-              maxLength={100}
-              aria-invalid={Boolean(cityError)}
-              aria-describedby={cityError ? `${cityFieldId}-error` : `${cityFieldId}-hint`}
+              id={visitDateId}
+              type="date"
+              value={visitDate}
+              onChange={(event) => setVisitDate(event.target.value)}
             />
           </div>
-          {cityError ? (
-            <p id={`${cityFieldId}-error`} className="visitor-field-error" role="alert">
-              {cityError}
-            </p>
-          ) : (
-            <p id={`${cityFieldId}-hint`} className="visitor-field-hint">
-              Esta cidade será aplicada a todos os visitantes cadastrados.
-            </p>
-          )}
         </div>
       </section>
 
-      <section className="visitor-section card" aria-labelledby="visitor-people-title">
-        <div className="visitor-section-heading">
-          <span className="visitor-section-icon" aria-hidden="true">
-            <AppIcon name="users" />
-          </span>
-          <div>
-            <h2 id="visitor-people-title">Pessoas</h2>
-            <p>Digite o nome completo de cada pessoa que está visitando.</p>
+      {people.map((person, index) => {
+        const nameId = `visitor-name-${person.id}`;
+        const cityId = `visitor-city-${person.id}`;
+        const relationId = `visitor-relation-${person.id}`;
+        const fieldError = nameErrors[person.id];
+        const cityError = cityErrors[person.id];
+
+        return (
+          <section key={person.id} className="visitor-section card" aria-labelledby={`visitor-title-${person.id}`}>
+            <div className="visitor-person-row-top">
+              <h2 id={`visitor-title-${person.id}`}>Visitante {index + 1}</h2>
+              {index > 0 && (
+                <button
+                  type="button"
+                  className="visitor-remove-icon"
+                  onClick={() => removePerson(person.id, index)}
+                  aria-label={`Remover visitante ${index + 1}`}
+                >
+                  <AppIcon name="trash" />
+                </button>
+              )}
+            </div>
+
+            <div className={`visitor-field${fieldError ? ' has-error' : ''}`}>
+              <label htmlFor={nameId}>Nome completo</label>
+              <input
+                id={nameId}
+                value={person.name}
+                onChange={(e) => updatePerson(person.id, { name: asUpperCase(e.target.value) })}
+                placeholder="Digite o nome do visitante"
+                autoComplete="name"
+                autoCapitalize="characters"
+                className="visitor-input-uppercase"
+                maxLength={120}
+                aria-invalid={Boolean(fieldError)}
+              />
+              {fieldError && (
+                <p className="visitor-field-error" role="alert">
+                  {fieldError}
+                </p>
+              )}
+            </div>
+
+            <div className="visitor-field-grid">
+              <div className="visitor-field">
+                <label htmlFor={relationId}>Parentesco</label>
+                <select
+                  id={relationId}
+                  value={person.relationship}
+                  onChange={(e) =>
+                    updatePerson(person.id, { relationship: e.target.value as Relationship })
+                  }
+                >
+                  {RELATIONSHIPS.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={`visitor-field${cityError ? ' has-error' : ''}`}>
+                <label htmlFor={cityId}>Cidade</label>
+                <input
+                  id={cityId}
+                  value={person.city}
+                  onChange={(e) => updatePerson(person.id, { city: asUpperCase(e.target.value) })}
+                  placeholder="Cidade de origem"
+                  autoComplete="address-level2"
+                  autoCapitalize="characters"
+                  className="visitor-input-uppercase"
+                  maxLength={100}
+                  aria-invalid={Boolean(cityError)}
+                />
+                {cityError && (
+                  <p className="visitor-field-error" role="alert">
+                    {cityError}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <PanelObservationFields
+              id={`visitor-observation-${person.id}`}
+              observation={person.panelObservation}
+              showOnPanel={person.showObservationOnPanel}
+              disabled={loading}
+              onObservationChange={(value) => updatePerson(person.id, { panelObservation: value })}
+              onShowChange={(value) => updatePerson(person.id, { showObservationOnPanel: value })}
+            />
+
+            {followUpEnabled && includeFollowUp && people.length > 1 && (
+              <label className="visitor-follow-check">
+                <input
+                  type="checkbox"
+                  checked={person.includeFollowUp}
+                  onChange={(event) => updatePerson(person.id, { includeFollowUp: event.target.checked })}
+                />
+                Incluir {person.name.trim() || `visitante ${index + 1}`} no acompanhamento
+              </label>
+            )}
+          </section>
+        );
+      })}
+
+      <button
+        type="button"
+        className="visitor-add"
+        onClick={addPerson}
+        disabled={people.length >= MAX_VISITORS || loading}
+      >
+        <AppIcon name="plus" />
+        {people.length >= MAX_VISITORS ? 'Limite de 10 pessoas atingido' : 'Adicionar outra pessoa'}
+      </button>
+
+      {followUpEnabled && (
+        <section className="visitor-section card visitor-follow-card" aria-labelledby="visitor-follow-title">
+          <div className="visitor-follow-heading">
+            <span className="visitor-section-icon" aria-hidden="true">
+              <AppIcon name="heartHand" />
+            </span>
+            <div>
+              <h2 id="visitor-follow-title">Acompanhamento</h2>
+              <p>A equipe poderá entrar em contato depois da visita.</p>
+            </div>
+            <label className="visitor-follow-switch">
+              <span>Incluir no acompanhamento</span>
+              <input
+                type="checkbox"
+                checked={includeFollowUp}
+                onChange={(event) => {
+                  setIncludeFollowUp(event.target.checked);
+                  if (!event.target.checked) {
+                    setPeople((prev) => prev.map((person) => ({ ...person, includeFollowUp: false })));
+                  }
+                }}
+              />
+            </label>
           </div>
-        </div>
 
-        <div className="visitor-people-list">
-          {people.map((person, index) => {
-            const nameId = `visitor-name-${person.id}`;
-            const fieldError = nameErrors[person.id];
-
-            return (
-              <div key={person.id} className="visitor-person-row">
-                <div className="visitor-person-row-top">
-                  <span className="visitor-person-badge" aria-hidden="true">
-                    {index + 1}
-                  </span>
-                  <h3 id={`visitor-title-${person.id}`}>Visitante {index + 1}</h3>
-                  {people.length > 1 && (
-                    <button
-                      type="button"
-                      className="visitor-remove-icon"
-                      onClick={() => removePerson(person.id)}
-                      aria-label={`Remover visitante ${index + 1}`}
-                    >
-                      <AppIcon name="trash" />
-                    </button>
-                  )}
-                </div>
-
-                <div className={`visitor-field${fieldError ? ' has-error' : ''}`}>
-                  <label htmlFor={nameId}>Nome completo *</label>
-                  <input
-                    id={nameId}
-                    value={person.name}
-                    onChange={(e) => updatePerson(person.id, e.target.value)}
-                    placeholder="DIGITE O NOME COMPLETO"
-                    autoComplete="name"
-                    autoCapitalize="characters"
-                    className="visitor-input-uppercase"
-                    maxLength={120}
-                    aria-invalid={Boolean(fieldError)}
-                    aria-describedby={fieldError ? `${nameId}-error` : undefined}
-                  />
-                  {fieldError && (
-                    <p id={`${nameId}-error`} className="visitor-field-error" role="alert">
-                      {fieldError}
-                    </p>
-                  )}
-                </div>
-                <PanelObservationFields
-                  id={`visitor-observation-${person.id}`}
-                  observation={person.panelObservation}
-                  showOnPanel={person.showObservationOnPanel}
-                  disabled={loading}
-                  onObservationChange={(value) =>
-                    setPeople((prev) =>
-                      prev.map((item) =>
-                        item.id === person.id ? { ...item, panelObservation: value } : item
-                      )
-                    )
-                  }
-                  onShowChange={(value) =>
-                    setPeople((prev) =>
-                      prev.map((item) =>
-                        item.id === person.id ? { ...item, showObservationOnPanel: value } : item
-                      )
-                    )
-                  }
+          {includeFollowUp && (
+            <>
+              <div className="visitor-field">
+                <label htmlFor="follow-up-phone">Telefone / WhatsApp</label>
+                <input
+                  id="follow-up-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  placeholder="(00) 00000-0000"
+                  value={phone}
+                  onChange={(event) => setPhone(maskPhoneInput(event.target.value))}
                 />
               </div>
-            );
-          })}
-        </div>
+              <div className="visitor-field-grid">
+                <div className="visitor-field">
+                  <label htmlFor="follow-up-assignee">Responsável</label>
+                  <select
+                    id="follow-up-assignee"
+                    value={assignedToId}
+                    onChange={(event) => setAssignedToId(event.target.value)}
+                  >
+                    <option value="">Definir depois</option>
+                    {assignees.map((person) => (
+                      <option key={person.id} value={person.id}>
+                        {person.name}
+                      </option>
+                    ))}
+                  </select>
+                  {assignees.length === 0 && (
+                    <p className="visitor-field-hint">Nenhum responsável disponível no momento.</p>
+                  )}
+                </div>
+                <div className="visitor-field">
+                  <label htmlFor="follow-up-when">Primeiro contato</label>
+                  <select
+                    id="follow-up-when"
+                    value={firstContact}
+                    onChange={(event) => setFirstContact(event.target.value as FollowUpPreset)}
+                  >
+                    {(Object.keys(FOLLOW_UP_PRESET_LABELS) as FollowUpPreset[]).map((key) => (
+                      <option key={key} value={key}>
+                        {FOLLOW_UP_PRESET_LABELS[key]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {firstContact === 'custom' && (
+                <div className="visitor-field">
+                  <label htmlFor="follow-up-date">Data do primeiro contato</label>
+                  <input
+                    id="follow-up-date"
+                    type="date"
+                    value={firstContactDate}
+                    onChange={(event) => setFirstContactDate(event.target.value)}
+                  />
+                </div>
+              )}
+              <p className="visitor-follow-privacy">
+                <AppIcon name="info" />
+                Essas informações ficam visíveis somente para pessoas autorizadas.
+              </p>
+            </>
+          )}
+        </section>
+      )}
 
-        <button
-          type="button"
-          className="visitor-add"
-          onClick={addPerson}
-          disabled={people.length >= MAX_VISITORS || loading}
-        >
-          <AppIcon name="plus" />
-          {people.length >= MAX_VISITORS
-            ? 'Limite de 10 pessoas atingido'
-            : 'Adicionar outra pessoa'}
+      <div className="visitor-submit-row">
+        <button type="button" className="visitor-cancel" onClick={resetForm} disabled={loading}>
+          Cancelar
         </button>
-        <p className="visitor-add-hint">Para famílias ou grupos que chegaram juntos.</p>
-      </section>
-
-      <div className="visitor-submit-area">
         <button type="submit" className="visitor-submit" disabled={loading}>
           {!loading && <AppIcon name="check" />}
           {loading ? 'Cadastrando...' : submitLabel}
         </button>
-        <p className="visitor-submit-hint">
-          <AppIcon name="lock" />
-          Os dados poderão ser alterados depois.
-        </p>
       </div>
     </form>
   );

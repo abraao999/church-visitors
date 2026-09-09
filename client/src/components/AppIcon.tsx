@@ -1,6 +1,7 @@
 export type AppIconName =
   | 'home'
   | 'users'
+  | 'heartHand'
   | 'prayer'
   | 'calendar'
   | 'panels'
@@ -49,6 +50,7 @@ export function AppIcon({ name, className = '' }: { name: AppIconName; className
   const content = {
     home: <><path d="m3 11 9-8 9 8" /><path d="M5 10v10h5v-6h4v6h5V10" /></>,
     users: <><circle cx="9" cy="8" r="3.5" /><circle cx="17" cy="9" r="2.5" /><path d="M2.5 20v-2.2c0-3 2.9-5.3 6.5-5.3s6.5 2.3 6.5 5.3V20h-13Z" /><path d="M15 14c3.5-.4 6.5 1.5 6.5 4.1V20H18" /></>,
+    heartHand: <><path d="M11 14H5.2A2.2 2.2 0 0 1 3 11.8 2.2 2.2 0 0 1 5.2 9.5H8" /><path d="M14 14v7" /><path d="M14 14h3.3A2.2 2.2 0 0 0 19.5 11.8 2.2 2.2 0 0 0 17.3 9.5H14" /><path d="M12 13.2 9.8 11a2.3 2.3 0 0 1 3.2-3.3c.4.4.7.8.9 1.3.2-.5.5-.9.9-1.3A2.3 2.3 0 0 1 18 11L12 16.5 9.8 14.4" /></>,
     prayer: <><path d="M9.2 3.5 8 11l-4 4c-1.2 1.2-1.2 3.1 0 4.2 1.1 1 2.8 1 3.9 0l4.1-4.1" /><path d="m14.8 3.5 1.2 7.6 4 4c1.2 1.2 1.2 3.1 0 4.2-1.1 1-2.8 1-3.9 0L12 15.1V8.8" /><path d="M9.2 3.5c.3-1.7 2.8-1.5 2.8.3v5" /><path d="M14.8 3.5c-.3-1.7-2.8-1.5-2.8.3" /></>,
     calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4m10-4v4M3 10h18" /></>,
     panels: <><rect x="3" y="4" width="18" height="14" rx="2" /><path d="M9 22h6m-3-4v4" /></>,
