@@ -1,7 +1,7 @@
-import { Router, type Response } from 'express';
+import { Router, type NextFunction, type Response } from 'express';
 import { Types } from 'mongoose';
-import { requireAuth, toActor, type AuthenticatedRequest } from '../middleware/auth.js';
-import { requirePermission } from '../middleware/requirePermission.js';
+import { getJwtSecret, requireAuth, toActor, type AuthenticatedRequest } from '../middleware/auth.js';
+import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
 import { Church } from '../models/Church.js';
 import { ReportExportAudit } from '../models/ReportExportAudit.js';
 import { Service } from '../models/Service.js';
@@ -31,15 +31,20 @@ import {
   resolveReportRange,
   type ReportRange,
 } from '../utils/reportRange.js';
+import { clientIp, consumeRateLimit, sendRateLimited } from '../utils/rateLimit.js';
 import { withChurch } from '../utils/tenant.js';
 
 const router = Router();
 
 const SOURCES = ['owner', 'guest_access', 'portaria_device', 'all'] as const;
 const EXPORT_FORMATS = ['pdf', 'csv', 'xlsx', 'follow_up_list', 'service'] as const;
+const FILTER_KEYS = ['preset', 'from', 'to', 'serviceId', 'source'] as const;
+const TENANT_KEYS = ['churchId', 'church_id', 'tenantId', 'tenant_id'];
+const EXPORT_LIMIT = 20;
 
-function rejectsClientChurchId(value: unknown) {
-  return Boolean(value && typeof value === 'object' && 'churchId' in value);
+function rejectsClientChurchId(value: unknown): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return TENANT_KEYS.some((key) => key in value);
 }
 
 function parseSource(value: unknown): ReportSourceFilter {
@@ -48,8 +53,20 @@ function parseSource(value: unknown): ReportSourceFilter {
     : 'all';
 }
 
-function queryRecord(req: AuthenticatedRequest) {
-  return { ...req.query, ...(req.body && typeof req.body === 'object' ? req.body : {}) };
+function pickScopedInput(req: AuthenticatedRequest) {
+  const raw =
+    req.body && typeof req.body === 'object' && !Array.isArray(req.body)
+      ? { ...req.query, ...req.body }
+      : { ...req.query };
+  const input: Record<string, unknown> = {};
+  for (const key of FILTER_KEYS) {
+    if (raw[key] !== undefined) input[key] = raw[key];
+  }
+  return input;
+}
+
+function downloadName(name: string) {
+  return name.replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 120) || 'relatorio.bin';
 }
 
 async function resolveScopedRange(req: AuthenticatedRequest, res: Response) {
@@ -59,7 +76,7 @@ async function resolveScopedRange(req: AuthenticatedRequest, res: Response) {
   }
   const churchId = req.auth!.churchId;
   const timeZone = await timezoneForReports(churchId);
-  const input = queryRecord(req);
+  const input = pickScopedInput(req);
   const resolved = resolveReportRange({
     preset: input.preset,
     from: input.from,
@@ -201,11 +218,31 @@ async function auditExport(
 }
 
 function sendFile(res: Response, filename: string, mime: string, body: Buffer) {
+  const safeName = downloadName(filename);
   setPrivateCacheHeaders(res);
   res.setHeader('Content-Type', mime);
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
   res.setHeader('X-Content-Type-Options', 'nosniff');
   return res.send(body);
+}
+
+async function limitReportExports(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  try {
+    const allowed = await consumeRateLimit(
+      getJwtSecret(),
+      'report-export',
+      `${req.auth!.churchId}|${req.auth!.userId}|${clientIp(req)}`,
+      EXPORT_LIMIT
+    );
+    if (!allowed) {
+      return sendRateLimited(res, {
+        error: 'Muitas exportações. Aguarde alguns minutos e tente de novo.',
+      });
+    }
+    next();
+  } catch {
+    next();
+  }
 }
 
 export async function createReportExport(req: AuthenticatedRequest, res: Response) {
@@ -219,13 +256,39 @@ export async function createReportExport(req: AuthenticatedRequest, res: Respons
     if (!hasPermission(req.auth!.permissions, 'reports:export') && format !== 'follow_up_list') {
       return res.status(403).json({ error: 'Você não tem permissão para exportar relatórios.' });
     }
-    if (format === 'follow_up_list' && !hasPermission(req.auth!.permissions, 'reports:export_sensitive')) {
-      return res.status(403).json({ error: 'Você não tem permissão para exportar dados pessoais.' });
+    if (format === 'follow_up_list') {
+      if (!hasPermission(req.auth!.permissions, 'reports:export_sensitive')) {
+        return res.status(403).json({ error: 'Você não tem permissão para exportar dados pessoais.' });
+      }
+      if (!(await canReadFollowUp(scoped.churchId, req.auth!.permissions))) {
+        return res.status(403).json({ error: 'Você não tem permissão para exportar dados pessoais.' });
+      }
     }
 
     const church = await Church.findById(scoped.churchId).select('name branding');
     const churchName = church?.name || 'Igreja';
     const generatedAt = new Date().toLocaleString('pt-BR', { timeZone: scoped.timeZone });
+
+    if (format === 'follow_up_list') {
+      await auditExport(req, format, 'follow_up', scoped.range);
+      const rows = await consentedFollowUpRows(scoped.churchId, scoped.range);
+      const body = buildCsv(
+        ['Nome', 'Cidade', 'Telefone', 'Data da visita', 'Culto', 'Responsavel', 'Situacao', 'Proximo contato', 'Ultimo contato'],
+        rows.map((row) => [
+          row.name,
+          row.city,
+          row.phone,
+          row.visitDate ? new Date(row.visitDate).toISOString() : '',
+          row.serviceId,
+          row.assignedToName,
+          row.status,
+          row.nextContactAt ? new Date(row.nextContactAt).toISOString() : '',
+          row.lastContactAt ? new Date(row.lastContactAt).toISOString() : '',
+        ])
+      );
+      return sendFile(res, `acompanhamento-autorizado-${scoped.range.fromKey}.csv`, 'text/csv; charset=utf-8', body);
+    }
+
     const [overview, visitors, prayers, vehicles, accesses] = await Promise.all([
       buildOverview(scoped.churchId, scoped.range, { serviceId: scoped.serviceId, source: scoped.source }),
       buildVisitorReport(scoped.churchId, scoped.range, { serviceId: scoped.serviceId, source: scoped.source }),
@@ -256,28 +319,8 @@ export async function createReportExport(req: AuthenticatedRequest, res: Respons
       return sendFile(res, `relatorio-${scoped.range.fromKey}-${scoped.range.toKey}.pdf`, 'application/pdf', body);
     }
 
-    if (format === 'follow_up_list') {
-      await auditExport(req, format, 'follow_up', scoped.range);
-      const rows = await consentedFollowUpRows(scoped.churchId, scoped.range);
-      const body = buildCsv(
-        ['Nome', 'Cidade', 'Telefone', 'Data da visita', 'Culto', 'Responsavel', 'Situacao', 'Proximo contato', 'Ultimo contato'],
-        rows.map((row) => [
-          row.name,
-          row.city,
-          row.phone,
-          row.visitDate ? new Date(row.visitDate).toISOString() : '',
-          row.serviceId,
-          row.assignedToName,
-          row.status,
-          row.nextContactAt ? new Date(row.nextContactAt).toISOString() : '',
-          row.lastContactAt ? new Date(row.lastContactAt).toISOString() : '',
-        ])
-      );
-      return sendFile(res, `acompanhamento-autorizado-${scoped.range.fromKey}.csv`, 'text/csv; charset=utf-8', body);
-    }
-
     if (format === 'service') {
-      const serviceId = typeof req.body?.serviceId === 'string' ? req.body.serviceId : scoped.serviceId;
+      const serviceId = scoped.serviceId;
       if (!serviceId) return res.status(400).json({ error: 'Escolha um culto para exportar.' });
       const report = await buildServiceReport(scoped.churchId, serviceId, scoped.range);
       if (!report) return res.status(404).json({ error: 'Culto não encontrado.' });
@@ -390,6 +433,13 @@ router.get('/prayers', requireAuth, requirePermission('reports:read'), getReport
 router.get('/vehicles', requireAuth, requirePermission('reports:read'), getReportsVehicles);
 router.get('/accesses', requireAuth, requirePermission('reports:read'), getReportsAccesses);
 router.get('/services/:serviceId', requireAuth, requirePermission('reports:read'), getReportsService);
-router.post('/exports', requireAuth, requirePermission('reports:read'), createReportExport);
+router.post(
+  '/exports',
+  requireAuth,
+  requirePermission('reports:read'),
+  requireAnyPermission('reports:export', 'reports:export_sensitive'),
+  limitReportExports,
+  createReportExport
+);
 
 export default router;

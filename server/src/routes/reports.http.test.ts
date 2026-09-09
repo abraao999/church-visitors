@@ -168,6 +168,13 @@ function stubReportReads(churchId: Types.ObjectId) {
   }));
   stubMethod(FollowUpContact, 'countDocuments', async () => 0);
   stubMethod(FollowUpContact, 'find', () => ({
+    select() {
+      return {
+        sort() {
+          return { lean: async () => [] };
+        },
+      };
+    },
     sort() {
       return { lean: async () => [] };
     },
@@ -216,6 +223,23 @@ describe('relatórios isolados por igreja', () => {
       res
     );
     assert.equal(state.statusCode, 404);
+  });
+
+  test('churchId enviado pelo cliente é recusado', async () => {
+    stubReportReads(churchA);
+    const fromQuery = mockRes();
+    await getReportsOverview(
+      authReq(churchA, { query: { preset: 'this_month', churchId: String(churchB) } }),
+      fromQuery.res
+    );
+    assert.equal(fromQuery.state.statusCode, 400);
+
+    const fromBody = mockRes();
+    await createReportExport(
+      authReq(churchA, { body: { format: 'pdf', preset: 'this_month', churchId: String(churchB) } }),
+      fromBody.res
+    );
+    assert.equal(fromBody.state.statusCode, 400);
   });
 
   test('exportação sem reports:export é recusada', async () => {
@@ -274,6 +298,55 @@ describe('relatórios isolados por igreja', () => {
     assert.equal(followFilter?.consent, true);
     assert.deepEqual(followFilter?.anonymizedAt, { $exists: false });
     assert.equal(String(followFilter?.churchId), String(churchA));
+  });
+
+  test('lista de acompanhamento fica bloqueada se o recurso estiver desligado', async () => {
+    stubReportReads(churchA);
+    stubMethod(Church, 'findById', () => ({
+      select: async () => ({
+        timezone: 'America/Sao_Paulo',
+        name: 'Igreja A',
+        visitorFollowUpEnabled: false,
+      }),
+    }));
+    const { res, state } = mockRes();
+    await createReportExport(
+      authReq(churchA, { body: { format: 'follow_up_list', preset: 'this_month' } }),
+      res
+    );
+    assert.equal(state.statusCode, 403);
+  });
+
+  test('lista de acompanhamento sem follow_up:read é recusada', async () => {
+    stubReportReads(churchA);
+    const { res, state } = mockRes();
+    await createReportExport(
+      authReq(churchA, {
+        auth: {
+          userId: String(userA),
+          churchId: String(churchA),
+          role: 'admin',
+          name: 'Ana',
+          email: 'ana@example.com',
+          permissions: ['reports:read', 'reports:export', 'reports:export_sensitive'],
+        },
+        body: { format: 'follow_up_list', preset: 'this_month' },
+      }),
+      res
+    );
+    assert.equal(state.statusCode, 403);
+  });
+
+  test('exportação de culto de outra igreja não vaza dado', async () => {
+    stubReportReads(churchA);
+    const { res, state } = mockRes();
+    await createReportExport(
+      authReq(churchA, {
+        body: { format: 'service', preset: 'this_month', serviceId: String(serviceB) },
+      }),
+      res
+    );
+    assert.equal(state.statusCode, 404);
   });
 });
 

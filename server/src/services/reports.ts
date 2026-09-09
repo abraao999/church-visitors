@@ -528,6 +528,7 @@ export async function consentedFollowUpRows(churchId: string, range: ReportRange
     .lean();
   const visitorMap = new Map(visitors.map((item) => [String(item._id), item]));
   const lastContacts = await FollowUpContact.find(withChurch(churchId, { visitorId: { $in: visitorIds } }))
+    .select('visitorId createdAt')
     .sort({ createdAt: -1 })
     .lean();
   const lastByVisitor = new Map<string, Date>();
