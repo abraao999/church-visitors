@@ -18,13 +18,13 @@ describe('menu lateral por permissão', () => {
         'Início',
         'Visitantes',
         'Acompanhamento',
-        'Oração',
-        'Acessos',
-        'Cultos',
         'Avisos de veículos',
+        'Cultos',
+        'Pedidos de oração',
         'Painéis',
+        'Acessos sem login',
         'Igreja',
-        'Holyric',
+        'Holyrics',
       ]
     );
     assert.deepEqual(
@@ -33,11 +33,11 @@ describe('menu lateral por permissão', () => {
         '/',
         '/visitantes',
         '/acompanhamento',
-        '/oracao',
-        '/acessos',
-        '/cultos',
         '/avisos-veiculos',
+        '/cultos',
+        '/oracao',
         '/paineis',
+        '/acessos',
         '/igreja',
         '/configuracoes',
       ]
@@ -83,14 +83,14 @@ describe('menu lateral por permissão', () => {
         (item) => item.to
       );
 
-    assert.deepEqual(visible('portaria'), ['/', '/visitantes', '/cultos', '/avisos-veiculos']);
+    assert.deepEqual(visible('portaria'), ['/', '/visitantes', '/avisos-veiculos', '/cultos']);
     assert.deepEqual(visible('intercession'), ['/', '/oracao']);
     assert.equal(
       hasAnyPermission(permissionsForRole('intercession'), ['panels:open', 'prayers:project']),
       true
     );
     assert.deepEqual(visible('louvor'), ['/', '/cultos', '/paineis', '/configuracoes']);
-    assert.deepEqual(visible('midia'), ['/', '/acessos', '/paineis']);
+    assert.deepEqual(visible('midia'), ['/', '/paineis', '/acessos']);
     assert.ok(visible('admin').includes('/igreja'));
     assert.ok(visible('admin').includes('/configuracoes'));
   });

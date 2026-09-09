@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { AppIcon, type AppIconName } from './AppIcon';
 import { BrandMark } from './BrandMark';
 import { ThemeToggle } from './ThemeToggle';
-import { drawerLabel, type NavItem } from './navItems';
+import { isNavItemActive, type NavBadge, type NavSectionGroup } from './navItems';
 
 interface Props {
   open: boolean;
@@ -11,12 +11,10 @@ interface Props {
   logoUrl?: string;
   userName?: string;
   pathname: string;
-  primary: NavItem[];
-  admin: NavItem[];
-  isActive: (pathname: string, to: string) => boolean;
+  sections: NavSectionGroup[];
   onClose: () => void;
   onLogout: () => void;
-  renderBadge: (to: string) => ReactNode;
+  renderBadge: (badge?: NavBadge) => ReactNode;
 }
 
 function focusableIn(root: HTMLElement): HTMLElement[] {
@@ -31,9 +29,7 @@ export function MobileNavDrawer({
   logoUrl,
   userName,
   pathname,
-  primary,
-  admin,
-  isActive,
+  sections,
   onClose,
   onLogout,
   renderBadge,
@@ -113,47 +109,43 @@ export function MobileNavDrawer({
         </div>
 
         <nav className="mobile-drawer-nav" aria-label="Menu principal">
-          <ul>
-            {primary.map((item) => (
-              <li key={item.to}>
-                <Link
-                  to={item.to}
-                  className={isActive(pathname, item.to) ? 'active' : ''}
-                  aria-current={isActive(pathname, item.to) ? 'page' : undefined}
-                  tabIndex={open ? 0 : -1}
-                  onClick={onClose}
-                >
-                  <AppIcon name={item.icon as AppIconName} />
-                  {drawerLabel(item)}
-                  {renderBadge(item.to)}
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          {admin.length > 0 && (
-            <>
-              <p className="mobile-drawer-section" id="mobile-drawer-admin">
-                ADMINISTRAÇÃO
-              </p>
-              <ul aria-labelledby="mobile-drawer-admin">
-                {admin.map((item) => (
-                  <li key={item.to}>
-                    <Link
-                      to={item.to}
-                      className={isActive(pathname, item.to) ? 'active' : ''}
-                      aria-current={isActive(pathname, item.to) ? 'page' : undefined}
-                      tabIndex={open ? 0 : -1}
-                      onClick={onClose}
-                    >
-                      <AppIcon name={item.icon as AppIconName} />
-                      {drawerLabel(item)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+          {sections.map((section) => {
+            const headingId = section.label ? `mobile-nav-${section.id}` : undefined;
+            return (
+              <div
+                key={section.id}
+                className="nav-section"
+                role={section.label ? 'group' : undefined}
+                aria-labelledby={headingId}
+              >
+                {section.label && (
+                  <p id={headingId} className="mobile-drawer-section">
+                    {section.label}
+                  </p>
+                )}
+                <ul>
+                  {section.items.map((item) => {
+                    const active = isNavItemActive(pathname, item.to);
+                    return (
+                      <li key={item.to}>
+                        <Link
+                          to={item.to}
+                          className={active ? 'active' : ''}
+                          aria-current={active ? 'page' : undefined}
+                          tabIndex={open ? 0 : -1}
+                          onClick={onClose}
+                        >
+                          <AppIcon name={item.icon as AppIconName} />
+                          <span className="nav-item-label">{item.label}</span>
+                          {renderBadge(item.badge)}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
         </nav>
 
         <div className="mobile-drawer-footer">

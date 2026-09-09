@@ -24,11 +24,11 @@ describe('identidade visual no cliente', () => {
         '/',
         '/visitantes',
         '/acompanhamento',
-        '/oracao',
-        '/acessos',
-        '/cultos',
         '/avisos-veiculos',
+        '/cultos',
+        '/oracao',
         '/paineis',
+        '/acessos',
         '/igreja',
         '/configuracoes',
       ]
@@ -84,6 +84,7 @@ describe('layout sem rolagem horizontal no celular', () => {
     assert.match(brandingCss, /max-width:\s*960px/);
     assert.match(brandingCss, /grid-template-columns:\s*1fr/);
     assert.match(layoutCss, /overflow-x:\s*hidden/);
+    assert.match(layoutCss, /\.nav-desktop[\s\S]*overflow-y:\s*auto/);
     assert.match(indexCss, /overflow-x:\s*hidden/);
   });
 });

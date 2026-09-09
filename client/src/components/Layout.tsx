@@ -8,14 +8,14 @@ import { AppIcon, type AppIconName } from './AppIcon';
 import { BrandMark } from './BrandMark';
 import { MobileNavDrawer } from './MobileNavDrawer';
 import { ThemeToggle } from './ThemeToggle';
-import { drawerSections, NAV_ITEMS } from './navItems';
+import {
+  isNavItemActive,
+  NAV_ITEMS,
+  visibleNavSections,
+  type NavBadge,
+} from './navItems';
 import { navItemVisible } from '../utils/permissions';
 import './Layout.css';
-
-function isActive(pathname: string, to: string) {
-  if (to === '/') return pathname === '/';
-  return pathname === to || pathname.startsWith(`${to}/`);
-}
 
 export function Layout() {
   const location = useLocation();
@@ -39,9 +39,9 @@ export function Layout() {
   );
 }
 
-function VehicleNavBadge({ to }: { to: string }) {
+function VehicleNavBadge({ badge }: { badge?: NavBadge }) {
   const alerts = useVehicleAlerts();
-  if (to !== '/avisos-veiculos') return null;
+  if (badge !== 'vehicleNotices') return null;
   const count = alerts?.pendingCount ?? 0;
   const label = formatPendingBadge(count);
   if (!label) return null;
@@ -65,7 +65,7 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
       visitorFollowUpEnabled: user?.visitorFollowUpEnabled === true,
     })
   );
-  const { primary, admin } = drawerSections(navItems);
+  const sections = visibleNavSections(navItems);
 
   drawerOpenRef.current = drawerOpen;
 
@@ -122,17 +122,38 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
 
           <div className="header-right">
             <nav className="nav nav-desktop" aria-label="Menu principal">
-              {navItems.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={isActive(pathname, item.to) ? 'active' : ''}
-                >
-                  <AppIcon name={item.icon as AppIconName} />
-                  {item.label}
-                  <VehicleNavBadge to={item.to} />
-                </Link>
-              ))}
+              {sections.map((section) => {
+                const headingId = section.label ? `desktop-nav-${section.id}` : undefined;
+                return (
+                  <div
+                    key={section.id}
+                    className="nav-section"
+                    role={section.label ? 'group' : undefined}
+                    aria-labelledby={headingId}
+                  >
+                    {section.label && (
+                      <p id={headingId} className="nav-section-label">
+                        {section.label}
+                      </p>
+                    )}
+                    {section.items.map((item) => {
+                      const active = isNavItemActive(pathname, item.to);
+                      return (
+                        <Link
+                          key={item.to}
+                          to={item.to}
+                          className={active ? 'active' : ''}
+                          aria-current={active ? 'page' : undefined}
+                        >
+                          <AppIcon name={item.icon as AppIconName} />
+                          <span className="nav-item-label">{item.label}</span>
+                          <VehicleNavBadge badge={item.badge} />
+                        </Link>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </nav>
 
             {user && (
@@ -164,12 +185,10 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
         logoUrl={logoUrl}
         userName={user?.name}
         pathname={pathname}
-        primary={primary}
-        admin={admin}
-        isActive={isActive}
+        sections={sections}
         onClose={closeDrawer}
         onLogout={handleLogout}
-        renderBadge={(to) => <VehicleNavBadge to={to} />}
+        renderBadge={(badge) => <VehicleNavBadge badge={badge} />}
       />
 
       <main className="app-main container">

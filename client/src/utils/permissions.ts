@@ -1,3 +1,5 @@
+import { NAV_ITEMS } from '../components/navItems.ts';
+
 export const PERMISSIONS = [
   'church:read',
   'church:update',
@@ -278,25 +280,12 @@ export function navItemVisible(
   permissions?: readonly string[],
   features?: NavFeatures
 ): boolean {
-  if (path === '/acompanhamento') {
-    if (features?.visitorFollowUpEnabled !== true) return false;
-    if (role === 'owner') return true;
-    return hasPermission(permissions, 'follow_up:read');
+  const item = NAV_ITEMS.find((entry) => entry.to === path);
+  if (!item) return true;
+  if (item.requiresFeature === 'visitorFollowUpEnabled' && features?.visitorFollowUpEnabled !== true) {
+    return false;
   }
   if (role === 'owner') return true;
-  const needed: Record<string, Permission[]> = {
-    '/': [],
-    '/visitantes': ['visitors:read', 'visitors:create'],
-    '/oracao': ['prayers:read', 'prayers:create'],
-    '/acessos': ['guest_accesses:read'],
-    '/cultos': ['services:read'],
-    '/avisos-veiculos': ['vehicle_notices:read'],
-    '/paineis': ['panels:open'],
-    '/igreja': ['church:read', 'team:read'],
-    '/configuracoes': ['holyrics:read', 'holyrics:configure'],
-  };
-  const list = needed[path];
-  if (!list) return true;
-  if (list.length === 0) return true;
-  return hasAnyPermission(permissions, list);
+  if (item.permissions.length === 0) return true;
+  return hasAnyPermission(permissions, item.permissions);
 }
