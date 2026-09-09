@@ -40,6 +40,7 @@ import {
   type PublicAccessEventType,
 } from '../models/PublicAccessEvent.js';
 import { parseVisitKind } from '../utils/reportRange.js';
+import { FAMILY_VISIT_KIND_ERROR, hasMixedFamilyVisitKinds } from '../utils/visitKind.js';
 
 const router = Router();
 const MAX_VISITORS_PER_REQUEST = 10;
@@ -195,6 +196,9 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
       return res.status(400).json({
         error: 'Informe o nome e a cidade de cada visitante.',
       });
+    }
+    if (hasMixedFamilyVisitKinds(people)) {
+      return res.status(400).json({ error: FAMILY_VISIT_KIND_ERROR });
     }
 
     const access = req.guestAccess!;

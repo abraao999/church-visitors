@@ -22,6 +22,7 @@ import {
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 import { normalizePanelObservation, readShowObservationOnPanel } from '../utils/panelText.js';
 import { parseVisitKind } from '../utils/reportRange.js';
+import { FAMILY_VISIT_KIND_ERROR, hasMixedFamilyVisitKinds } from '../utils/visitKind.js';
 import {
   FOLLOW_UP_DISABLED_ERROR,
   FOLLOW_UP_FORBIDDEN_ERROR,
@@ -108,6 +109,10 @@ function normalizeVisitors(body: Record<string, unknown>): { data: VisitorInput[
       visitKind: parseVisitKind(raw.visitKind),
       followUp: parseVisitorFollowUpDraft(raw.followUp),
     });
+  }
+
+  if (hasMixedFamilyVisitKinds(data)) {
+    return { data: [], error: FAMILY_VISIT_KIND_ERROR };
   }
 
   return { data };

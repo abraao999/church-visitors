@@ -32,6 +32,7 @@ import { getGuestAccessSecret } from '../utils/guestToken.js';
 import { parseVehiclePlate } from '../utils/vehiclePlate.js';
 import { normalizePanelObservation, readShowObservationOnPanel } from '../utils/panelText.js';
 import { parseVisitKind } from '../utils/reportRange.js';
+import { FAMILY_VISIT_KIND_ERROR, hasMixedFamilyVisitKinds } from '../utils/visitKind.js';
 import {
   createPortariaDeviceToken,
   createPortariaPublicId,
@@ -306,6 +307,13 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
         code: 'review',
         error: 'Informe o nome e a cidade de cada visitante.',
         fields: { visitors: 'Informe o nome e a cidade de cada visitante.' },
+      });
+    }
+    if (hasMixedFamilyVisitKinds(people)) {
+      return res.status(422).json({
+        code: 'review',
+        error: FAMILY_VISIT_KIND_ERROR,
+        fields: { visitors: FAMILY_VISIT_KIND_ERROR },
       });
     }
 

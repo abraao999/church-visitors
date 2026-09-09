@@ -28,7 +28,6 @@ interface PersonDraft {
   name: string;
   panelObservation: string;
   showObservationOnPanel: boolean;
-  visitKind: VisitKind;
 }
 
 const MAX_VISITORS = 10;
@@ -199,8 +198,10 @@ function PublicVisitorsForm({
   const channel = searchParams.get('origem') === 'qr' ? 'qr' as const : 'shared_link' as const;
   const [city, setCity] = useState('');
   const [people, setPeople] = useState<PersonDraft[]>([
-    { id: 1, name: '', panelObservation: '', showObservationOnPanel: false, visitKind: 'unknown' },
+    { id: 1, name: '', panelObservation: '', showObservationOnPanel: false },
   ]);
+  const [visitKind, setVisitKind] = useState<VisitKind | ''>('');
+  const [visitKindError, setVisitKindError] = useState('');
   const [cityError, setCityError] = useState('');
   const [nameErrors, setNameErrors] = useState<Record<number, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -226,7 +227,7 @@ function PublicVisitorsForm({
     if (people.length >= MAX_VISITORS) return;
     setPeople((current) => [
       ...current,
-      { id: nextId.current++, name: '', panelObservation: '', showObservationOnPanel: false, visitKind: 'unknown' },
+      { id: nextId.current++, name: '', panelObservation: '', showObservationOnPanel: false },
     ]);
   }
 
@@ -250,12 +251,16 @@ function PublicVisitorsForm({
     }
     setCityError(nextCityError);
     setNameErrors(nextNameErrors);
+    const nextVisitKindError = visitKind
+      ? ''
+      : 'Informe se esta é a primeira visita da família ou grupo.';
+    setVisitKindError(nextVisitKindError);
     if (followUpEnabled && contactConsent && phone.replace(/\D/g, '').length < 10) {
       setPhoneError('Informe o telefone ou WhatsApp para o contato.');
       return false;
     }
     setPhoneError('');
-    return !nextCityError && Object.keys(nextNameErrors).length === 0;
+    return !nextCityError && !nextVisitKindError && Object.keys(nextNameErrors).length === 0;
   }
 
   async function submit(event: React.FormEvent) {
@@ -279,7 +284,7 @@ function PublicVisitorsForm({
           relationship: 'outro',
           panelObservation: person.panelObservation.trim(),
           showObservationOnPanel: person.showObservationOnPanel,
-          visitKind: person.visitKind,
+          visitKind: visitKind as VisitKind,
         })),
         {
           requestId,
@@ -352,6 +357,16 @@ function PublicVisitorsForm({
               <p id="public-visit-city-hint" className="public-field-hint">Esta cidade será aplicada a todos os visitantes cadastrados.</p>
             )}
           </div>
+          <VisitKindField
+            id="public-family-kind"
+            value={visitKind}
+            disabled={submitting}
+            error={visitKindError}
+            onChange={(value) => {
+              setVisitKind(value);
+              setVisitKindError('');
+            }}
+          />
         </section>
 
         <section className="public-person-card card">
@@ -402,16 +417,6 @@ function PublicVisitorsForm({
                     </p>
                   )}
                 </div>
-                <VisitKindField
-                  id={`public-kind-${person.id}`}
-                  value={person.visitKind}
-                  disabled={submitting}
-                  onChange={(visitKind) =>
-                    setPeople((current) =>
-                      current.map((item) => (item.id === person.id ? { ...item, visitKind } : item))
-                    )
-                  }
-                />
                 <PanelObservationFields
                   id={`public-observation-${person.id}`}
                   observation={person.panelObservation}

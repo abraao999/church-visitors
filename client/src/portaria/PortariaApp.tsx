@@ -391,7 +391,6 @@ function emptyPortariaPerson(id: number) {
     relationship: 'outro' as Relationship,
     panelObservation: '',
     showObservationOnPanel: false,
-    visitKind: 'unknown' as VisitKind,
     includeFollowUp: false,
   };
 }
@@ -400,6 +399,8 @@ function PortariaVisitors() {
   const { session, connection, saveVisitors, capacity } = usePortaria();
   const [city, setCity] = useState('');
   const [people, setPeople] = useState([emptyPortariaPerson(1)]);
+  const [visitKind, setVisitKind] = useState<VisitKind | ''>('');
+  const [visitKindError, setVisitKindError] = useState('');
   const [includeFollowUp, setIncludeFollowUp] = useState(false);
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
@@ -414,6 +415,11 @@ function PortariaVisitors() {
     setMessage('');
     if (capacity === 'full') {
       setError('Este aparelho possui muitos cadastros aguardando envio. Conecte-se à internet antes de continuar.');
+      return;
+    }
+    if (!visitKind) {
+      setVisitKindError('Informe se esta é a primeira visita da família ou grupo.');
+      setError('Confira os campos destacados antes de cadastrar.');
       return;
     }
     const selected = people.filter((person) =>
@@ -433,7 +439,7 @@ function PortariaVisitors() {
       relationship: person.relationship,
       panelObservation: person.panelObservation.trim(),
       showObservationOnPanel: person.showObservationOnPanel,
-      visitKind: person.visitKind,
+      visitKind,
       includeFollowUp: followUpEnabled && includeFollowUp && selected.some((item) => item.id === person.id),
     }));
     if (!city.trim() || visitors.some((person) => !person.name)) {
@@ -450,6 +456,8 @@ function PortariaVisitors() {
       });
       setPeople([emptyPortariaPerson(Date.now())]);
       setCity('');
+      setVisitKind('');
+      setVisitKindError('');
       setIncludeFollowUp(false);
       setPhone('');
       setMessage(
@@ -477,6 +485,16 @@ function PortariaVisitors() {
           Cidade da família
           <input value={city} onChange={(event) => setCity(event.target.value)} maxLength={100} required />
         </label>
+        <VisitKindField
+          id="portaria-family-kind"
+          value={visitKind}
+          disabled={saving}
+          error={visitKindError}
+          onChange={(value) => {
+            setVisitKind(value);
+            setVisitKindError('');
+          }}
+        />
         <fieldset>
           <legend>Visitantes</legend>
           {people.map((person, index) => (
@@ -517,16 +535,6 @@ function PortariaVisitors() {
                   required
                 />
               </label>
-              <VisitKindField
-                id={`portaria-kind-${person.id}`}
-                value={person.visitKind}
-                disabled={saving}
-                onChange={(visitKind) =>
-                  setPeople((current) =>
-                    current.map((item) => (item.id === person.id ? { ...item, visitKind } : item))
-                  )
-                }
-              />
               <PanelObservationFields
                 id={`portaria-observation-${person.id}`}
                 observation={person.panelObservation}

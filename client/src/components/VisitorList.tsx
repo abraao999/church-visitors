@@ -1,5 +1,5 @@
 import type { Visitor } from '../types';
-import { RELATIONSHIP_LABELS } from '../types';
+import { RELATIONSHIP_LABELS, VISIT_KIND_LABELS } from '../types';
 import { AppIcon } from './AppIcon';
 import './PrivateRecords.css';
 
@@ -53,6 +53,9 @@ export function VisitorList({ visitors, onDelete }: Props) {
                   ? ` · ${RELATIONSHIP_LABELS[visitor.relationship] ?? visitor.relationship}`
                   : ''}
               </p>
+              <span className={`private-visit-kind ${visitor.visitKind ?? 'unknown'}`}>
+                {VISIT_KIND_LABELS[visitor.visitKind ?? 'unknown']}
+              </span>
               <p className="private-record-origin">
                 <AppIcon name="clock" /> {formatTime(visitor.createdAt)} · {originLabel(visitor)}
               </p>

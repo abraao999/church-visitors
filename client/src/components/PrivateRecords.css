@@ -65,6 +65,27 @@
   font-size: 0.86rem;
 }
 
+.private-visit-kind {
+  display: inline-flex;
+  margin-top: 0.45rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.private-visit-kind.first {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.private-visit-kind.returning {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
 .private-record-body {
   margin-top: 0.65rem;
   color: var(--text);

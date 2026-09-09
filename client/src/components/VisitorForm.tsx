@@ -24,7 +24,6 @@ interface PersonDraft {
   panelObservation: string;
   showObservationOnPanel: boolean;
   includeFollowUp: boolean;
-  visitKind: VisitKind;
 }
 
 interface Assignee {
@@ -51,7 +50,6 @@ function emptyPerson(id: number, city = ''): PersonDraft {
     panelObservation: '',
     showObservationOnPanel: false,
     includeFollowUp: false,
-    visitKind: 'unknown',
   };
 }
 
@@ -75,6 +73,8 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
   const formRef = useRef<HTMLFormElement>(null);
   const [people, setPeople] = useState<PersonDraft[]>([emptyPerson(1)]);
   const [visitDate, setVisitDate] = useState(todayLocalISO());
+  const [visitKind, setVisitKind] = useState<VisitKind | ''>('');
+  const [visitKindError, setVisitKindError] = useState('');
   const [nameErrors, setNameErrors] = useState<Record<number, string>>({});
   const [cityErrors, setCityErrors] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(false);
@@ -110,7 +110,7 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
     const field = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
     field?.focus();
     setFocusInvalid(false);
-  }, [focusInvalid, nameErrors, cityErrors]);
+  }, [focusInvalid, nameErrors, cityErrors, visitKindError]);
 
   function updatePerson(id: number, patch: Partial<PersonDraft>) {
     setPeople((prev) => prev.map((person) => (person.id === id ? { ...person, ...patch } : person)));
@@ -150,6 +150,8 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
   function resetForm() {
     setPeople([emptyPerson(nextId.current++)]);
     setVisitDate(todayLocalISO());
+    setVisitKind('');
+    setVisitKindError('');
     setNameErrors({});
     setCityErrors({});
     setIncludeFollowUp(false);
@@ -170,7 +172,11 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
     }
     setNameErrors(nextNameErrors);
     setCityErrors(nextCityErrors);
-    if (Object.keys(nextNameErrors).length || Object.keys(nextCityErrors).length) {
+    const nextVisitKindError = visitKind
+      ? ''
+      : 'Informe se esta é a primeira visita da família ou grupo.';
+    setVisitKindError(nextVisitKindError);
+    if (Object.keys(nextNameErrors).length || Object.keys(nextCityErrors).length || nextVisitKindError) {
       return 'Confira os campos destacados antes de cadastrar.';
     }
     if (includeFollowUp && people.length > 1 && !people.some((person) => person.includeFollowUp)) {
@@ -204,7 +210,7 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
       relationship: person.relationship,
       panelObservation: person.panelObservation.trim(),
       showObservationOnPanel: person.showObservationOnPanel,
-      visitKind: person.visitKind,
+      visitKind: visitKind as VisitKind,
       ...(followUpEnabled && includeFollowUp && selected.some((item) => item.id === person.id)
         ? {
             followUp: {
@@ -289,6 +295,16 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
             />
           </div>
         </div>
+        <VisitKindField
+          id="visitor-family-kind"
+          value={visitKind}
+          onChange={(value) => {
+            setVisitKind(value);
+            setVisitKindError('');
+          }}
+          disabled={loading}
+          error={visitKindError}
+        />
       </section>
 
       {people.map((person, index) => {
@@ -371,13 +387,6 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
                 )}
               </div>
             </div>
-
-            <VisitKindField
-              id={`visitor-kind-${person.id}`}
-              value={person.visitKind}
-              onChange={(visitKind) => updatePerson(person.id, { visitKind })}
-              disabled={loading}
-            />
 
             <PanelObservationFields
               id={`visitor-observation-${person.id}`}
