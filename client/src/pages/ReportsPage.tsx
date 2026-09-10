@@ -356,6 +356,9 @@ export function ReportsPage() {
                 <article><strong>{visitors.followUp.overdue}</strong><span>Contatos atrasados</span></article>
               </div>
               <ReportChart title="Quantidade por responsável" series={visitors.followUp.assignees} />
+              {visitors.followUp.historicRemoved && (
+                <p className="reports-footnote">Parte dos totais veio de resumos anônimos após a retenção.</p>
+              )}
             </section>
           )}
         </>

@@ -6,6 +6,7 @@ import {
   type AuthenticatedRequest,
 } from '../middleware/auth.js';
 import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
+import { canChangePrayerCareStatus } from '../utils/permissions.js';
 import { resolveLinkedServiceId } from '../services/activeService.js';
 import { fetchPrayerPanel } from '../services/panelData.js';
 import { hasPermission } from '../utils/permissions.js';
@@ -127,6 +128,9 @@ export async function createPrayerRequest(req: AuthenticatedRequest, res: Respon
 
 export async function updatePrayerCareStatus(req: AuthenticatedRequest, res: Response) {
   try {
+    if (!canChangePrayerCareStatus(req.auth!.role)) {
+      return res.status(403).json({ error: 'Somente a equipe de intercessão pode atualizar este acompanhamento.' });
+    }
     const filter = tenantRecordFilter(req.auth!.churchId, req.params.id);
     if (!filter) {
       return res.status(404).json({ error: 'Pedido não encontrado' });

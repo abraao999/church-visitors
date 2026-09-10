@@ -87,6 +87,14 @@ describe('menu lateral por permissão', () => {
 
     assert.deepEqual(visible('portaria'), ['/', '/visitantes', '/avisos-veiculos', '/cultos']);
     assert.deepEqual(visible('intercession'), ['/', '/oracao']);
+    assert.deepEqual(
+      NAV_ITEMS.filter((item) =>
+        navItemVisible(item.to, 'intercession', permissionsForRole('intercession'), {
+          visitorFollowUpEnabled: true,
+        })
+      ).map((item) => item.to),
+      ['/', '/acompanhamento', '/oracao']
+    );
     assert.equal(
       hasAnyPermission(permissionsForRole('intercession'), ['panels:open', 'prayers:project']),
       true

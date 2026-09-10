@@ -22,10 +22,12 @@ import {
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 import { normalizePanelObservation, readShowObservationOnPanel } from '../utils/panelText.js';
 import { parseVisitKind } from '../utils/reportRange.js';
+import { FAMILY_CITY_ERROR, hasMixedFamilyCities, normalizeFamilyCity } from '../utils/familyCity.js';
 import { FAMILY_VISIT_KIND_ERROR, hasMixedFamilyVisitKinds } from '../utils/visitKind.js';
 import {
   FOLLOW_UP_DISABLED_ERROR,
   FOLLOW_UP_FORBIDDEN_ERROR,
+  FOLLOW_UP_PHONE_REQUIRED_ERROR,
   isValidFollowUpPhone,
   normalizeFollowUpPhone,
   resolveNextContactAt,
@@ -93,7 +95,7 @@ function normalizeVisitors(body: Record<string, unknown>): { data: VisitorInput[
     }
 
     const name = raw.name.trim().replace(/\s+/g, ' ');
-    const city = raw.city.trim().replace(/\s+/g, ' ');
+    const city = normalizeFamilyCity(typeof raw.city === 'string' ? raw.city : '');
     const relationshipRaw = typeof raw.relationship === 'string' ? raw.relationship : 'outro';
     const relationship = isRelationship(relationshipRaw) ? relationshipRaw : null;
 
@@ -113,6 +115,9 @@ function normalizeVisitors(body: Record<string, unknown>): { data: VisitorInput[
 
   if (hasMixedFamilyVisitKinds(data)) {
     return { data: [], error: FAMILY_VISIT_KIND_ERROR };
+  }
+  if (hasMixedFamilyCities(data)) {
+    return { data: [], error: FAMILY_CITY_ERROR };
   }
 
   return { data };
@@ -215,8 +220,8 @@ export async function createVisitors(req: AuthenticatedRequest, res: Response) {
       timezone = church.timezone || CHURCH_TIMEZONE;
       for (const entry of followUps) {
         const phone = normalizeFollowUpPhone(entry.person.followUp?.phone);
-        if (entry.person.followUp?.phone?.trim() && !isValidFollowUpPhone(phone)) {
-          return res.status(400).json({ error: 'Informe um telefone válido com DDD.' });
+        if (!isValidFollowUpPhone(phone)) {
+          return res.status(400).json({ error: FOLLOW_UP_PHONE_REQUIRED_ERROR });
         }
         const next = resolveNextContactAt(
           entry.person.followUp?.firstContact,

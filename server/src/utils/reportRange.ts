@@ -43,6 +43,14 @@ export function startOfMonth(date: Date, timeZone = CHURCH_TIMEZONE): Date {
   return civilToUtc(year, month, 1, 0, 0, 0, 0, timeZone);
 }
 
+export function addCivilMonths(date: Date, months: number, timeZone = CHURCH_TIMEZONE): Date {
+  const { year, month } = civilInZone(date, timeZone);
+  const absolute = year * 12 + (month - 1) + months;
+  const nextYear = Math.floor(absolute / 12);
+  const nextMonth = ((absolute % 12) + 12) % 12 + 1;
+  return civilToUtc(nextYear, nextMonth, 1, 0, 0, 0, 0, timeZone);
+}
+
 export function startOfYear(date: Date, timeZone = CHURCH_TIMEZONE): Date {
   const { year } = civilInZone(date, timeZone);
   return civilToUtc(year, 1, 1, 0, 0, 0, 0, timeZone);
@@ -82,10 +90,10 @@ export function resolveReportRange(input: {
     from = startOfMonth(now, timeZone);
     to = endOfDay(now, timeZone);
   } else if (preset === 'last_3_months') {
-    from = startOfDay(addCivilDays(now, -90, timeZone), timeZone);
+    from = addCivilMonths(now, -3, timeZone);
     to = endOfDay(now, timeZone);
   } else if (preset === 'last_6_months') {
-    from = startOfDay(addCivilDays(now, -180, timeZone), timeZone);
+    from = addCivilMonths(now, -6, timeZone);
     to = endOfDay(now, timeZone);
   } else {
     from = startOfYear(now, timeZone);

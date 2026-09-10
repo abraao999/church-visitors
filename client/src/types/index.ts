@@ -768,6 +768,7 @@ export interface ReportFollowUp {
   due: number;
   overdue: number;
   contacts: number;
+  historicRemoved?: boolean;
   assignees: ReportSeriesPoint[];
 }
 

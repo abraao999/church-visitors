@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon } from '../components/AppIcon';
+import { CitySuggestField } from '../components/CitySuggestField';
 import { PanelObservationFields } from '../components/PanelObservationFields';
 import { BrandMark } from '../components/BrandMark';
 import { useBranding } from '../theme/BrandingContext';
@@ -16,6 +17,7 @@ import {
   resolvePublicTypes,
   typeFromPublicPath,
 } from '../utils/publicAccess';
+import { normalizeCityInput } from '../utils/citySuggest';
 import { createRequestId } from '../utils/requestId';
 import { maskPhoneInput } from '../utils/visitorFollowUp';
 import { PublicAccessMenu } from './PublicAccessMenu';
@@ -198,7 +200,7 @@ function PublicVisitorsForm({
   const channel = searchParams.get('origem') === 'qr' ? 'qr' as const : 'shared_link' as const;
   const [city, setCity] = useState('');
   const [people, setPeople] = useState<PersonDraft[]>([
-    { id: 1, name: '', panelObservation: '', showObservationOnPanel: false },
+    { id: 1, name: '', panelObservation: '', showObservationOnPanel: true },
   ]);
   const [visitKind, setVisitKind] = useState<VisitKind | ''>('');
   const [visitKindError, setVisitKindError] = useState('');
@@ -227,7 +229,7 @@ function PublicVisitorsForm({
     if (people.length >= MAX_VISITORS) return;
     setPeople((current) => [
       ...current,
-      { id: nextId.current++, name: '', panelObservation: '', showObservationOnPanel: false },
+      { id: nextId.current++, name: '', panelObservation: '', showObservationOnPanel: true },
     ]);
   }
 
@@ -242,7 +244,7 @@ function PublicVisitorsForm({
   }
 
   function validate(): boolean {
-    const nextCityError = cleanLine(city) ? '' : 'Informe a cidade.';
+    const nextCityError = normalizeCityInput(city) ? '' : 'Informe a cidade da família ou grupo.';
     const nextNameErrors: Record<number, string> = {};
     for (const person of people) {
       if (!cleanLine(person.name)) {
@@ -274,7 +276,7 @@ function PublicVisitorsForm({
     }
 
     setSubmitting(true);
-    const sharedCity = cleanLine(city);
+    const sharedCity = normalizeCityInput(city);
     try {
       await api.submitPublicVisitors(
         token,
@@ -334,29 +336,19 @@ function PublicVisitorsForm({
             <AppIcon name="pin" />
             <h2>Informações da visita</h2>
           </div>
-          <div className={`public-field${cityError ? ' has-error' : ''}`}>
-            <label htmlFor="public-visit-city">Cidade da visita *</label>
-            <input
-              id="public-visit-city"
-              value={city}
-              onChange={(event) => {
-                setCity(asUpperCase(event.target.value));
-                if (cityError) setCityError('');
-              }}
-              placeholder="Ex.: UMUARAMA"
-              maxLength={100}
-              autoComplete="address-level2"
-              autoCapitalize="characters"
-              className="public-input-uppercase"
-              aria-invalid={Boolean(cityError)}
-              aria-describedby={cityError ? 'public-visit-city-error' : 'public-visit-city-hint'}
-            />
-            {cityError ? (
-              <p id="public-visit-city-error" className="public-field-error" role="alert">{cityError}</p>
-            ) : (
-              <p id="public-visit-city-hint" className="public-field-hint">Esta cidade será aplicada a todos os visitantes cadastrados.</p>
-            )}
-          </div>
+          <CitySuggestField
+            id="public-visit-city"
+            label="Cidade da família ou grupo *"
+            value={city}
+            error={cityError}
+            hint="Esta cidade será aplicada a todos os visitantes cadastrados."
+            disabled={submitting}
+            required
+            onChange={(value) => {
+              setCity(value);
+              if (cityError) setCityError('');
+            }}
+          />
           <VisitKindField
             id="public-family-kind"
             value={visitKind}

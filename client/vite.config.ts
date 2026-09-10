@@ -5,6 +5,7 @@ import { portariaSwPlugin } from './vite.portaria-sw';
 export default defineConfig({
   plugins: [react(), portariaSwPlugin()],
   server: {
+    host: true,
     port: 5173,
     proxy: {
       '/api': {

@@ -5,6 +5,7 @@ import { Types } from 'mongoose';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 import { Church } from '../models/Church.js';
 import { FollowUpContact } from '../models/FollowUpContact.js';
+import { User } from '../models/User.js';
 import { Visitor } from '../models/Visitor.js';
 import { VisitorFollowUp } from '../models/VisitorFollowUp.js';
 import { createVisitors } from './visitors.js';
@@ -12,11 +13,13 @@ import {
   createFollowUp,
   createFollowUpContact,
   listFollowUps,
+  patchFollowUp,
 } from './visitorFollowUp.js';
 import { createPublicVisitors } from './publicAccess.js';
 import type { GuestAccessRequest } from '../middleware/guestAccess.js';
 import { GuestAccess } from '../models/GuestAccess.js';
 import { Service } from '../models/Service.js';
+import { FAMILY_CITY_ERROR } from '../utils/familyCity.js';
 import { FOLLOW_UP_DISABLED_ERROR } from '../utils/visitorFollowUp.js';
 import { permissionsForRole } from '../utils/permissions.js';
 
@@ -139,7 +142,7 @@ describe('acompanhamento isolado por igreja', () => {
     });
     const { res, state } = mockRes();
     await createFollowUp(
-      authReq(churchA, { body: { visitorId: String(visitorB) } }),
+      authReq(churchA, { body: { visitorId: String(visitorB), phone: '44999990000' } }),
       res
     );
     assert.equal(state.statusCode, 404);
@@ -228,6 +231,26 @@ describe('acompanhamento isolado por igreja', () => {
     const { res, state } = mockRes();
     await createVisitors(req, res);
     assert.equal(state.statusCode, 403);
+  });
+
+  test('cadastro interno recusa cidades diferentes na mesma família', async () => {
+    stubMethod(Visitor, 'insertMany', async () => {
+      throw new Error('não deveria criar visitantes com cidades diferentes');
+    });
+    const { res, state } = mockRes();
+    await createVisitors(
+      authReq(churchA, {
+        body: {
+          visitors: [
+            { name: 'João', city: 'Umuarama', relationship: 'outro', visitKind: 'first' },
+            { name: 'Maria', city: 'Maria Helena', relationship: 'outro', visitKind: 'first' },
+          ],
+        },
+      }),
+      res
+    );
+    assert.equal(state.statusCode, 400);
+    assert.deepEqual(state.body, { error: FAMILY_CITY_ERROR });
   });
 
   test('token público não troca de igreja nem aceita responsável interno', async () => {
@@ -345,5 +368,44 @@ describe('acompanhamento isolado por igreja', () => {
     );
     assert.equal(state.statusCode, 201);
     assert.deepEqual(phones, ['44988887777', '44988887777']);
+  });
+
+  test('intercessão pode assumir o responsável do acompanhamento', async () => {
+    stubEnabledChurch(churchA, true);
+    const item = {
+      _id: followUpA,
+      churchId: churchA,
+      visitorId: visitorA,
+      status: 'awaiting',
+      assignedTo: undefined as Types.ObjectId | undefined,
+      assignedToName: '',
+      anonymizedAt: undefined,
+      save: async () => undefined,
+    };
+    stubMethod(VisitorFollowUp, 'findOne', async (filter: Record<string, unknown>) => {
+      assert.equal(String(filter.churchId), String(churchA));
+      return item;
+    });
+    stubMethod(User, 'findOne', (filter: Record<string, unknown>) => {
+      assert.equal(String(filter.churchId), String(churchA));
+      assert.equal(filter.role, 'intercession');
+      return {
+        select: async () => ({ _id: userA, name: 'Lia' }),
+      };
+    });
+    stubMethod(Visitor, 'findOne', () => ({
+      select: async () => ({ _id: visitorA, name: 'Maria', city: 'Umuarama' }),
+    }));
+    const req = authReq(churchA, {
+      params: { id: String(followUpA) },
+      body: { assignedToId: String(userA) },
+    });
+    req.auth!.role = 'intercession';
+    req.auth!.permissions = permissionsForRole('intercession');
+    const { res, state } = mockRes();
+    await patchFollowUp(req, res);
+    assert.equal(state.statusCode, 200);
+    assert.equal(String(item.assignedTo), String(userA));
+    assert.equal(item.assignedToName, 'Lia');
   });
 });

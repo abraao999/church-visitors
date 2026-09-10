@@ -4,6 +4,7 @@
   gap: 1.25rem;
   width: 100%;
   max-width: 100%;
+  overflow-x: hidden;
 }
 
 .visitor-page-heading {
@@ -51,8 +52,9 @@
 
 .visitor-field-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1rem;
+  min-width: 0;
 }
 
 .visitor-field select,
@@ -159,8 +161,11 @@
   display: flex;
   flex-direction: column;
   gap: 1.15rem;
+  min-width: 0;
+  max-width: 100%;
   padding: 1.35rem;
   border-radius: 16px;
+  overflow-x: clip;
 }
 
 .visitor-section-heading {
@@ -202,6 +207,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .visitor-field label {
@@ -212,6 +219,8 @@
 
 .visitor-field input {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 54px;
   padding: 0.85rem 1rem;
   border: 1.5px solid var(--border);
@@ -220,6 +229,28 @@
   color: var(--text);
   font-size: 1rem;
   transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.visitor-field input[type='date'],
+.visitor-field input[type='datetime-local'] {
+  display: block;
+  height: 54px;
+  min-height: 54px;
+  max-height: 54px;
+  padding: 0 1rem;
+  overflow: hidden;
+  line-height: normal;
+}
+
+.visitor-field input[type='date']::-webkit-datetime-edit,
+.visitor-field input[type='datetime-local']::-webkit-datetime-edit,
+.visitor-field input[type='date']::-webkit-date-and-time-value {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 0;
+  padding: 0;
+  line-height: 51px;
 }
 
 .visitor-input-uppercase {
@@ -313,6 +344,7 @@
   font-weight: 800;
 }
 
+.visitor-person-row-top h2,
 .visitor-person-row-top h3 {
   flex: 1;
   color: var(--text);

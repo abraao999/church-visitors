@@ -10,6 +10,7 @@ import { hasPermission, type Permission } from '../utils/permissions.js';
 import { tenantRecordFilter, withChurch } from '../utils/tenant.js';
 import {
   FOLLOW_UP_DISABLED_ERROR,
+  FOLLOW_UP_PHONE_REQUIRED_ERROR,
   dateKeyInZone,
   escapeSearch,
   formatFollowUpPhone,
@@ -51,10 +52,14 @@ export async function resolveAssignee(churchId: string, assignedToId: unknown) {
     return { error: 'Escolha um responsável da equipe desta igreja.' };
   }
   const user = await User.findOne(
-    withChurch(churchId, { _id: new Types.ObjectId(assignedToId), active: { $ne: false } })
+    withChurch(churchId, {
+      _id: new Types.ObjectId(assignedToId),
+      role: 'intercession',
+      active: { $ne: false },
+    })
   ).select('name');
   if (!user) {
-    return { error: 'O responsável precisa pertencer a esta igreja.' };
+    return { error: 'O responsável precisa ser da equipe de intercessão desta igreja.' };
   }
   return { assignedTo: user._id as Types.ObjectId, assignedToName: user.name };
 }
@@ -152,7 +157,7 @@ export function serializeFollowUp(
 }
 
 export async function listAssignees(churchId: string) {
-  const members = await User.find(withChurch(churchId, { active: { $ne: false } }))
+  const members = await User.find(withChurch(churchId, { role: 'intercession', active: { $ne: false } }))
     .select('name')
     .sort({ name: 1 });
   return members.map((member) => ({
@@ -194,8 +199,8 @@ export function parseCreateFollowUpBody(
   timeZone: string
 ): { error: string } | { phone: string; assignedToId: unknown; nextContactAt?: Date } {
   const phone = normalizeFollowUpPhone(body.phone);
-  if (body.phone != null && typeof body.phone === 'string' && body.phone.trim() && !isValidFollowUpPhone(phone)) {
-    return { error: 'Informe um telefone válido com DDD.' };
+  if (!isValidFollowUpPhone(phone)) {
+    return { error: FOLLOW_UP_PHONE_REQUIRED_ERROR };
   }
   const next = resolveNextContactAt(
     (body.firstContact as FollowUpPreset) || 'tomorrow',

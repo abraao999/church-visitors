@@ -17,6 +17,13 @@
   margin-top: 0.75rem;
   font-weight: 700;
 }
+
+.follow-up-create .visitor-field input,
+.follow-up-create .visitor-field select,
+.follow-up-create .visitor-field textarea,
+.follow-up-modal .visitor-field input,
+.follow-up-modal .visitor-field select,
+.follow-up-modal .visitor-field textarea {
   width: 100%;
   min-height: 48px;
   margin-top: 0.35rem;

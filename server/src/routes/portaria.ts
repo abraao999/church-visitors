@@ -32,6 +32,7 @@ import { getGuestAccessSecret } from '../utils/guestToken.js';
 import { parseVehiclePlate } from '../utils/vehiclePlate.js';
 import { normalizePanelObservation, readShowObservationOnPanel } from '../utils/panelText.js';
 import { parseVisitKind } from '../utils/reportRange.js';
+import { FAMILY_CITY_ERROR, hasMixedFamilyCities, normalizeFamilyCity } from '../utils/familyCity.js';
 import { FAMILY_VISIT_KIND_ERROR, hasMixedFamilyVisitKinds } from '../utils/visitKind.js';
 import {
   createPortariaDeviceToken,
@@ -287,7 +288,8 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
       if (!raw || typeof raw !== 'object') return null;
       const item = raw as Record<string, unknown>;
       const name = normalizeSingleLine(item.name, 120);
-      const city = normalizeSingleLine(item.city, 100);
+      const cityRaw = normalizeSingleLine(item.city, 100);
+      const city = cityRaw ? normalizeFamilyCity(cityRaw) : null;
       const relationshipRaw = typeof item.relationship === 'string' ? item.relationship : 'outro';
       if (!name || !city || !isRelationship(relationshipRaw)) return null;
       return {
@@ -314,6 +316,13 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
         code: 'review',
         error: FAMILY_VISIT_KIND_ERROR,
         fields: { visitors: FAMILY_VISIT_KIND_ERROR },
+      });
+    }
+    if (hasMixedFamilyCities(people)) {
+      return res.status(422).json({
+        code: 'review',
+        error: FAMILY_CITY_ERROR,
+        fields: { visitors: FAMILY_CITY_ERROR },
       });
     }
 

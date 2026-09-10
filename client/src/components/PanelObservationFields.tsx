@@ -22,7 +22,7 @@ export function PanelObservationFields({
 }: Props) {
   return (
     <div className="panel-observation-fields">
-      <label htmlFor={id}>Observação pública no painel</label>
+      <label htmlFor={id}>Observação para o painel</label>
       <textarea
         id={id}
         value={observation}
@@ -30,7 +30,7 @@ export function PanelObservationFields({
         maxLength={PANEL_OBSERVATION_MAX}
         rows={2}
         disabled={disabled}
-        placeholder="Ex.: Primeira visita"
+        placeholder="Ex.: aniversário hoje"
       />
       <p className="panel-observation-hint">
         Esse texto será projetado publicamente no telão quando a autorização estiver ativa.
@@ -43,9 +43,13 @@ export function PanelObservationFields({
           disabled={disabled}
           onChange={(event) => onShowChange(event.target.checked)}
         />
+        <span className="panel-observation-switch-control" aria-hidden="true" />
         <span>
-          <AppIcon name="panels" />
-          Exibir esta observação no painel do culto
+          <strong>
+            <AppIcon name="panels" />
+            Mostrar no painel da TV
+          </strong>
+          <small>A observação só aparece no telão quando isso estiver ligado.</small>
         </span>
       </label>
     </div>

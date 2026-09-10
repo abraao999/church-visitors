@@ -5,7 +5,7 @@ import './PrivateRecords.css';
 
 interface Props {
   requests: PrayerRequest[];
-  onDelete: (id: string) => void;
+  onDelete?: (id: string) => void;
   onCareChange?: (id: string, status: PrayerCareStatus) => void;
 }
 
@@ -69,13 +69,15 @@ export function PrayerList({ requests, onDelete, onCareChange }: Props) {
                 </label>
               )}
             </div>
-            <button
-              type="button"
-              className="private-record-remove"
-              onClick={() => onDelete(item._id)}
-            >
-              <AppIcon name="trash" /> Remover pedido
-            </button>
+            {onDelete && (
+              <button
+                type="button"
+                className="private-record-remove"
+                onClick={() => onDelete(item._id)}
+              >
+                <AppIcon name="trash" /> Remover pedido
+              </button>
+            )}
           </li>
         ))}
       </ul>

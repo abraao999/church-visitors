@@ -27,6 +27,7 @@ export function FollowUpPage() {
   const { user } = useAuth();
   const canCreate = hasPermission(user?.permissions, 'follow_up:create') || user?.role === 'owner';
   const canContact = hasPermission(user?.permissions, 'follow_up:contact') || user?.role === 'owner';
+  const canReassign = hasPermission(user?.permissions, 'follow_up:reassign') || user?.role === 'owner';
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<(typeof FILTERS)[number]['id']>('all');
   const [summary, setSummary] = useState<FollowUpSummary>({ awaiting: 0, today: 0, integrating: 0 });
@@ -46,6 +47,8 @@ export function FollowUpPage() {
   const [assignees, setAssignees] = useState<Array<{ id: string; name: string }>>([]);
   const [createError, setCreateError] = useState('');
   const [savingCreate, setSavingCreate] = useState(false);
+  const [assigningId, setAssigningId] = useState('');
+  const canClaim = Boolean(canReassign && user?.id && assignees.some((person) => person.id === user.id));
 
   const load = useCallback(async () => {
     setError('');
@@ -66,16 +69,29 @@ export function FollowUpPage() {
   }, [load]);
 
   useEffect(() => {
+    if (!canReassign) return;
+    let cancelled = false;
+    api
+      .getFollowUpAssignees()
+      .then((people) => {
+        if (!cancelled) setAssignees(people);
+      })
+      .catch(() => {
+        if (!cancelled) setAssignees([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canReassign]);
+
+  useEffect(() => {
     if (!creating) return;
     let cancelled = false;
-    Promise.all([
-      api.getAvailableFollowUpVisitors(visitorQuery),
-      api.getFollowUpAssignees(),
-    ])
-      .then(([visitors, people]) => {
+    api
+      .getAvailableFollowUpVisitors(visitorQuery)
+      .then((visitors) => {
         if (cancelled) return;
         setVisitorOptions(visitors);
-        setAssignees(people);
       })
       .catch((err) => {
         if (!cancelled) {
@@ -87,10 +103,27 @@ export function FollowUpPage() {
     };
   }, [creating, visitorQuery]);
 
+  async function assignFollowUp(id: string, assignedToId: string | null) {
+    setAssigningId(id);
+    setError('');
+    try {
+      await api.updateFollowUp(id, { assignedToId });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível atualizar o responsável.');
+    } finally {
+      setAssigningId('');
+    }
+  }
+
   async function createFollowUp(event: React.FormEvent) {
     event.preventDefault();
     if (!selectedVisitorId) {
       setCreateError('Escolha um visitante desta igreja.');
+      return;
+    }
+    if (newPhone.replace(/\D/g, '').length < 10) {
+      setCreateError('Informe o telefone ou WhatsApp para o contato.');
       return;
     }
     setSavingCreate(true);
@@ -202,12 +235,40 @@ export function FollowUpPage() {
                   </div>
                 </div>
                 <div className="follow-up-meta">
-                  <span>{item.assignedToName || 'Sem responsável'}</span>
+                  {canReassign ? (
+                    <label className="follow-up-assignee">
+                      <span className="sr-only">Responsável</span>
+                      <select
+                        value={item.assignedToId || ''}
+                        disabled={assigningId === item.id}
+                        onChange={(event) => void assignFollowUp(item.id, event.target.value || null)}
+                      >
+                        <option value="">Definir depois</option>
+                        {assignees.map((person) => (
+                          <option key={person.id} value={person.id}>
+                            {person.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <span>{item.assignedToName || 'Sem responsável'}</span>
+                  )}
                   <strong className={item.nextContactIsToday ? 'is-today' : ''}>
                     {nextContactLabel(item.nextContactAt, item.nextContactIsToday)}
                   </strong>
                 </div>
                 <div className="follow-up-actions">
+                  {canClaim && item.assignedToId !== user?.id && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      disabled={assigningId === item.id}
+                      onClick={() => void assignFollowUp(item.id, user!.id)}
+                    >
+                      Assumir
+                    </button>
+                  )}
                   {canContact && (
                     <button
                       type="button"
@@ -279,6 +340,9 @@ export function FollowUpPage() {
                   <option key={person.id} value={person.id}>{person.name}</option>
                 ))}
               </select>
+              {assignees.length === 0 && (
+                <p className="visitor-field-hint">Somente a equipe de intercessão pode ser responsável.</p>
+              )}
             </label>
             <label className="visitor-field">
               Primeiro contato

@@ -5,6 +5,7 @@ import { Types } from 'mongoose';
 import type { GuestAccessRequest } from '../middleware/guestAccess.js';
 import { PrayerRequest } from '../models/PrayerRequest.js';
 import { Visitor } from '../models/Visitor.js';
+import { FAMILY_CITY_ERROR } from '../utils/familyCity.js';
 import { createPublicPrayerRequest, createPublicVisitors } from './publicAccess.js';
 
 process.env.GUEST_ACCESS_SECRET = 'teste-guest-idempotencia-chave-longa-654321';
@@ -88,6 +89,24 @@ describe('envio público idempotente', () => {
     assert.equal(state.statusCode, 201);
     assert.equal(created, 0);
     assert.deepEqual(state.body, { success: true, message: 'Informações enviadas' });
+  });
+
+  test('acesso público recusa cidades diferentes na mesma família', async () => {
+    stubMethod(Visitor, 'insertMany', async () => {
+      throw new Error('não deveria criar visitantes com cidades diferentes');
+    });
+    const { res, state } = mockRes();
+    await createPublicVisitors(
+      guestReq('visitors:create', {
+        visitors: [
+          { name: 'João', city: 'Umuarama', relationship: 'outro', visitKind: 'first' },
+          { name: 'Maria', city: 'Cruzeiro do Oeste', relationship: 'outro', visitKind: 'first' },
+        ],
+      }),
+      res
+    );
+    assert.equal(state.statusCode, 400);
+    assert.deepEqual(state.body, { error: FAMILY_CITY_ERROR });
   });
 
   test('dois envios de oração com o mesmo requestId criam um único registro', async () => {

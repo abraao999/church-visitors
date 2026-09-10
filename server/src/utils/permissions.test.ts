@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import {
+  canChangePrayerCareStatus,
   canGrantPermissions,
   clampPermissionsToGrant,
   hasPermission,
@@ -31,6 +32,10 @@ describe('funções e permissões da equipe', () => {
 
   test('intercessão lê oração e mídia não altera a igreja', () => {
     assert.equal(hasPermission(permissionsForRole('intercession'), 'prayers:read'), true);
+    assert.equal(hasPermission(permissionsForRole('intercession'), 'follow_up:read'), true);
+    assert.equal(hasPermission(permissionsForRole('intercession'), 'follow_up:contact'), true);
+    assert.equal(hasPermission(permissionsForRole('intercession'), 'follow_up:reassign'), true);
+    assert.equal(hasPermission(permissionsForRole('intercession'), 'follow_up:create'), false);
     assert.equal(hasPermission(permissionsForRole('intercession'), 'visitors:read'), false);
     assert.equal(hasPermission(permissionsForRole('midia'), 'panels:open'), true);
     assert.equal(hasPermission(permissionsForRole('midia'), 'church:update'), false);
@@ -41,6 +46,11 @@ describe('funções e permissões da equipe', () => {
     assert.equal(hasPermission(permissionsForRole('admin'), 'retention:manage'), true);
     assert.equal(hasPermission(permissionsForRole('admin'), 'reports:export'), true);
     assert.equal(hasPermission(permissionsForRole('portaria'), 'reports:read'), false);
+    assert.equal(canChangePrayerCareStatus('intercession'), true);
+    assert.equal(canChangePrayerCareStatus('admin'), true);
+    assert.equal(canChangePrayerCareStatus('owner'), true);
+    assert.equal(canChangePrayerCareStatus('portaria'), false);
+    assert.equal(canChangePrayerCareStatus('louvor'), false);
   });
 
   test('portaria gerencia aparelhos e cultos de consulta, mídia não', () => {

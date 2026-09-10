@@ -48,6 +48,26 @@ describe('período dos relatórios', () => {
     assert.equal(compare.delta, 12);
   });
 
+  test('últimos 3 e 6 meses usam meses civis, não 90 ou 180 dias', () => {
+    const now = new Date('2026-09-09T02:00:00.000Z');
+    const three = resolveReportRange({
+      preset: 'last_3_months',
+      now,
+      timeZone: 'America/Sao_Paulo',
+    });
+    const six = resolveReportRange({
+      preset: 'last_6_months',
+      now,
+      timeZone: 'America/Sao_Paulo',
+    });
+    assert.ok(three.range);
+    assert.ok(six.range);
+    assert.equal(three.range.fromKey, '2026-06-01');
+    assert.equal(three.range.toKey, '2026-09-08');
+    assert.equal(six.range.fromKey, '2026-03-01');
+    assert.equal(six.range.toKey, '2026-09-08');
+  });
+
   test('a chave do dia segue o fuso da igreja', () => {
     assert.equal(dateKeyInZone(new Date('2026-09-09T02:30:00.000Z'), 'America/Sao_Paulo'), '2026-09-08');
   });

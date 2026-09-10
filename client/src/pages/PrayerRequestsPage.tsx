@@ -7,12 +7,14 @@ import { PrayerForm } from '../components/PrayerForm';
 import { PrayerList } from '../components/PrayerList';
 import type { PrayerCareStatus, PrayerRequest } from '../types';
 import { todayLocalISO } from '../utils/date';
-import { hasPermission } from '../utils/permissions';
+import { canChangePrayerCareStatus, hasPermission } from '../utils/permissions';
 import './PrayerRequestsPage.css';
 
 export function PrayerRequestsPage() {
   const { user } = useAuth();
   const canProject = hasPermission(user?.permissions, 'prayers:project') || user?.role === 'owner';
+  const canChangeCare = canChangePrayerCareStatus(user?.role);
+  const canDelete = hasPermission(user?.permissions, 'prayers:delete') || user?.role === 'owner';
   const [selectedDate, setSelectedDate] = useState(todayLocalISO());
   const [requests, setRequests] = useState<PrayerRequest[]>([]);
   const [loadingRecords, setLoadingRecords] = useState(true);
@@ -96,7 +98,11 @@ export function PrayerRequestsPage() {
         {loadingRecords ? (
           <div className="private-record-list card"><p className="empty-state">Carregando pedidos...</p></div>
         ) : (
-          <PrayerList requests={requests} onDelete={removeRequest} onCareChange={updateCare} />
+          <PrayerList
+            requests={requests}
+            onDelete={canDelete ? removeRequest : undefined}
+            onCareChange={canChangeCare ? updateCare : undefined}
+          />
         )}
       </section>
     </div>

@@ -1,12 +1,14 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
-import { RELATIONSHIPS, type FollowUpPreset, type Relationship, type VisitKind } from '../types';
+import type { FollowUpPreset, VisitKind } from '../types';
 import { VisitKindField } from './VisitKindField';
 import { todayLocalISO } from '../utils/date';
 import { hasPermission } from '../utils/permissions';
+import { normalizeCityInput } from '../utils/citySuggest';
 import { FOLLOW_UP_PRESET_LABELS, maskPhoneInput, shouldShowFollowUpBlock } from '../utils/visitorFollowUp';
 import { AppIcon } from './AppIcon';
+import { CitySuggestField } from './CitySuggestField';
 import { PanelObservationFields } from './PanelObservationFields';
 import { ServiceLinkField } from './ServiceLinkField';
 import './VisitorForm.css';
@@ -19,8 +21,6 @@ interface Props {
 interface PersonDraft {
   id: number;
   name: string;
-  relationship: Relationship;
-  city: string;
   panelObservation: string;
   showObservationOnPanel: boolean;
   includeFollowUp: boolean;
@@ -41,25 +41,18 @@ function asUpperCase(value: string): string {
   return value.toLocaleUpperCase('pt-BR');
 }
 
-function emptyPerson(id: number, city = ''): PersonDraft {
+function emptyPerson(id: number): PersonDraft {
   return {
     id,
     name: '',
-    relationship: 'outro',
-    city,
     panelObservation: '',
-    showObservationOnPanel: false,
+    showObservationOnPanel: true,
     includeFollowUp: false,
   };
 }
 
 function personHasData(person: PersonDraft): boolean {
-  return Boolean(
-    person.name.trim() ||
-      person.city.trim() ||
-      person.panelObservation.trim() ||
-      person.relationship !== 'outro'
-  );
+  return Boolean(person.name.trim() || person.panelObservation.trim());
 }
 
 export function VisitorForm({ onSuccess, onViewList }: Props) {
@@ -70,13 +63,15 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
   );
   const nextId = useRef(2);
   const visitDateId = useId();
+  const cityId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const [people, setPeople] = useState<PersonDraft[]>([emptyPerson(1)]);
   const [visitDate, setVisitDate] = useState(todayLocalISO());
+  const [city, setCity] = useState('');
   const [visitKind, setVisitKind] = useState<VisitKind | ''>('');
   const [visitKindError, setVisitKindError] = useState('');
   const [nameErrors, setNameErrors] = useState<Record<number, string>>({});
-  const [cityErrors, setCityErrors] = useState<Record<number, string>>({});
+  const [cityError, setCityError] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -110,7 +105,7 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
     const field = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
     field?.focus();
     setFocusInvalid(false);
-  }, [focusInvalid, nameErrors, cityErrors, visitKindError]);
+  }, [focusInvalid, nameErrors, cityError, visitKindError]);
 
   function updatePerson(id: number, patch: Partial<PersonDraft>) {
     setPeople((prev) => prev.map((person) => (person.id === id ? { ...person, ...patch } : person)));
@@ -122,38 +117,36 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
         return next;
       });
     }
-    if (patch.city != null) {
-      setCityErrors((prev) => {
-        if (!prev[id]) return prev;
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    }
   }
 
   function addPerson() {
     if (people.length >= MAX_VISITORS) return;
-    const sharedCity = people.find((person) => person.city.trim())?.city || '';
-    setPeople((prev) => [...prev, emptyPerson(nextId.current++, sharedCity)]);
+    setPeople((prev) => [...prev, emptyPerson(nextId.current++)]);
   }
 
-  function removePerson(id: number, index: number) {
-    if (index === 0) return;
+  function removePerson(id: number) {
+    if (people.length <= 1) return;
     const person = people.find((item) => item.id === id);
     if (person && personHasData(person) && !window.confirm('Remover este visitante? Os dados preenchidos serão perdidos.')) {
       return;
     }
-    setPeople((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
+    setPeople((prev) => prev.filter((item) => item.id !== id));
+    setNameErrors((prev) => {
+      if (!prev[id]) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   }
 
   function resetForm() {
     setPeople([emptyPerson(nextId.current++)]);
     setVisitDate(todayLocalISO());
+    setCity('');
     setVisitKind('');
     setVisitKindError('');
     setNameErrors({});
-    setCityErrors({});
+    setCityError('');
     setIncludeFollowUp(false);
     setPhone('');
     setAssignedToId('');
@@ -165,22 +158,24 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
 
   function validate(): string | null {
     const nextNameErrors: Record<number, string> = {};
-    const nextCityErrors: Record<number, string> = {};
     for (const person of people) {
       if (!cleanLine(person.name)) nextNameErrors[person.id] = 'Informe o nome do visitante.';
-      if (!cleanLine(person.city)) nextCityErrors[person.id] = 'Informe a cidade.';
     }
     setNameErrors(nextNameErrors);
-    setCityErrors(nextCityErrors);
+    const nextCityError = normalizeCityInput(city) ? '' : 'Informe a cidade da família ou grupo.';
+    setCityError(nextCityError);
     const nextVisitKindError = visitKind
       ? ''
       : 'Informe se esta é a primeira visita da família ou grupo.';
     setVisitKindError(nextVisitKindError);
-    if (Object.keys(nextNameErrors).length || Object.keys(nextCityErrors).length || nextVisitKindError) {
+    if (Object.keys(nextNameErrors).length || nextCityError || nextVisitKindError) {
       return 'Confira os campos destacados antes de cadastrar.';
     }
     if (includeFollowUp && people.length > 1 && !people.some((person) => person.includeFollowUp)) {
       return 'Escolha quem entra no acompanhamento.';
+    }
+    if (includeFollowUp && phone.replace(/\D/g, '').length < 10) {
+      return 'Informe o telefone ou WhatsApp para o contato.';
     }
     if (includeFollowUp && firstContact === 'custom' && !firstContactDate) {
       return 'Escolha a data do primeiro contato.';
@@ -204,10 +199,11 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
     const selected = people.filter((person) =>
       people.length === 1 ? includeFollowUp : person.includeFollowUp
     );
+    const sharedCity = normalizeCityInput(city);
     const validVisitors = people.map((person) => ({
       name: cleanLine(person.name),
-      city: cleanLine(person.city),
-      relationship: person.relationship,
+      city: sharedCity,
+      relationship: 'outro' as const,
       panelObservation: person.panelObservation.trim(),
       showObservationOnPanel: person.showObservationOnPanel,
       visitKind: visitKind as VisitKind,
@@ -278,8 +274,7 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
             <AppIcon name="calendar" />
           </span>
           <div>
-            <span className="visitor-section-eyebrow">Dados da visita</span>
-            <h2 id="visitor-visit-title">Informações do culto</h2>
+            <h2 id="visitor-visit-title">Informações da visita</h2>
           </div>
         </div>
 
@@ -295,6 +290,18 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
             />
           </div>
         </div>
+        <CitySuggestField
+          id={cityId}
+          label="Cidade da família ou grupo *"
+          value={city}
+          error={cityError}
+          disabled={loading}
+          required
+          onChange={(value) => {
+            setCity(value);
+            if (cityError) setCityError('');
+          }}
+        />
         <VisitKindField
           id="visitor-family-kind"
           value={visitKind}
@@ -309,20 +316,21 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
 
       {people.map((person, index) => {
         const nameId = `visitor-name-${person.id}`;
-        const cityId = `visitor-city-${person.id}`;
-        const relationId = `visitor-relation-${person.id}`;
         const fieldError = nameErrors[person.id];
-        const cityError = cityErrors[person.id];
+        const nameErrorId = `${nameId}-error`;
 
         return (
           <section key={person.id} className="visitor-section card" aria-labelledby={`visitor-title-${person.id}`}>
             <div className="visitor-person-row-top">
+              <span className="visitor-section-icon" aria-hidden="true">
+                <AppIcon name="user" />
+              </span>
               <h2 id={`visitor-title-${person.id}`}>Visitante {index + 1}</h2>
-              {index > 0 && (
+              {people.length > 1 && (
                 <button
                   type="button"
                   className="visitor-remove-icon"
-                  onClick={() => removePerson(person.id, index)}
+                  onClick={() => removePerson(person.id)}
                   aria-label={`Remover visitante ${index + 1}`}
                 >
                   <AppIcon name="trash" />
@@ -331,7 +339,7 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
             </div>
 
             <div className={`visitor-field${fieldError ? ' has-error' : ''}`}>
-              <label htmlFor={nameId}>Nome completo</label>
+              <label htmlFor={nameId}>Nome completo *</label>
               <input
                 id={nameId}
                 value={person.name}
@@ -342,50 +350,13 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
                 className="visitor-input-uppercase"
                 maxLength={120}
                 aria-invalid={Boolean(fieldError)}
+                aria-describedby={fieldError ? nameErrorId : undefined}
               />
               {fieldError && (
-                <p className="visitor-field-error" role="alert">
+                <p id={nameErrorId} className="visitor-field-error" role="alert">
                   {fieldError}
                 </p>
               )}
-            </div>
-
-            <div className="visitor-field-grid">
-              <div className="visitor-field">
-                <label htmlFor={relationId}>Parentesco</label>
-                <select
-                  id={relationId}
-                  value={person.relationship}
-                  onChange={(e) =>
-                    updatePerson(person.id, { relationship: e.target.value as Relationship })
-                  }
-                >
-                  {RELATIONSHIPS.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={`visitor-field${cityError ? ' has-error' : ''}`}>
-                <label htmlFor={cityId}>Cidade</label>
-                <input
-                  id={cityId}
-                  value={person.city}
-                  onChange={(e) => updatePerson(person.id, { city: asUpperCase(e.target.value) })}
-                  placeholder="Cidade de origem"
-                  autoComplete="address-level2"
-                  autoCapitalize="characters"
-                  className="visitor-input-uppercase"
-                  maxLength={100}
-                  aria-invalid={Boolean(cityError)}
-                />
-                {cityError && (
-                  <p className="visitor-field-error" role="alert">
-                    {cityError}
-                  </p>
-                )}
-              </div>
             </div>
 
             <PanelObservationFields
@@ -476,7 +447,7 @@ export function VisitorForm({ onSuccess, onViewList }: Props) {
                     ))}
                   </select>
                   {assignees.length === 0 && (
-                    <p className="visitor-field-hint">Nenhum responsável disponível no momento.</p>
+                    <p className="visitor-field-hint">Nenhum integrante de intercessão disponível.</p>
                   )}
                 </div>
                 <div className="visitor-field">

@@ -136,6 +136,13 @@ describe('checagem de permissão nas APIs', () => {
       adminOk = true;
     });
     assert.equal(adminOk, true);
+
+    const intercession = mockRes();
+    let intercessionOk = false;
+    requirePermission('follow_up:read')(authReq('intercession'), intercession.res, () => {
+      intercessionOk = true;
+    });
+    assert.equal(intercessionOk, true);
   });
 
   test('administrador altera dados da igreja e a portaria não', () => {

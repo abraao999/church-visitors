@@ -152,7 +152,16 @@ const ROLE_PERMISSIONS: Record<TeamRole, readonly Permission[]> = {
     'portaria_devices:update',
     'portaria_devices:revoke',
   ],
-  intercession: ['prayers:create', 'prayers:read', 'prayers:delete', 'prayers:project'],
+  intercession: [
+    'prayers:create',
+    'prayers:read',
+    'prayers:delete',
+    'prayers:project',
+    'follow_up:read',
+    'follow_up:contact',
+    'follow_up:reassign',
+    'follow_up:close',
+  ],
   louvor: [
     'services:create',
     'services:read',
@@ -212,6 +221,10 @@ export function hasAnyPermission(
   permissions: readonly Permission[]
 ): boolean {
   return permissions.some((permission) => hasPermission(granted, permission));
+}
+
+export function canChangePrayerCareStatus(role: unknown): boolean {
+  return role === 'owner' || role === 'admin' || role === 'intercession';
 }
 
 export function resolvePermissions(input: {

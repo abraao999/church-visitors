@@ -11,10 +11,12 @@ import {
 } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AppIcon } from '../components/AppIcon';
+import { CitySuggestField } from '../components/CitySuggestField';
 import { PanelObservationFields } from '../components/PanelObservationFields';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { RELATIONSHIPS, VEHICLE_NOTICE_ACTIONS, type PortariaOfflinePermission, type Relationship, type VehicleNoticeAction, type VisitKind } from '../types';
+import { VEHICLE_NOTICE_ACTIONS, type PortariaOfflinePermission, type VehicleNoticeAction, type VisitKind } from '../types';
 import { VisitKindField } from '../components/VisitKindField';
+import { normalizeCityInput } from '../utils/citySuggest';
 import { maskPhoneInput } from '../utils/visitorFollowUp';
 import { maskVehiclePlateInput } from '../utils/vehiclePlate';
 import { claimPairing, inspectPairing, isPortariaApiError } from './api';
@@ -388,9 +390,8 @@ function emptyPortariaPerson(id: number) {
   return {
     id,
     name: '',
-    relationship: 'outro' as Relationship,
     panelObservation: '',
-    showObservationOnPanel: false,
+    showObservationOnPanel: true,
     includeFollowUp: false,
   };
 }
@@ -435,14 +436,14 @@ function PortariaVisitors() {
     }
     const visitors = people.map((person) => ({
       name: person.name.trim(),
-      city: city.trim(),
-      relationship: person.relationship,
+      city: normalizeCityInput(city),
+      relationship: 'outro' as const,
       panelObservation: person.panelObservation.trim(),
       showObservationOnPanel: person.showObservationOnPanel,
       visitKind,
       includeFollowUp: followUpEnabled && includeFollowUp && selected.some((item) => item.id === person.id),
     }));
-    if (!city.trim() || visitors.some((person) => !person.name)) {
+    if (!normalizeCityInput(city) || visitors.some((person) => !person.name)) {
       setError('Informe a cidade e o nome de cada pessoa.');
       return;
     }
@@ -481,10 +482,14 @@ function PortariaVisitors() {
       </Link>
       <h1>Registrar visitantes</h1>
       <form className="portaria-form" onSubmit={onSubmit}>
-        <label>
-          Cidade da família
-          <input value={city} onChange={(event) => setCity(event.target.value)} maxLength={100} required />
-        </label>
+        <CitySuggestField
+          id="portaria-family-city"
+          label="Cidade da família ou grupo *"
+          value={city}
+          disabled={saving}
+          required
+          onChange={setCity}
+        />
         <VisitKindField
           id="portaria-family-kind"
           value={visitKind}
@@ -499,27 +504,6 @@ function PortariaVisitors() {
           <legend>Visitantes</legend>
           {people.map((person, index) => (
             <div className="portaria-person" key={person.id}>
-              <label>
-                Parentesco
-                <select
-                  value={person.relationship}
-                  onChange={(event) =>
-                    setPeople((current) =>
-                      current.map((item) =>
-                        item.id === person.id
-                          ? { ...item, relationship: event.target.value as Relationship }
-                          : item
-                      )
-                    )
-                  }
-                >
-                  {RELATIONSHIPS.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
               <label>
                 Nome completo
                 <input

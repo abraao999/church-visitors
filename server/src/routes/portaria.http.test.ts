@@ -338,6 +338,25 @@ describe('sincronização da portaria', () => {
     assert.equal(noConsent.state.statusCode, 201);
     assert.equal(createdFollowUp, 0);
   });
+
+  test('portaria recusa cidades diferentes na mesma família', async () => {
+    stubMethod(Visitor, 'insertMany', async () => {
+      throw new Error('não deveria criar visitantes com cidades diferentes');
+    });
+    const { res, state } = mockRes();
+    await createPortariaVisitors(
+      deviceReq({
+        visitors: [
+          { name: 'Carlos', city: 'Umuarama', relationship: 'outro', visitKind: 'first' },
+          { name: 'Mariana', city: 'Perobal', relationship: 'outro', visitKind: 'first' },
+        ],
+        capturedAt: new Date().toISOString(),
+      }),
+      res
+    );
+    assert.equal(state.statusCode, 422);
+    assert.equal((state.body as { error?: string }).error, 'A cidade deve ser a mesma para toda a família ou grupo.');
+  });
 });
 
 describe('pareamento da portaria', () => {

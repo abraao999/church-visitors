@@ -9,6 +9,9 @@ export interface IReportDailySummary extends Document {
   unknownVisits: number;
   prayers: number;
   vehicleNotices: number;
+  followUps: number;
+  followUpContacts: number;
+  followUpsClosed: number;
   cities: Record<string, number>;
   visitorSources: Record<string, number>;
   createdAt: Date;
@@ -25,6 +28,9 @@ const reportDailySummarySchema = new Schema<IReportDailySummary>(
     unknownVisits: { type: Number, default: 0, min: 0 },
     prayers: { type: Number, default: 0, min: 0 },
     vehicleNotices: { type: Number, default: 0, min: 0 },
+    followUps: { type: Number, default: 0, min: 0 },
+    followUpContacts: { type: Number, default: 0, min: 0 },
+    followUpsClosed: { type: Number, default: 0, min: 0 },
     cities: { type: Schema.Types.Mixed, default: {} },
     visitorSources: { type: Schema.Types.Mixed, default: {} },
   },

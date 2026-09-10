@@ -29,15 +29,84 @@
 
 .panel-observation-switch {
   display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  font-weight: 650;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 48px;
+  margin-top: 0.25rem;
+  padding: 0.75rem 0.85rem;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  cursor: pointer;
 }
 
-.panel-observation-switch span {
+.panel-observation-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.panel-observation-switch-control {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  flex: 0 0 48px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 45%, var(--surface-muted));
+  transition: background 0.18s;
+}
+
+.panel-observation-switch-control::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 4px rgba(28, 25, 23, 0.22);
+  transition: transform 0.18s;
+}
+
+.panel-observation-switch input:checked + .panel-observation-switch-control {
+  background: var(--primary);
+}
+
+.panel-observation-switch input:checked + .panel-observation-switch-control::after {
+  transform: translateX(20px);
+}
+
+.panel-observation-switch input:focus-visible + .panel-observation-switch-control {
+  outline: 3px solid color-mix(in srgb, var(--primary) 25%, transparent);
+  outline-offset: 2px;
+}
+
+.panel-observation-switch input:disabled + .panel-observation-switch-control,
+.panel-observation-switch:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.panel-observation-switch strong,
+.panel-observation-switch small {
+  display: block;
+}
+
+.panel-observation-switch strong {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.panel-observation-switch small {
+  margin-top: 0.15rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
 }
 
 .panel-observation-switch .app-icon {

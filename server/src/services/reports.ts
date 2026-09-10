@@ -111,7 +111,9 @@ export async function loadReportScope(
         dateKey: { $gte: range.fromKey, $lte: range.toKey },
       })
     )
-      .select('dateKey visitors firstVisits returningVisits unknownVisits prayers vehicleNotices cities visitorSources')
+      .select(
+        'dateKey visitors firstVisits returningVisits unknownVisits prayers vehicleNotices followUps followUpContacts followUpsClosed cities visitorSources'
+      )
       .lean(),
   ]);
 
@@ -284,12 +286,14 @@ export async function buildVisitorReport(
   const previous = await loadReportScope(churchId, previousEquivalentRange(range, timeZone), options);
   const visitors = aggregateVisitors(current.visitors, current.summaries, timeZone);
   const previousVisitors = aggregateVisitors(previous.visitors, previous.summaries, timeZone);
-  const followUps = await VisitorFollowUp.countDocuments(
-    withChurch(churchId, {
-      createdAt: { $gte: range.from, $lte: range.to },
-      anonymizedAt: { $exists: false },
-    })
-  );
+  const historicFollowUps = current.summaries.reduce((sum, item) => sum + (item.followUps || 0), 0);
+  const followUps =
+    (await VisitorFollowUp.countDocuments(
+      withChurch(churchId, {
+        createdAt: { $gte: range.from, $lte: range.to },
+        anonymizedAt: { $exists: false },
+      })
+    )) + historicFollowUps;
   const serviceCount = current.services.length;
   return {
     totals: compareCounts(visitors.total, previousVisitors.total),
@@ -320,9 +324,21 @@ export async function buildFollowUpReport(churchId: string, range: ReportRange) 
   )
     .select('status nextContactAt assignedToName consent visitorId')
     .lean();
-  const contacts = await FollowUpContact.countDocuments(
-    withChurch(churchId, { createdAt: { $gte: range.from, $lte: range.to } })
-  );
+  const [contacts, summaries] = await Promise.all([
+    FollowUpContact.countDocuments(
+      withChurch(churchId, { createdAt: { $gte: range.from, $lte: range.to } })
+    ),
+    ReportDailySummary.find(
+      withChurch(churchId, {
+        dateKey: { $lte: range.toKey },
+      })
+    )
+      .select('followUps followUpContacts followUpsClosed')
+      .lean(),
+  ]);
+  const historicFollowUps = summaries.reduce((sum, item) => sum + (item.followUps || 0), 0);
+  const historicContacts = summaries.reduce((sum, item) => sum + (item.followUpContacts || 0), 0);
+  const historicClosed = summaries.reduce((sum, item) => sum + (item.followUpsClosed || 0), 0);
   const now = new Date();
   const byAssignee: Record<string, number> = {};
   let awaiting = 0;
@@ -343,14 +359,15 @@ export async function buildFollowUpReport(churchId: string, range: ReportRange) 
     }
   }
   return {
-    included: items.length,
+    included: items.length + historicFollowUps,
     awaiting,
     contacted,
     integrating,
-    closed,
+    closed: closed + historicClosed,
     due,
     overdue,
-    contacts,
+    contacts: contacts + historicContacts,
+    historicRemoved: historicFollowUps > 0 || historicContacts > 0,
     assignees: topEntries(byAssignee),
   };
 }
@@ -562,6 +579,9 @@ export async function upsertDailySummary(
     unknownVisits?: number;
     prayers?: number;
     vehicleNotices?: number;
+    followUps?: number;
+    followUpContacts?: number;
+    followUpsClosed?: number;
     cities?: Record<string, number>;
     visitorSources?: Record<string, number>;
   }
@@ -583,6 +603,9 @@ export async function upsertDailySummary(
         unknownVisits: patch.unknownVisits || 0,
         prayers: patch.prayers || 0,
         vehicleNotices: patch.vehicleNotices || 0,
+        followUps: patch.followUps || 0,
+        followUpContacts: patch.followUpContacts || 0,
+        followUpsClosed: patch.followUpsClosed || 0,
       },
       $set: { cities, visitorSources },
       $setOnInsert: { churchId: asObjectId(churchId), dateKey },
@@ -602,7 +625,9 @@ export async function recordRetentionSummaries(
   }>,
   prayers: Array<{ createdAt?: Date }>,
   vehicles: Array<{ createdAt?: Date; capturedAt?: Date }>,
-  timeZone: string
+  timeZone: string,
+  followUps: Array<{ createdAt?: Date; status?: string }> = [],
+  contacts: Array<{ createdAt?: Date }> = []
 ) {
   const byDay = new Map<
     string,
@@ -613,6 +638,9 @@ export async function recordRetentionSummaries(
       unknownVisits: number;
       prayers: number;
       vehicleNotices: number;
+      followUps: number;
+      followUpContacts: number;
+      followUpsClosed: number;
       cities: Record<string, number>;
       visitorSources: Record<string, number>;
     }
@@ -626,6 +654,9 @@ export async function recordRetentionSummaries(
       unknownVisits: 0,
       prayers: 0,
       vehicleNotices: 0,
+      followUps: 0,
+      followUpContacts: 0,
+      followUpsClosed: 0,
       cities: {},
       visitorSources: {},
     };
@@ -648,6 +679,14 @@ export async function recordRetentionSummaries(
   }
   for (const notice of vehicles) {
     day(dateKeyInZone(eventTime(notice), timeZone)).vehicleNotices += 1;
+  }
+  for (const followUp of followUps) {
+    const current = day(dateKeyInZone(followUp.createdAt || new Date(), timeZone));
+    current.followUps += 1;
+    if (followUp.status === 'closed') current.followUpsClosed += 1;
+  }
+  for (const contact of contacts) {
+    day(dateKeyInZone(contact.createdAt || new Date(), timeZone)).followUpContacts += 1;
   }
   for (const [dateKey, values] of byDay) {
     await upsertDailySummary(churchId, dateKey, values);

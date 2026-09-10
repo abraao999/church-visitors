@@ -240,13 +240,27 @@ export async function runRetentionPolicy(
     const vehiclesToDelete = await VehicleNotice.find(filters.vehicleNotices)
       .select('createdAt capturedAt')
       .lean();
+    const followUpsToSummarize =
+      visitorIds.length > 0
+        ? await VisitorFollowUp.find(withChurch(churchId, { visitorId: { $in: visitorIds } }))
+            .select('createdAt status')
+            .lean()
+        : [];
+    const contactsToSummarize =
+      visitorIds.length > 0
+        ? await FollowUpContact.find(withChurch(churchId, { visitorId: { $in: visitorIds } }))
+            .select('createdAt')
+            .lean()
+        : [];
     const church = await Church.findById(churchId).select('timezone');
     await recordRetentionSummaries(
       churchId,
       visitorsToAnonymize,
       prayersToDelete,
       vehiclesToDelete,
-      churchTimezone(church?.timezone)
+      churchTimezone(church?.timezone),
+      followUpsToSummarize,
+      contactsToSummarize
     );
     const visitors = await Visitor.updateMany(filters.visitors, {
       $set: {

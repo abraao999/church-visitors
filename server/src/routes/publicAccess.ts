@@ -40,6 +40,7 @@ import {
   type PublicAccessEventType,
 } from '../models/PublicAccessEvent.js';
 import { parseVisitKind } from '../utils/reportRange.js';
+import { FAMILY_CITY_ERROR, hasMixedFamilyCities, normalizeFamilyCity } from '../utils/familyCity.js';
 import { FAMILY_VISIT_KIND_ERROR, hasMixedFamilyVisitKinds } from '../utils/visitKind.js';
 
 const router = Router();
@@ -178,7 +179,8 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
       if (!raw || typeof raw !== 'object' || 'churchId' in raw || 'serviceId' in raw) return null;
       const item = raw as Record<string, unknown>;
       const name = normalizeSingleLine(item.name, 120);
-      const city = normalizeSingleLine(item.city, 100);
+      const cityRaw = normalizeSingleLine(item.city, 100);
+      const city = cityRaw ? normalizeFamilyCity(cityRaw) : null;
       const relationshipRaw = typeof item.relationship === 'string' ? item.relationship : 'outro';
       if (!name || !city || !isRelationship(relationshipRaw)) return null;
       return {
@@ -199,6 +201,9 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
     }
     if (hasMixedFamilyVisitKinds(people)) {
       return res.status(400).json({ error: FAMILY_VISIT_KIND_ERROR });
+    }
+    if (hasMixedFamilyCities(people)) {
+      return res.status(400).json({ error: FAMILY_CITY_ERROR });
     }
 
     const access = req.guestAccess!;
