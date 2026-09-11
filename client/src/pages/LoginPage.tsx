@@ -1,7 +1,14 @@
-import { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import {
+  clearPendingChallengeId,
+  maskEmail,
+  readPendingChallengeId,
+  savePendingChallengeId,
+} from '../auth/pendingChallenge';
 import { AppIcon } from '../components/AppIcon';
+import { EmailConfirmationPanel } from '../components/EmailConfirmationPanel';
 import { ThemeToggle } from '../components/ThemeToggle';
 import './AuthPages.css';
 
@@ -22,6 +29,18 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [pending, setPending] = useState<{
+    challengeId: string;
+    emailMasked?: string;
+    resendAvailableAt?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const stored = readPendingChallengeId();
+    if (stored) {
+      setPending({ challengeId: stored });
+    }
+  }, []);
 
   if (!loading && user) {
     return <Navigate to={from} replace />;
@@ -35,10 +54,16 @@ export function LoginPage() {
     try {
       if (mode === 'login') {
         await login(loginValue, password);
-      } else {
-        await register({ churchName, name, email, username, password });
+        navigate(from, { replace: true });
+        return;
       }
-      navigate(from, { replace: true });
+      const result = await register({ churchName, name, email, username, password });
+      savePendingChallengeId(result.challengeId);
+      setPending({
+        challengeId: result.challengeId,
+        emailMasked: result.emailMasked || maskEmail(email),
+        resendAvailableAt: result.resendAvailableAt,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro na autenticação');
     } finally {
@@ -74,6 +99,20 @@ export function LoginPage() {
             <ThemeToggle compact />
           </div>
 
+          {pending ? (
+            <EmailConfirmationPanel
+              challengeId={pending.challengeId}
+              emailMasked={pending.emailMasked}
+              resendAvailableAt={pending.resendAvailableAt}
+              onBack={() => {
+                clearPendingChallengeId();
+                setPending(null);
+                setMode('register');
+              }}
+              onConfirmed={() => navigate(from, { replace: true })}
+            />
+          ) : (
+            <>
           <div className="auth-card-heading">
             <span className="auth-card-eyebrow">Área da equipe</span>
             <h2>{mode === 'login' ? 'Que bom ter você de volta' : 'Crie sua conta'}</h2>
@@ -219,6 +258,12 @@ export function LoginPage() {
               )}
             </div>
 
+            {mode === 'login' && (
+              <Link className="auth-forgot" to="/esqueci-senha">
+                Esqueceu sua senha?
+              </Link>
+            )}
+
             <button type="submit" className="btn btn-primary auth-submit" disabled={submitting}>
               {submitting ? 'Aguarde...' : mode === 'login' ? 'Entrar no sistema' : 'Criar minha conta'}
               {!submitting && <AppIcon name="arrow" />}
@@ -229,6 +274,8 @@ export function LoginPage() {
             <AppIcon name="prayer" />
             Para enviar um pedido, use o link seguro fornecido pela sua igreja.
           </p>
+            </>
+          )}
         </section>
       </div>
     </div>

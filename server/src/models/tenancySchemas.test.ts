@@ -15,6 +15,7 @@ import { FollowUpContact } from './FollowUpContact.js';
 import { PublicAccessEvent } from './PublicAccessEvent.js';
 import { ReportDailySummary } from './ReportDailySummary.js';
 import { ReportExportAudit } from './ReportExportAudit.js';
+import { EmailActionToken } from './EmailActionToken.js';
 import { VehicleNotice } from './VehicleNotice.js';
 import { PortariaDevice } from './PortariaDevice.js';
 import { PortariaPairing } from './PortariaPairing.js';
@@ -117,6 +118,9 @@ test('modelos privados possuem churchId obrigatório e índices compostos de iso
   assert.ok(hasIndex(ReportDailySummary.schema.indexes(), { churchId: 1, dateKey: 1 }, { unique: true }));
   assert.equal(ReportExportAudit.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(ReportExportAudit.schema.indexes(), { churchId: 1, createdAt: -1 }));
+  assert.equal(EmailActionToken.schema.path('churchId').isRequired, true);
+  assert.equal(EmailActionToken.schema.path('userId').isRequired, true);
+  assert.ok(hasIndex(EmailActionToken.schema.indexes(), { deleteAfter: 1 }, { expireAfterSeconds: 0 }));
 
   assert.equal(HolyricsSettings.schema.path('churchId').isRequired, true);
   assert.ok(hasIndex(HolyricsSettings.schema.indexes(), { churchId: 1 }, { unique: true }));

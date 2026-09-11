@@ -266,6 +266,111 @@
   font-weight: 700;
 }
 
+.auth-forgot {
+  display: inline-block;
+  margin: -0.35rem 0 1rem;
+  color: var(--primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.auth-confirm,
+.auth-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.auth-confirm h2,
+.auth-result h2 {
+  margin: 0;
+  font-size: 1.7rem;
+}
+
+.auth-confirm-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.auth-confirm-icon .app-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.auth-status {
+  margin: 0 0 0.75rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.auth-resend-note {
+  margin: 0.75rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.auth-secondary,
+.auth-text-link {
+  min-height: 48px;
+}
+
+.auth-secondary {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.auth-text-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-weight: 700;
+  text-align: center;
+}
+
+.auth-result-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-password-wrap {
+  position: relative;
+}
+
+.auth-password-wrap input {
+  width: 100%;
+  padding-right: 6.5rem;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.55rem;
+  min-height: 40px;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  transform: translateY(-50%);
+}
+
 .auth-loading {
   min-height: 100vh;
   display: flex;

@@ -20,6 +20,7 @@ export interface IUser extends Document {
   permissionsUpdatedAt?: Date;
   permissionsUpdatedBy?: IActor;
   tokenVersion: number;
+  emailVerifiedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +42,7 @@ const userSchema = new Schema<IUser>(
     permissionsUpdatedAt: { type: Date },
     permissionsUpdatedBy: { type: actorSchema, required: false },
     tokenVersion: { type: Number, default: 0 },
+    emailVerifiedAt: { type: Date },
   },
   { timestamps: true }
 );

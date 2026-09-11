@@ -45,7 +45,8 @@ export type AppIconName =
   | 'clipboard'
   | 'close'
   | 'menu'
-  | 'chart';
+  | 'chart'
+  | 'mail';
 
 export function AppIcon({ name, className = '' }: { name: AppIconName; className?: string }) {
   const content = {
@@ -96,6 +97,7 @@ export function AppIcon({ name, className = '' }: { name: AppIconName; className
     close: <><path d="M6 6l12 12M18 6 6 18" /></>,
     menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
     chart: <><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-5" /><path d="M12 16V8" /><path d="M16 16v-3" /></>,
+    mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m4 7 8 6 8-6" /></>,
   }[name];
 
   return (

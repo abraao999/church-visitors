@@ -2,6 +2,7 @@ import express from 'express';
 import { connectDB, publicDatabaseError } from './config/db.js';
 import { getJwtSecret } from './middleware/auth.js';
 import { createCorsMiddleware, securityHeaders } from './middleware/httpSecurity.js';
+import { getEmailTokenSecret } from './utils/emailConfig.js';
 import { getGuestAccessSecret } from './utils/guestToken.js';
 import authRouter from './routes/auth.js';
 import visitorsRouter from './routes/visitors.js';
@@ -30,7 +31,7 @@ export async function ensureDb(): Promise<void> {
 /** Devolve os problemas de configuração dos segredos, sem revelar valores. */
 export function secretConfigurationErrors(): string[] {
   const problems: string[] = [];
-  for (const check of [getJwtSecret, getGuestAccessSecret]) {
+  for (const check of [getJwtSecret, getGuestAccessSecret, getEmailTokenSecret]) {
     try {
       check();
     } catch (error) {

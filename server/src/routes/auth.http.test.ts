@@ -19,6 +19,9 @@ import {
 
 process.env.JWT_SECRET = 'teste-jwt-enumeracao-conta-chave-longa-123456';
 process.env.GUEST_ACCESS_SECRET = 'teste-guest-enumeracao-conta-chave-longa-654321';
+process.env.EMAIL_TOKEN_SECRET = 'teste-email-token-secret-chave-longa-abcdef';
+process.env.CRON_SECRET = 'teste-cron-secret-chave-longa-diferente-999';
+process.env.APP_ORIGIN = 'https://app.eclesiafy.com.br';
 
 type Stub = { restore: () => void };
 const stubs: Stub[] = [];

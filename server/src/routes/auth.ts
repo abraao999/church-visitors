@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import mongoose, { Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { Church } from '../models/Church.js';
 import { User, type IUser } from '../models/User.js';
 import {
@@ -13,8 +13,23 @@ import {
   type AuthContext,
 } from '../middleware/auth.js';
 import { requireAuthRateLimit } from '../middleware/authRateLimit.js';
+import { EmailDeliveryError } from '../services/authEmail.js';
+import {
+  EmailConfirmError,
+  confirmPendingOwnerRegistration,
+  createPendingOwnerRegistration,
+  resendPendingOwnerRegistration,
+} from '../services/ownerRegistration.js';
+import {
+  PasswordResetError,
+  completePasswordReset,
+  inspectPasswordResetToken,
+  requestPasswordReset,
+} from '../services/passwordReset.js';
 import { publicChurchBranding, type PublicChurchBranding } from '../utils/branding.js';
-import { createChurchSlug, normalizeChurchName } from '../utils/church.js';
+import { normalizeChurchName } from '../utils/church.js';
+import { isEmailTokenSecretError, EMAIL_TOKEN_SECRET_HELP } from '../utils/emailConfig.js';
+import { normalizeEmail } from '../utils/emailCrypto.js';
 import { readLoginIdentifier } from '../utils/loginIdentifier.js';
 import { resolvePermissions, type Permission, type TeamRole } from '../utils/permissions.js';
 import { clearSessionCookie, setSessionCookie } from '../utils/sessionCookie.js';
@@ -152,43 +167,216 @@ export async function registerAccount(
       return res.status(400).json({ error: REGISTER_GENERIC_ERROR });
     }
 
-    const session = await mongoose.startSession();
-    let user: IUser | undefined;
-    let churchId: Types.ObjectId | undefined;
+    const pending = await createPendingOwnerRegistration({
+      churchName,
+      name,
+      email,
+      username,
+      passwordHash,
+    });
 
-    try {
-      await session.withTransaction(async () => {
-        const [church] = await Church.create(
-          [{ name: churchName, slug: createChurchSlug(churchName), active: true }],
-          { session }
-        );
-        churchId = church._id as Types.ObjectId;
-
-        const [createdUser] = await User.create(
-          [{ name, email, username, passwordHash, churchId, role: 'owner', tokenVersion: 0 }],
-          { session }
-        );
-        user = createdUser;
-      });
-    } finally {
-      await session.endSession();
-    }
-
-    if (!user || !churchId) {
-      throw new Error('Cadastro não concluído');
-    }
-
-    return res.status(201).json(
-      issueSession(req, res, user as IUser & { churchId: Types.ObjectId }, churchName)
-    );
+    return res.status(201).json(pending);
   } catch (error) {
+    if (error instanceof EmailDeliveryError) {
+      return res.status(503).json({ error: error.message });
+    }
     if ((error as { code?: number }).code === 11000) {
       return res.status(400).json({ error: REGISTER_GENERIC_ERROR });
     }
     if (isJwtSecretError(error)) {
       return res.status(503).json({ error: JWT_SECRET_HELP });
     }
+    if (isEmailTokenSecretError(error)) {
+      return res.status(503).json({ error: EMAIL_TOKEN_SECRET_HELP });
+    }
     return res.status(500).json({ error: 'Erro ao criar conta' });
+  }
+}
+
+function rejectClientTenantIds(body: Record<string, unknown>): string | undefined {
+  if (body.churchId !== undefined) {
+    return 'O identificador da igreja não deve ser enviado.';
+  }
+  if (body.userId !== undefined) {
+    return 'O identificador do usuário não deve ser enviado.';
+  }
+  return undefined;
+}
+
+function sendConfirmError(res: Response, error: EmailConfirmError) {
+  return res.status(error.status).json({
+    error: error.message,
+    code: error.code,
+    ...(error.resendAvailableAt ? { resendAvailableAt: error.resendAvailableAt } : {}),
+  });
+}
+
+export async function confirmOwnerEmail(
+  req: { body?: Record<string, unknown>; secure?: boolean; get?: (name: string) => string | undefined },
+  res: Response
+) {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const tenantError = rejectClientTenantIds(body);
+    if (tenantError) {
+      return res.status(400).json({ error: tenantError });
+    }
+
+    const token = typeof body.token === 'string' ? body.token : undefined;
+    const challengeId = typeof body.challengeId === 'string' ? body.challengeId : undefined;
+    const code = typeof body.code === 'string' ? body.code.replace(/\s+/g, '') : undefined;
+
+    const created = await confirmPendingOwnerRegistration({ token, challengeId, code });
+    return res.status(201).json(
+      issueSession(
+        req,
+        res,
+        created.user,
+        created.churchName
+      )
+    );
+  } catch (error) {
+    if (error instanceof EmailConfirmError) {
+      return sendConfirmError(res, error);
+    }
+    if (isJwtSecretError(error)) {
+      return res.status(503).json({ error: JWT_SECRET_HELP });
+    }
+    if (isEmailTokenSecretError(error)) {
+      return res.status(503).json({ error: EMAIL_TOKEN_SECRET_HELP });
+    }
+    return res.status(503).json({
+      error: 'Não foi possível confirmar agora. Tente novamente em instantes.',
+      code: 'unavailable',
+    });
+  }
+}
+
+export async function resendOwnerEmail(
+  req: { body?: Record<string, unknown> },
+  res: Response
+) {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const tenantError = rejectClientTenantIds(body);
+    if (tenantError) {
+      return res.status(400).json({ error: tenantError });
+    }
+
+    const challengeId = typeof body.challengeId === 'string' ? body.challengeId.trim() : '';
+    if (!challengeId) {
+      return res.json({ ok: true, resendAvailableAt: new Date(Date.now() + 60_000).toISOString() });
+    }
+
+    const result = await resendPendingOwnerRegistration(challengeId);
+    return res.json(result);
+  } catch (error) {
+    if (error instanceof EmailConfirmError) {
+      return sendConfirmError(res, error);
+    }
+    if (error instanceof EmailDeliveryError) {
+      return res.status(503).json({ error: error.message, code: 'unavailable' });
+    }
+    if (isEmailTokenSecretError(error)) {
+      return res.status(503).json({ error: EMAIL_TOKEN_SECRET_HELP, code: 'unavailable' });
+    }
+    return res.status(503).json({
+      error: 'Não foi possível reenviar agora. Tente novamente em instantes.',
+      code: 'unavailable',
+    });
+  }
+}
+
+export async function forgotPasswordAccount(
+  req: { body?: Record<string, unknown> },
+  res: Response
+) {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const tenantError = rejectClientTenantIds(body);
+    if (tenantError) {
+      return res.status(400).json({ error: tenantError });
+    }
+
+    const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
+    if (!email || !isValidEmail(email)) {
+      return res.json({ message: 'Se existir uma conta para este e-mail, enviaremos as instruções.' });
+    }
+
+    const result = await requestPasswordReset(email);
+    return res.json(result);
+  } catch (error) {
+    if (error instanceof EmailDeliveryError) {
+      return res.status(503).json({ error: error.message });
+    }
+    if (isEmailTokenSecretError(error)) {
+      return res.status(503).json({ error: EMAIL_TOKEN_SECRET_HELP });
+    }
+    return res.status(503).json({ error: 'Não foi possível enviar as instruções agora.' });
+  }
+}
+
+export async function inspectPasswordReset(
+  req: { body?: Record<string, unknown> },
+  res: Response
+) {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const tenantError = rejectClientTenantIds(body);
+    if (tenantError) {
+      return res.status(400).json({ error: tenantError });
+    }
+    const token = typeof body.token === 'string' ? body.token.trim() : '';
+    if (!token) {
+      return res.json({ status: 'invalid' });
+    }
+    return res.json(await inspectPasswordResetToken(token));
+  } catch (error) {
+    if (isEmailTokenSecretError(error)) {
+      return res.status(503).json({ error: EMAIL_TOKEN_SECRET_HELP, status: 'invalid' });
+    }
+    return res.json({ status: 'invalid' });
+  }
+}
+
+export async function resetPasswordAccount(
+  req: { body?: Record<string, unknown> },
+  res: Response
+) {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const tenantError = rejectClientTenantIds(body);
+    if (tenantError) {
+      return res.status(400).json({ error: tenantError });
+    }
+
+    const token = typeof body.token === 'string' ? body.token.trim() : '';
+    const newPassword = typeof body.newPassword === 'string' ? body.newPassword : '';
+    const confirmPassword = typeof body.confirmPassword === 'string' ? body.confirmPassword : '';
+
+    if (!token) {
+      return res.status(400).json({ error: 'Este link não é válido.', code: 'invalid' });
+    }
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({ error: 'Informe a nova senha e a confirmação.' });
+    }
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ error: PASSWORD_TOO_SHORT });
+    }
+
+    await completePasswordReset({ token, newPassword, confirmPassword });
+    return res.json({ ok: true });
+  } catch (error) {
+    if (error instanceof PasswordResetError) {
+      return res.status(error.status).json({ error: error.message, code: error.code });
+    }
+    if (isEmailTokenSecretError(error)) {
+      return res.status(503).json({ error: EMAIL_TOKEN_SECRET_HELP, code: 'unavailable' });
+    }
+    return res.status(503).json({
+      error: 'Não foi possível redefinir a senha agora. Tente novamente em instantes.',
+      code: 'unavailable',
+    });
   }
 }
 
@@ -318,7 +506,12 @@ export async function logoutAccount(req: AuthenticatedRequest, res: Response) {
 router.post('/register', requireAuthRateLimit('register'), registerAccount);
 router.post('/login', requireAuthRateLimit('login'), loginAccount);
 router.post('/logout', requireAuth, logoutAccount);
+router.post('/password/forgot', requireAuthRateLimit('password-forgot'), forgotPasswordAccount);
+router.post('/password/reset/inspect', requireAuthRateLimit('password-reset'), inspectPasswordReset);
+router.post('/password/reset', requireAuthRateLimit('password-reset'), resetPasswordAccount);
 router.post('/password', requireAuth, changePassword);
+router.post('/email/confirm', requireAuthRateLimit('email-confirm'), confirmOwnerEmail);
+router.post('/email/resend', requireAuthRateLimit('email-resend'), resendOwnerEmail);
 
 router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {

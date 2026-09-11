@@ -1,5 +1,12 @@
 import type {
   AuthUser,
+  EmailConfirmationRequest,
+  EmailConfirmationResponse,
+  EmailResendResponse,
+  PasswordForgotResponse,
+  PasswordResetLinkStatus,
+  PasswordResetRequest,
+  PendingRegistrationResponse,
   ChurchBranding,
   ChurchProfile,
   CreatePrayerDto,
@@ -72,10 +79,30 @@ async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<R
   }
 }
 
+export class ApiError extends Error {
+  readonly code?: string;
+  readonly resendAvailableAt?: string;
+
+  constructor(message: string, extras?: { code?: string; resendAvailableAt?: string }) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = extras?.code;
+    this.resendAvailableAt = extras?.resendAvailableAt;
+  }
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || 'Erro na requisição');
+    const data = (await response.json().catch(() => ({}))) as {
+      error?: string;
+      code?: string;
+      resendAvailableAt?: string;
+    };
+    throw new ApiError(data.error || 'Erro na requisição', {
+      code: typeof data.code === 'string' ? data.code : undefined,
+      resendAvailableAt:
+        typeof data.resendAvailableAt === 'string' ? data.resendAvailableAt : undefined,
+    });
   }
   return response.json();
 }
@@ -120,13 +147,58 @@ export const api = {
     email: string;
     username: string;
     password: string;
-  }): Promise<AuthResponse> {
+  }): Promise<PendingRegistrationResponse> {
     const response = await apiFetch(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    return handleResponse<AuthResponse>(response);
+    return handleResponse<PendingRegistrationResponse>(response);
+  },
+
+  async confirmEmail(data: EmailConfirmationRequest): Promise<EmailConfirmationResponse> {
+    const response = await apiFetch(`${API_BASE}/auth/email/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<EmailConfirmationResponse>(response);
+  },
+
+  async resendEmail(challengeId: string): Promise<EmailResendResponse> {
+    const response = await apiFetch(`${API_BASE}/auth/email/resend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeId }),
+    });
+    return handleResponse<EmailResendResponse>(response);
+  },
+
+  async forgotPassword(email: string): Promise<PasswordForgotResponse> {
+    const response = await apiFetch(`${API_BASE}/auth/password/forgot`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return handleResponse<PasswordForgotResponse>(response);
+  },
+
+  async inspectPasswordReset(token: string): Promise<{ status: PasswordResetLinkStatus }> {
+    const response = await apiFetch(`${API_BASE}/auth/password/reset/inspect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return handleResponse<{ status: PasswordResetLinkStatus }>(response);
+  },
+
+  async resetPassword(data: PasswordResetRequest): Promise<{ ok: true }> {
+    const response = await apiFetch(`${API_BASE}/auth/password/reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<{ ok: true }>(response);
   },
 
   async login(data: { login: string; password: string }): Promise<AuthResponse> {

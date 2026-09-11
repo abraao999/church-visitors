@@ -8,7 +8,11 @@ import {
   type ReactNode,
 } from 'react';
 import { api, clearLegacyToken } from '../api/client';
-import type { AuthUser } from '../types';
+import type {
+  AuthUser,
+  EmailConfirmationRequest,
+  PendingRegistrationResponse,
+} from '../types';
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -20,7 +24,8 @@ interface AuthContextValue {
     email: string;
     username: string;
     password: string;
-  }) => Promise<void>;
+  }) => Promise<PendingRegistrationResponse>;
+  confirmEmail: (data: EmailConfirmationRequest) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setChurchName: (churchName: string) => void;
@@ -56,11 +61,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username: string;
       password: string;
     }) => {
-      const result = await api.register(data);
-      setUser(result.user);
+      return api.register(data);
     },
     []
   );
+
+  const confirmEmail = useCallback(async (data: EmailConfirmationRequest) => {
+    const result = await api.confirmEmail(data);
+    setUser(result.user);
+  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -82,8 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, login, register, logout, refreshUser, setChurchName }),
-    [user, loading, login, register, logout, refreshUser, setChurchName]
+    () => ({ user, loading, login, register, confirmEmail, logout, refreshUser, setChurchName }),
+    [user, loading, login, register, confirmEmail, logout, refreshUser, setChurchName]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

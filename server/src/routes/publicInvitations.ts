@@ -247,6 +247,7 @@ router.post('/:token/accept', async (req, res) => {
               active: true,
               tokenVersion: 0,
               lastSeenAt: new Date(),
+              ...(invite.email ? { emailVerifiedAt: new Date() } : {}),
             },
           ],
           { session }

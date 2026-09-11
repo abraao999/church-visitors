@@ -53,6 +53,60 @@ export interface AuthUser {
   visitorFollowUpEnabled?: boolean;
 }
 
+export interface PendingRegistrationResponse {
+  pending: true;
+  challengeId: string;
+  emailMasked: string;
+  resendAvailableAt: string;
+  expiresAt: string;
+}
+
+export type EmailConfirmationRequest =
+  | { token: string }
+  | { challengeId: string; code: string };
+
+export type EmailConfirmCode = 'invalid' | 'expired' | 'used' | 'unavailable' | 'too_many';
+
+export interface EmailConfirmationResponse {
+  user: AuthUser;
+}
+
+export interface EmailResendResponse {
+  ok: true;
+  resendAvailableAt: string;
+}
+
+export interface PasswordForgotResponse {
+  message: string;
+}
+
+export interface PasswordResetRequest {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export type PasswordResetLinkStatus = 'valid' | 'invalid' | 'expired' | 'used';
+
+export type ConfirmEmailScreenState =
+  | 'verifying'
+  | 'confirmed'
+  | 'invalid'
+  | 'expired'
+  | 'used'
+  | 'temporary'
+  | 'missing';
+
+export type ResetPasswordScreenState =
+  | 'validating'
+  | 'form'
+  | 'invalid'
+  | 'expired'
+  | 'used'
+  | 'saving'
+  | 'changed'
+  | 'missing';
+
 export interface TeamMember {
   id: string;
   name: string;

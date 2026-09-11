@@ -14,7 +14,10 @@ import { InviteAcceptPage } from './pages/InviteAcceptPage';
 import { TeamMemberPage } from './pages/TeamMemberPage';
 import { TeamPage } from './pages/TeamPage';
 import { LivePrayerPage } from './pages/LivePrayerPage';
+import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LoginPage } from './pages/LoginPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { PanelsPage } from './pages/PanelsPage';
 import { HymnsPanelPage } from './pages/panels/HymnsPanelPage';
 import { LegacyPanelRedirect } from './pages/panels/LegacyPanelRedirect';
@@ -39,6 +42,9 @@ export function App() {
         <BrandingProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/confirmar-email" element={<ConfirmEmailPage />} />
+          <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
+          <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
           <Route path="/acesso/:token" element={<PublicAccessPage />} />
           <Route path="/acesso/:token/visitantes" element={<PublicAccessPage />} />
           <Route path="/acesso/:token/oracao" element={<PublicAccessPage />} />

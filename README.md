@@ -58,6 +58,9 @@ cp server/.env.example server/.env
 # - JWT_SECRET (obrigatório; não use o valor de exemplo)
 # - GUEST_ACCESS_SECRET (chave diferente do JWT_SECRET; não use o valor de exemplo)
 # - CRON_SECRET (protege a rotina diária; não use o valor de exemplo)
+# - EMAIL_TOKEN_SECRET (chave diferente das outras três; não use o valor de exemplo)
+# - APP_ORIGIN=https://app.eclesiafy.com.br
+# - RESEND_API_KEY (envio de confirmação e redefinição de senha)
 # - BLOB_READ_WRITE_TOKEN (Vercel Blob, necessário para o logotipo da igreja)
 ```
 
@@ -194,7 +197,18 @@ Em **Network Access**, libere `0.0.0.0/0` (a Vercel usa IPs dinâmicos).
 | `JWT_SECRET` | Server | chave longa e aleatória (`openssl rand -hex 32`; não copie o exemplo) |
 | `GUEST_ACCESS_SECRET` | Server | outra chave longa e aleatória, diferente do JWT |
 | `CRON_SECRET` | Server | chave aleatória para proteger a limpeza automática diária |
+| `EMAIL_TOKEN_SECRET` | Server | outra chave longa e aleatória, diferente de JWT, GUEST e CRON |
+| `APP_ORIGIN` | Server | `https://app.eclesiafy.com.br` — origem usada nos links de e-mail |
+| `RESEND_API_KEY` | Server | chave do Resend (nunca use prefixo `VITE_`) |
+| `EMAIL_FROM` | Server | `Eclesiafy <acesso@notificacoes.eclesiafy.com.br>` |
+| `EMAIL_REPLY_TO` | Server | opcional |
+| `EMAIL_VERIFICATION_TTL_MINUTES` | Server | `30` |
+| `PASSWORD_RESET_TTL_MINUTES` | Server | `30` |
+| `EMAIL_RESEND_INTERVAL_SECONDS` | Server | `60` |
+| `EMAIL_CODE_MAX_ATTEMPTS` | Server | `5` |
 | `BLOB_READ_WRITE_TOKEN` | Server | token do Vercel Blob para o logotipo da igreja |
+
+O cadastro de proprietário só cria a igreja depois da confirmação do e-mail. A redefinição de senha usa o mesmo remetente. Em produção, `APP_ORIGIN` precisa ser `https://app.eclesiafy.com.br` — nunca localhost nem `*.vercel.app`. Mantenha o rastreamento de abertura e de cliques desligado no domínio do Resend.
 
 ### 4. Deploy
 
