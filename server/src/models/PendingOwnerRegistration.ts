@@ -7,6 +7,8 @@ export interface IPendingOwnerRegistration extends Document {
   email: string;
   username: string;
   passwordHash: string;
+  city?: string;
+  assisted?: boolean;
   verificationTokenHash: string;
   verificationCodeHash: string;
   verificationExpiresAt: Date;
@@ -25,6 +27,8 @@ const pendingOwnerRegistrationSchema = new Schema<IPendingOwnerRegistration>(
     email: { type: String, required: true, trim: true, lowercase: true, index: true },
     username: { type: String, required: true, trim: true, lowercase: true, index: true },
     passwordHash: { type: String, required: true },
+    city: { type: String, trim: true, maxlength: 100, default: '' },
+    assisted: { type: Boolean, default: false },
     verificationTokenHash: { type: String, required: true, unique: true },
     verificationCodeHash: { type: String, required: true },
     verificationExpiresAt: { type: Date, required: true },

@@ -6,7 +6,12 @@ export function isPlaceholderSecret(value: string | undefined): boolean {
 }
 
 export function requireConfiguredSecret(
-  name: 'JWT_SECRET' | 'GUEST_ACCESS_SECRET' | 'CRON_SECRET' | 'EMAIL_TOKEN_SECRET',
+  name:
+    | 'JWT_SECRET'
+    | 'GUEST_ACCESS_SECRET'
+    | 'CRON_SECRET'
+    | 'EMAIL_TOKEN_SECRET'
+    | 'PLATFORM_ADMIN_JWT_SECRET',
   value: string | undefined,
   minLength = 32
 ): string {

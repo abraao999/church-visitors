@@ -97,6 +97,8 @@ export async function createPendingOwnerRegistration(input: {
   email: string;
   username: string;
   passwordHash: string;
+  city?: string;
+  assisted?: boolean;
 }): Promise<PendingRegistrationPublic> {
   const secrets = createChallengeSecrets();
   const dates = ttlDates();
@@ -112,6 +114,8 @@ export async function createPendingOwnerRegistration(input: {
     email: input.email,
     username: input.username,
     passwordHash: input.passwordHash,
+    city: input.city?.trim() || '',
+    assisted: Boolean(input.assisted),
     verificationTokenHash: secrets.verificationTokenHash,
     verificationCodeHash: secrets.verificationCodeHash,
     verificationExpiresAt: dates.verificationExpiresAt,
@@ -213,6 +217,7 @@ export async function confirmPendingOwnerRegistration(input: {
     emailVerifiedAt: Date;
   };
   churchName: string;
+  assisted: boolean;
 }> {
   const now = new Date();
   const token = input.token?.trim();
@@ -243,6 +248,7 @@ export async function confirmPendingOwnerRegistration(input: {
           emailVerifiedAt: Date;
         };
         churchName: string;
+        assisted: boolean;
       }
     | undefined;
 
@@ -273,7 +279,14 @@ export async function confirmPendingOwnerRegistration(input: {
 
       const emailVerifiedAt = new Date();
       const [church] = await Church.create(
-        [{ name: claimed.churchName, slug: createChurchSlug(claimed.churchName), active: true }],
+        [
+          {
+            name: claimed.churchName,
+            slug: createChurchSlug(claimed.churchName),
+            city: claimed.city || '',
+            active: true,
+          },
+        ],
         { session }
       );
       const churchId = church._id as Types.ObjectId;
@@ -307,6 +320,7 @@ export async function confirmPendingOwnerRegistration(input: {
           emailVerifiedAt,
         },
         churchName: claimed.churchName,
+        assisted: Boolean(claimed.assisted),
       };
     });
   } catch (error) {

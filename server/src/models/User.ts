@@ -49,5 +49,6 @@ const userSchema = new Schema<IUser>(
 
 userSchema.index({ churchId: 1, active: 1, createdAt: -1 });
 userSchema.index({ churchId: 1, role: 1 });
+userSchema.index({ lastSeenAt: -1 });
 
 export const User = mongoose.model<IUser>('User', userSchema);

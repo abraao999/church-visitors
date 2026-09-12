@@ -1,6 +1,6 @@
 {
   "name": "church-visitors-server",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,8 @@
     "tenancy:migrate": "tsx src/scripts/tenancy.ts migrate",
     "services:recurrence:check": "tsx src/scripts/serviceRecurrence.ts check",
     "services:recurrence": "tsx src/scripts/serviceRecurrence.ts migrate",
-    "guest-access:types": "tsx src/scripts/guestAccessTypes.ts"
+    "guest-access:types": "tsx src/scripts/guestAccessTypes.ts",
+    "platform-admin:create": "tsx src/scripts/createPlatformAdmin.ts"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0",

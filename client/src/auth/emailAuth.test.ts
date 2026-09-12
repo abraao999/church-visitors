@@ -44,7 +44,7 @@ test('todas as situações de link têm estado visual', () => {
   assert.equal(resetStateFromStatus('invalid'), 'invalid');
 
   const confirmPage = readFileSync(join(clientSrc, 'pages/ConfirmEmailPage.tsx'), 'utf8');
-  for (const state of ['verifying', 'confirmed', 'invalid', 'expired', 'used', 'temporary', 'missing']) {
+  for (const state of ['verifying', 'confirmed', 'invalid', 'expired', 'used', 'temporary', 'missing', 'needsPassword']) {
     assert.equal(confirmPage.includes(`${state}:`), true);
   }
   const resetPage = readFileSync(join(clientSrc, 'pages/ResetPasswordPage.tsx'), 'utf8');
@@ -85,6 +85,7 @@ test('não existe chamada do Resend no navegador e o menu permanece nas rotas au
   assert.match(client, /forgotPassword/);
 
   const app = readFileSync(join(clientSrc, 'App.tsx'), 'utf8');
+  assert.match(app, /path="\/admin"/);
   const loginIndex = app.indexOf('path="/login"');
   const confirmIndex = app.indexOf('path="/confirmar-email"');
   const forgotIndex = app.indexOf('path="/esqueci-senha"');

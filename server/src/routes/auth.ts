@@ -25,11 +25,12 @@ import {
   completePasswordReset,
   inspectPasswordResetToken,
   requestPasswordReset,
+  requestPasswordResetForOwner,
 } from '../services/passwordReset.js';
 import { publicChurchBranding, type PublicChurchBranding } from '../utils/branding.js';
 import { normalizeChurchName } from '../utils/church.js';
 import { isEmailTokenSecretError, EMAIL_TOKEN_SECRET_HELP } from '../utils/emailConfig.js';
-import { normalizeEmail } from '../utils/emailCrypto.js';
+import { maskEmail, normalizeEmail } from '../utils/emailCrypto.js';
 import { readLoginIdentifier } from '../utils/loginIdentifier.js';
 import { resolvePermissions, type Permission, type TeamRole } from '../utils/permissions.js';
 import { clearSessionCookie, setSessionCookie } from '../utils/sessionCookie.js';
@@ -227,6 +228,17 @@ export async function confirmOwnerEmail(
     const code = typeof body.code === 'string' ? body.code.replace(/\s+/g, '') : undefined;
 
     const created = await confirmPendingOwnerRegistration({ token, challengeId, code });
+    if (created.assisted) {
+      try {
+        await requestPasswordResetForOwner(created.user._id);
+      } catch {
+        // A conta já existe; o painel pode reenviar a redefinição.
+      }
+      return res.status(201).json({
+        needsPassword: true,
+        emailMasked: maskEmail(created.user.email),
+      });
+    }
     return res.status(201).json(
       issueSession(
         req,

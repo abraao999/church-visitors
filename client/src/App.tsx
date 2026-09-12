@@ -34,6 +34,13 @@ import { VisitorsPage } from './pages/VisitorsPage';
 import { FollowUpPage } from './pages/FollowUpPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { PortariaApp } from './portaria/PortariaApp';
+import { AdminRoot } from './admin/AdminAuthContext';
+import { AdminChurchDetailPage } from './admin/AdminChurchDetailPage';
+import { AdminChurchesPage } from './admin/AdminChurchesPage';
+import { AdminLayout } from './admin/AdminLayout';
+import { AdminLoginPage } from './admin/AdminLoginPage';
+import { AdminOverviewPage } from './admin/AdminOverviewPage';
+import { AdminProtectedRoute } from './admin/AdminProtectedRoute';
 
 export function App() {
   return (
@@ -41,6 +48,16 @@ export function App() {
       <BrowserRouter>
         <BrandingProvider>
         <Routes>
+          <Route element={<AdminRoot />}>
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route element={<AdminProtectedRoute />}>
+              <Route element={<AdminLayout />}>
+                <Route path="/admin" element={<AdminOverviewPage />} />
+                <Route path="/admin/igrejas" element={<AdminChurchesPage />} />
+                <Route path="/admin/igrejas/:churchId" element={<AdminChurchDetailPage />} />
+              </Route>
+            </Route>
+          </Route>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/confirmar-email" element={<ConfirmEmailPage />} />
           <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />

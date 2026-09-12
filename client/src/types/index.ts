@@ -67,9 +67,9 @@ export type EmailConfirmationRequest =
 
 export type EmailConfirmCode = 'invalid' | 'expired' | 'used' | 'unavailable' | 'too_many';
 
-export interface EmailConfirmationResponse {
-  user: AuthUser;
-}
+export type EmailConfirmationResponse =
+  | { user: AuthUser }
+  | { needsPassword: true; emailMasked: string };
 
 export interface EmailResendResponse {
   ok: true;
@@ -95,7 +95,8 @@ export type ConfirmEmailScreenState =
   | 'expired'
   | 'used'
   | 'temporary'
-  | 'missing';
+  | 'missing'
+  | 'needsPassword';
 
 export type ResetPasswordScreenState =
   | 'validating'

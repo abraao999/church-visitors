@@ -1,7 +1,7 @@
 {
   "name": "church-visitors",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Sistema de visitantes e pedidos de oração para igreja",
   "type": "module",
   "scripts": {
@@ -20,7 +20,8 @@
     "tenancy:migrate": "npm run tenancy:migrate --prefix server --",
     "services:recurrence:check": "npm run services:recurrence:check --prefix server",
     "services:recurrence": "npm run services:recurrence --prefix server --",
-    "guest-access:types": "npm run guest-access:types --prefix server --"
+    "guest-access:types": "npm run guest-access:types --prefix server --",
+    "platform-admin:create": "npm run platform-admin:create --prefix server"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0",

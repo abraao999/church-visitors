@@ -50,4 +50,7 @@ const churchSchema = new Schema<IChurch>(
   { timestamps: true }
 );
 
+churchSchema.index({ active: 1, createdAt: -1 });
+churchSchema.index({ createdAt: -1 });
+
 export const Church = mongoose.model<IChurch>('Church', churchSchema);

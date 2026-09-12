@@ -128,6 +128,47 @@ export async function requestPasswordReset(email: string): Promise<{ message: st
   return { message: PASSWORD_FORGOT_MESSAGE };
 }
 
+export async function requestPasswordResetForOwner(userId: Types.ObjectId): Promise<void> {
+  const now = new Date();
+  const user = await User.findById(userId, 'name email passwordHash churchId active');
+  if (!user?.passwordHash || user.active === false || !user.churchId) {
+    throw new PasswordResetError('unavailable', PASSWORD_RESET_UNAVAILABLE, 503);
+  }
+
+  const church = await Church.findById(user.churchId, 'name');
+  if (!church) {
+    throw new PasswordResetError('unavailable', PASSWORD_RESET_UNAVAILABLE, 503);
+  }
+
+  const token = createHighEntropyToken();
+  const tokenHash = hashPasswordResetToken(token);
+  const dates = ttlDates(now.getTime());
+  await EmailActionToken.updateMany(
+    {
+      userId: user._id,
+      churchId: user.churchId,
+      purpose: 'password_reset',
+      usedAt: null,
+    },
+    { $set: { usedAt: now } }
+  );
+  await EmailActionToken.create({
+    purpose: 'password_reset',
+    userId: user._id,
+    churchId: user.churchId,
+    tokenHash,
+    expiresAt: dates.expiresAt,
+    deleteAfter: dates.deleteAfter,
+  });
+  await sendPasswordResetEmail({
+    to: user.email,
+    name: user.name,
+    churchName: church.name,
+    token,
+    idempotencyKey: `admin-reset-${String(user._id)}-${dates.expiresAt.getTime()}`,
+  });
+}
+
 export async function inspectPasswordResetToken(token: string): Promise<{ status: PasswordResetStatus }> {
   const tokenHash = hashPasswordResetToken(token);
   const record = await EmailActionToken.findOne({

@@ -59,6 +59,7 @@ cp server/.env.example server/.env
 # - GUEST_ACCESS_SECRET (chave diferente do JWT_SECRET; não use o valor de exemplo)
 # - CRON_SECRET (protege a rotina diária; não use o valor de exemplo)
 # - EMAIL_TOKEN_SECRET (chave diferente das outras três; não use o valor de exemplo)
+# - PLATFORM_ADMIN_JWT_SECRET (chave do painel /admin; diferente das outras)
 # - APP_ORIGIN=https://app.eclesiafy.com.br
 # - RESEND_API_KEY (envio de confirmação, cadastro concluído e redefinição de senha)
 # - BLOB_READ_WRITE_TOKEN (Vercel Blob, necessário para o logotipo da igreja)
@@ -198,6 +199,7 @@ Em **Network Access**, libere `0.0.0.0/0` (a Vercel usa IPs dinâmicos).
 | `GUEST_ACCESS_SECRET` | Server | outra chave longa e aleatória, diferente do JWT |
 | `CRON_SECRET` | Server | chave aleatória para proteger a limpeza automática diária |
 | `EMAIL_TOKEN_SECRET` | Server | outra chave longa e aleatória, diferente de JWT, GUEST e CRON |
+| `PLATFORM_ADMIN_JWT_SECRET` | Server | chave do painel `/admin`, diferente de JWT, GUEST e EMAIL |
 | `APP_ORIGIN` | Server | `https://app.eclesiafy.com.br` — origem usada nos links de e-mail |
 | `RESEND_API_KEY` | Server | chave do Resend (nunca use prefixo `VITE_`) |
 | `EMAIL_FROM` | Server | `Eclesiafy <acesso@notificacoes.eclesiafy.com.br>` |
@@ -266,6 +268,23 @@ O logotipo é gravado no [Vercel Blob](https://vercel.com/docs/storage/vercel-bl
 3. Faça um novo deploy depois de conectar o store
 
 Formatos aceitos: PNG, JPEG e WebP, até 2 MB. SVG é recusado.
+
+## Painel administrativo da plataforma
+
+A área `/admin` é independente do painel de cada igreja. A sessão usa o cookie
+`eclesiafy_admin_session` e o segredo `PLATFORM_ADMIN_JWT_SECRET`. Não existe
+cadastro público de administrador.
+
+Para criar o primeiro `platform_owner` no computador (nunca no build nem no deploy):
+
+```bash
+# em server/.env, configure PLATFORM_ADMIN_JWT_SECRET (openssl rand -hex 32)
+npm run db:up
+npm run platform-admin:create
+```
+
+O comando pede nome, e-mail e senha (a senha não aparece no terminal) e recusa
+e-mails duplicados.
 
 ## Estrutura
 

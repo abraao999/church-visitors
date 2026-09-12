@@ -38,6 +38,10 @@ const COPY: Record<ConfirmEmailScreenState, { title: string; text: string }> = {
     title: 'Link incompleto',
     text: 'Abra o link enviado no e-mail para confirmar o cadastro.',
   },
+  needsPassword: {
+    title: 'E-mail confirmado',
+    text: 'Enviamos um segundo e-mail para você criar a própria senha. Olhe também o spam.',
+  },
 };
 
 export function ConfirmEmailPage() {
@@ -55,10 +59,10 @@ export function ConfirmEmailPage() {
 
     let cancelled = false;
     confirmEmail({ token })
-      .then(() => {
+      .then((result) => {
         if (cancelled) return;
         clearPendingChallengeId();
-        setState('confirmed');
+        setState(result.needsPassword ? 'needsPassword' : 'confirmed');
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -100,6 +104,11 @@ export function ConfirmEmailPage() {
               </Link>
             )}
           </div>
+        )}
+        {state === 'needsPassword' && (
+          <Link className="btn btn-primary auth-submit" to="/esqueci-senha">
+            Abrir recuperação de senha
+          </Link>
         )}
         {state === 'used' && (
           <Link className="btn btn-primary auth-submit" to="/login">

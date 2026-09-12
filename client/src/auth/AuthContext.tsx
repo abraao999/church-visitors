@@ -25,7 +25,7 @@ interface AuthContextValue {
     username: string;
     password: string;
   }) => Promise<PendingRegistrationResponse>;
-  confirmEmail: (data: EmailConfirmationRequest) => Promise<void>;
+  confirmEmail: (data: EmailConfirmationRequest) => Promise<{ needsPassword?: boolean; emailMasked?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setChurchName: (churchName: string) => void;
@@ -68,7 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const confirmEmail = useCallback(async (data: EmailConfirmationRequest) => {
     const result = await api.confirmEmail(data);
-    setUser(result.user);
+    if ('needsPassword' in result && result.needsPassword) {
+      return { needsPassword: true, emailMasked: result.emailMasked };
+    }
+    if ('user' in result) {
+      setUser(result.user);
+    }
+    return {};
   }, []);
 
   const logout = useCallback(async () => {

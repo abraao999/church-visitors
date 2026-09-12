@@ -84,7 +84,7 @@ export function hasCustomBrandColors(branding?: ChurchBrandingDraft | null): boo
 }
 
 export function shouldApplyChurchBranding(pathname: string): boolean {
-  return pathname !== '/login' && !pathname.startsWith('/convite');
+  return pathname !== '/login' && !pathname.startsWith('/convite') && !pathname.startsWith('/admin');
 }
 
 export function brandingFromUser(user?: {

@@ -43,6 +43,8 @@ describe('identidade visual no cliente', () => {
   test('login e convite preservam a identidade geral do sistema', () => {
     assert.equal(shouldApplyChurchBranding('/login'), false);
     assert.equal(shouldApplyChurchBranding('/convite/abc'), false);
+    assert.equal(shouldApplyChurchBranding('/admin'), false);
+    assert.equal(shouldApplyChurchBranding('/admin/igrejas'), false);
     assert.equal(shouldApplyChurchBranding('/'), true);
     assert.equal(shouldApplyChurchBranding('/acesso/token'), true);
     assert.equal(shouldApplyChurchBranding('/igreja/identidade'), true);
