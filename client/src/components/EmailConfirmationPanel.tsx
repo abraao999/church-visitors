@@ -3,6 +3,7 @@ import { ApiError, api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { clearPendingChallengeId, resendSecondsLeft } from '../auth/pendingChallenge';
 import { AppIcon } from './AppIcon';
+import { EmailSpamNote } from './EmailSpamNote';
 
 export function EmailConfirmationPanel({
   challengeId,
@@ -89,12 +90,7 @@ export function EmailConfirmationPanel({
         <strong>{emailMasked || 'o e-mail informado'}</strong>.
         Use o código de seis dígitos ou o botão do e-mail para confirmar.
       </p>
-      <p className="auth-spam-note" role="note">
-        <AppIcon name="info" />
-        <span>
-          Se o e-mail não aparecer na caixa de entrada, olhe também o spam ou o lixo eletrônico.
-        </span>
-      </p>
+      <EmailSpamNote />
 
       {error && (
         <p id={errorId} className="error-message auth-error" role="alert">

@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { AuthLayout } from '../components/AuthLayout';
+import { EmailSpamNote } from '../components/EmailSpamNote';
 import './AuthPages.css';
 
 export function ForgotPasswordPage() {
@@ -41,6 +42,7 @@ export function ForgotPasswordPage() {
           {message}
         </p>
       )}
+      <EmailSpamNote />
       <form onSubmit={handleSubmit} className="auth-form">
         <div className="form-group auth-field">
           <label htmlFor="forgot-email">E-mail</label>

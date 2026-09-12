@@ -319,7 +319,7 @@
   display: flex;
   align-items: flex-start;
   gap: 0.7rem;
-  margin: 0;
+  margin: 0 0 0.85rem;
   padding: 0.85rem 1rem;
   border-radius: 12px;
   background: color-mix(in srgb, var(--primary) 10%, var(--surface));

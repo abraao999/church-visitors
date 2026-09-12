@@ -63,8 +63,14 @@ test('cadastro mostra confirmação e não entra automaticamente', () => {
   assert.match(login, /Código de seis dígitos|EmailConfirmationPanel/);
   assert.match(login, /Esqueceu sua senha\?/);
   const confirmPanel = readFileSync(join(clientSrc, 'components/EmailConfirmationPanel.tsx'), 'utf8');
-  assert.match(confirmPanel, /spam ou o lixo eletrônico/);
+  const forgotPage = readFileSync(join(clientSrc, 'pages/ForgotPasswordPage.tsx'), 'utf8');
+  assert.match(confirmPanel, /EmailSpamNote/);
   assert.match(confirmPanel, /Código de seis dígitos/);
+  assert.match(forgotPage, /EmailSpamNote/);
+  assert.match(
+    readFileSync(join(clientSrc, 'components/EmailSpamNote.tsx'), 'utf8'),
+    /spam ou o lixo eletrônico/
+  );
   assert.match(login, /mode === 'login' && \(/);
 });
 
