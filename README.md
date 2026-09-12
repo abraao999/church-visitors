@@ -60,7 +60,7 @@ cp server/.env.example server/.env
 # - CRON_SECRET (protege a rotina diária; não use o valor de exemplo)
 # - EMAIL_TOKEN_SECRET (chave diferente das outras três; não use o valor de exemplo)
 # - APP_ORIGIN=https://app.eclesiafy.com.br
-# - RESEND_API_KEY (envio de confirmação e redefinição de senha)
+# - RESEND_API_KEY (envio de confirmação, cadastro concluído e redefinição de senha)
 # - BLOB_READ_WRITE_TOKEN (Vercel Blob, necessário para o logotipo da igreja)
 ```
 
@@ -208,7 +208,7 @@ Em **Network Access**, libere `0.0.0.0/0` (a Vercel usa IPs dinâmicos).
 | `EMAIL_CODE_MAX_ATTEMPTS` | Server | `5` |
 | `BLOB_READ_WRITE_TOKEN` | Server | token do Vercel Blob para o logotipo da igreja |
 
-O cadastro de proprietário só cria a igreja depois da confirmação do e-mail. A redefinição de senha usa o mesmo remetente. Em produção, `APP_ORIGIN` precisa ser `https://app.eclesiafy.com.br` — nunca localhost nem `*.vercel.app`. Mantenha o rastreamento de abertura e de cliques desligado no domínio do Resend.
+O cadastro de proprietário só cria a igreja depois da confirmação do e-mail. Depois da confirmação, o sistema envia um e-mail de cadastro concluído. A redefinição de senha usa o mesmo remetente. Em produção, `APP_ORIGIN` precisa ser `https://app.eclesiafy.com.br` — nunca localhost nem `*.vercel.app`. Mantenha o rastreamento de abertura e de cliques desligado no domínio do Resend.
 
 ### 4. Deploy
 

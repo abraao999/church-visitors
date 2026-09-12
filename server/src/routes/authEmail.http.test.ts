@@ -7,7 +7,7 @@ import { Church } from '../models/Church.js';
 import { EmailActionToken } from '../models/EmailActionToken.js';
 import { PendingOwnerRegistration } from '../models/PendingOwnerRegistration.js';
 import { User } from '../models/User.js';
-import { EmailDeliveryError, setAuthEmailSender } from '../services/authEmail.js';
+import { EmailDeliveryError, setAuthEmailSender, type AuthEmailSender } from '../services/authEmail.js';
 import {
   hashPasswordResetToken,
   hashVerificationCode,
@@ -46,6 +46,15 @@ afterEach(() => {
   while (stubs.length) stubs.pop()?.restore();
   setAuthEmailSender(null);
 });
+
+function stubAuthEmails(overrides: Partial<AuthEmailSender> = {}): void {
+  setAuthEmailSender({
+    sendOwnerVerificationEmail: async () => undefined,
+    sendPasswordResetEmail: async () => undefined,
+    sendOwnerWelcomeEmail: async () => undefined,
+    ...overrides,
+  });
+}
 
 function mockRes() {
   const state: {
@@ -94,11 +103,10 @@ function stubSession() {
 describe('cadastro pendente do proprietário', () => {
   test('cadastro válido não cria igreja, usuário nem sessão', async () => {
     const sent: Array<Record<string, unknown>> = [];
-    setAuthEmailSender({
+    stubAuthEmails({
       sendOwnerVerificationEmail: async (input) => {
         sent.push({ ...input });
       },
-      sendPasswordResetEmail: async () => undefined,
     });
     stubMethod(User, 'findOne', async () => null);
     stubMethod(PendingOwnerRegistration, 'deleteMany', async () => ({ deletedCount: 0 }));
@@ -131,11 +139,10 @@ describe('cadastro pendente do proprietário', () => {
   });
 
   test('falha do Resend não expõe detalhes internos', async () => {
-    setAuthEmailSender({
+    stubAuthEmails({
       sendOwnerVerificationEmail: async () => {
         throw new EmailDeliveryError();
       },
-      sendPasswordResetEmail: async () => undefined,
     });
     stubMethod(User, 'findOne', async () => null);
     stubMethod(PendingOwnerRegistration, 'deleteMany', async () => ({ deletedCount: 0 }));
@@ -162,6 +169,12 @@ describe('cadastro pendente do proprietário', () => {
 
 describe('confirmação de e-mail', () => {
   test('confirmação válida cria uma igreja, define emailVerifiedAt e emite cookie', async () => {
+    const welcome: Array<Record<string, unknown>> = [];
+    stubAuthEmails({
+      sendOwnerWelcomeEmail: async (input) => {
+        welcome.push({ ...input });
+      },
+    });
     const token = 'token-alto-entropia-teste-confirmacao';
     const pendingId = new Types.ObjectId();
     const churchId = new Types.ObjectId();
@@ -196,6 +209,50 @@ describe('confirmação de e-mail', () => {
     assert.equal(state.statusCode, 201);
     assert.equal(body.user.email, 'ana@igreja.test');
     assert.equal(state.cookies.some((cookie) => cookie.name === 'cv_session' && cookie.value), true);
+    assert.equal(welcome.length, 1);
+    assert.equal(welcome[0]?.to, 'ana@igreja.test');
+    assert.equal(welcome[0]?.churchName, 'Igreja Teste');
+    assert.equal(String(welcome[0]?.idempotencyKey).includes(String(userId)), true);
+  });
+
+  test('falha do e-mail de boas-vindas não impede a confirmação', async () => {
+    stubAuthEmails({
+      sendOwnerWelcomeEmail: async () => {
+        throw new EmailDeliveryError();
+      },
+    });
+    const token = 'token-welcome-falhou';
+    const pending = {
+      _id: new Types.ObjectId(),
+      churchName: 'Igreja Teste',
+      name: 'Ana Silva',
+      email: 'ana@igreja.test',
+      username: 'anasilva',
+      passwordHash: 'hash',
+      verificationTokenHash: hashVerificationToken(token),
+      verificationExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      consumedAt: null,
+      attemptCount: 0,
+    };
+    stubMethod(PendingOwnerRegistration, 'findOne', async () => pending);
+    stubSession();
+    stubMethod(PendingOwnerRegistration, 'findOneAndUpdate', async () => pending);
+    stubMethod(User, 'findOne', async () => null);
+    stubMethod(Church, 'create', async () => [{ _id: new Types.ObjectId(), name: 'Igreja Teste' }]);
+    stubMethod(User, 'create', async () => [{
+      _id: new Types.ObjectId(),
+      name: 'Ana Silva',
+      email: 'ana@igreja.test',
+      username: 'anasilva',
+      tokenVersion: 0,
+      emailVerifiedAt: new Date(),
+    }]);
+    stubMethod(PendingOwnerRegistration, 'deleteOne', async () => ({ deletedCount: 1 }));
+
+    const { res, state } = mockRes();
+    await confirmOwnerEmail({ body: { token } }, res);
+    assert.equal(state.statusCode, 201);
+    assert.equal((state.body as { user: { email: string } }).user.email, 'ana@igreja.test');
   });
 
   test('token e código expirados são recusados', async () => {
@@ -242,6 +299,7 @@ describe('confirmação de e-mail', () => {
   });
 
   test('dois cliques simultâneos não criam duas igrejas', async () => {
+    stubAuthEmails();
     const token = 'token-duplo-clique';
     const pending = {
       _id: new Types.ObjectId(),
@@ -289,11 +347,10 @@ describe('confirmação de e-mail', () => {
 
   test('reenvio invalida o token anterior e respeita o intervalo', async () => {
     const sent: string[] = [];
-    setAuthEmailSender({
+    stubAuthEmails({
       sendOwnerVerificationEmail: async (input) => {
         sent.push(input.token);
       },
-      sendPasswordResetEmail: async () => undefined,
     });
     const pending = {
       _id: new Types.ObjectId(),
@@ -328,10 +385,7 @@ describe('confirmação de e-mail', () => {
 
 describe('redefinição de senha', () => {
   test('e-mail existente e inexistente recebem a mesma resposta pública', async () => {
-    setAuthEmailSender({
-      sendOwnerVerificationEmail: async () => undefined,
-      sendPasswordResetEmail: async () => undefined,
-    });
+    stubAuthEmails();
     stubMethod(User, 'findOne', async () => null);
     const missing = mockRes();
     await forgotPasswordAccount({ body: { email: 'sumida@igreja.test' } }, missing.res);

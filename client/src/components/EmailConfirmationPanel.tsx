@@ -87,6 +87,13 @@ export function EmailConfirmationPanel({
       <p>
         Enviamos uma mensagem para{' '}
         <strong>{emailMasked || 'o e-mail informado'}</strong>.
+        Use o código de seis dígitos ou o botão do e-mail para confirmar.
+      </p>
+      <p className="auth-spam-note" role="note">
+        <AppIcon name="info" />
+        <span>
+          Se o e-mail não aparecer na caixa de entrada, olhe também o spam ou o lixo eletrônico.
+        </span>
       </p>
 
       {error && (

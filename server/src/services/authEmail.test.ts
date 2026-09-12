@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { renderOwnerVerificationEmail, renderPasswordResetEmail } from './authEmail.js';
+import {
+  renderOwnerVerificationEmail,
+  renderOwnerWelcomeEmail,
+  renderPasswordResetEmail,
+} from './authEmail.js';
 
 test('e-mails escapam nome e igreja e não pedem rastreamento no HTML', () => {
   const verify = renderOwnerVerificationEmail({
@@ -10,11 +14,12 @@ test('e-mails escapam nome e igreja e não pedem rastreamento no HTML', () => {
     code: '123456',
     ttlMinutes: '30',
   });
-  assert.equal(verify.subject, 'Confirme seu e-mail — Eclesiafy');
+  assert.equal(verify.subject, 'Seu código Eclesiafy: 123456');
   assert.equal(verify.html.includes('<script>alert(1)</script>'), false);
   assert.equal(verify.html.includes('&lt;script&gt;'), true);
   assert.equal(verify.html.includes('Igreja &quot;Nova&quot;'), true);
   assert.equal(verify.html.includes('Confirmar meu e-mail'), true);
+  assert.equal(verify.html.includes('https://app.eclesiafy.com.br/confirmar-email#token=abc'), true);
   assert.equal(verify.text.includes('123456'), true);
   assert.equal(verify.html.includes('open-tracking'), false);
 
@@ -28,4 +33,17 @@ test('e-mails escapam nome e igreja e não pedem rastreamento no HTML', () => {
   assert.equal(reset.html.includes('Criar uma nova senha'), true);
   assert.equal(reset.text.includes('passwordHash'), false);
   assert.equal(reset.html.includes('userId'), false);
+
+  const welcome = renderOwnerWelcomeEmail({
+    name: '<b>Ana</b>',
+    churchName: 'Igreja "Nova"',
+    appUrl: 'https://app.eclesiafy.com.br',
+  });
+  assert.equal(welcome.subject, 'Cadastro da Igreja "Nova" concluído');
+  assert.equal(welcome.html.includes('<b>Ana</b>'), false);
+  assert.equal(welcome.html.includes('&lt;b&gt;Ana&lt;/b&gt;'), true);
+  assert.equal(welcome.html.includes('Igreja &quot;Nova&quot;'), true);
+  assert.equal(welcome.text.includes('concluído com sucesso'), true);
+  assert.equal(welcome.text.includes('token'), false);
+  assert.equal(welcome.html.includes('password'), false);
 });

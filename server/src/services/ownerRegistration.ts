@@ -18,7 +18,7 @@ import {
   maskEmail,
   secretsMatch,
 } from '../utils/emailCrypto.js';
-import { EmailDeliveryError, sendOwnerVerificationEmail } from './authEmail.js';
+import { EmailDeliveryError, sendOwnerVerificationEmail, sendOwnerWelcomeEmail } from './authEmail.js';
 
 export const EMAIL_CONFIRM_INVALID = 'Este link ou código não é válido.';
 export const EMAIL_CONFIRM_EXPIRED = 'Este link ou código expirou.';
@@ -327,6 +327,17 @@ export async function confirmPendingOwnerRegistration(input: {
     churchId: created.user.churchId,
     userId: created.user._id,
   });
+
+  try {
+    await sendOwnerWelcomeEmail({
+      to: created.user.email,
+      name: created.user.name,
+      churchName: created.churchName,
+      idempotencyKey: `owner-welcome:${created.user._id.toString()}`,
+    });
+  } catch {
+    console.error('Falha ao enviar e-mail de cadastro concluído');
+  }
 
   return created;
 }
