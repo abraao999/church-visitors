@@ -11,6 +11,7 @@ import {
   livePrayerObsPath,
   typeFromPublicPath,
 } from './publicAccess.ts';
+import { projectionPrivacyHint } from './prayerPrivacy.ts';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const clientSrc = join(root, '..');
@@ -64,5 +65,49 @@ describe('acesso de oração da live', () => {
     assert.match(app, /LivePrayerObsPage/);
     assert.equal(nav.includes('/live'), false);
     assert.equal(nav.includes('/acesso/:token/obs'), false);
+  });
+});
+
+describe('interruptores de privacidade do pedido público', () => {
+  test('as quatro combinações descrevem o telão sem criar campos novos', () => {
+    assert.equal(
+      projectionPrivacyHint(false, false),
+      'Seu pedido ficará visível somente para os responsáveis.'
+    );
+    assert.equal(
+      projectionPrivacyHint(true, false),
+      'Seu pedido ficará visível somente para os responsáveis.'
+    );
+    assert.equal(
+      projectionPrivacyHint(false, true),
+      'Será exibido com seu primeiro nome durante o culto.'
+    );
+    assert.equal(
+      projectionPrivacyHint(true, true),
+      'Será exibido como “Anônimo” durante o culto.'
+    );
+    assert.equal(projectionPrivacyHint(undefined as unknown as boolean, undefined as unknown as boolean), 'Seu pedido ficará visível somente para os responsáveis.');
+  });
+
+  test('o formulário público usa interruptores independentes e o contrato atual', () => {
+    const page = readFileSync(join(clientSrc, 'pages/PublicAccessPage.tsx'), 'utf8');
+    const css = readFileSync(join(clientSrc, 'pages/PublicAccessPage.css'), 'utf8');
+    const prayerForm = readFileSync(join(clientSrc, 'components/PrayerForm.tsx'), 'utf8');
+    const app = readFileSync(join(clientSrc, 'App.tsx'), 'utf8');
+    const nav = readFileSync(join(clientSrc, 'components/navItems.ts'), 'utf8');
+
+    assert.match(page, /role="switch"/);
+    assert.match(page, /isAnonymous: anonymous === true/);
+    assert.match(page, /allowProjection: allowProjection === true/);
+    assert.match(page, /if \(next\) setName\(''\)/);
+    assert.equal(page.includes('type="radio"'), false);
+    assert.match(css, /width:\s*58px/);
+    assert.match(css, /height:\s*34px/);
+    assert.match(css, /width:\s*22px/);
+    assert.match(css, /appearance:\s*none/);
+    assert.match(css, /prefers-reduced-motion/);
+    assert.match(prayerForm, /anonymous-switch/);
+    assert.match(app, /\/acesso\/:token\/oracao/);
+    assert.equal(nav.includes('PublicPrivacySwitch'), false);
   });
 });

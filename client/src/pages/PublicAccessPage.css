@@ -4,6 +4,7 @@
   min-height: 100dvh;
   margin: 0 auto;
   padding: 1.25rem 1rem 2rem;
+  overflow-x: hidden;
   color: var(--text);
 }
 
@@ -228,6 +229,10 @@ body:has(.public-access-page) {
   flex-direction: column;
   gap: 0.45rem;
   margin-bottom: 1rem;
+}
+
+.public-field[hidden] {
+  display: none;
 }
 
 .public-field:last-child {
@@ -472,6 +477,136 @@ body:has(.public-access-page) {
   box-shadow: 0 6px 22px rgba(41, 37, 36, 0.055);
 }
 
+.public-privacy-switch {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.85rem;
+  min-height: 44px;
+  margin-bottom: 1.1rem;
+  padding: 0.85rem 0.9rem;
+  overflow: visible;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: inset 4px 0 0 transparent;
+  cursor: pointer;
+}
+
+.public-privacy-switch.is-on {
+  border-color: color-mix(in srgb, var(--primary) 70%, var(--border));
+  background: var(--primary-soft);
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  box-shadow: inset 4px 0 0 var(--primary);
+}
+
+.public-privacy-switch-control {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 58px;
+  min-height: 44px;
+}
+
+.public-privacy-switch-control > input {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  min-width: 44px;
+  height: 100%;
+  min-height: 44px;
+  margin: 0;
+  opacity: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.public-privacy-switch-track {
+  position: relative;
+  box-sizing: border-box;
+  width: 58px;
+  height: 34px;
+  flex: 0 0 34px;
+  border: 1.5px solid var(--text-muted);
+  border-color: color-mix(in srgb, var(--text) 38%, var(--border));
+  border-radius: 999px;
+  background: var(--surface-muted);
+  background: color-mix(in srgb, var(--text-muted) 32%, var(--surface));
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.public-privacy-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--text) 28%, transparent);
+  transform: translateY(-50%);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.public-privacy-switch.is-on .public-privacy-switch-track,
+.public-privacy-switch-control > input:checked + .public-privacy-switch-track {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.public-privacy-switch.is-on .public-privacy-switch-track::after,
+.public-privacy-switch-control > input:checked + .public-privacy-switch-track::after {
+  background: var(--on-primary);
+  transform: translate(23px, -50%);
+}
+
+.public-privacy-switch-control > input:focus-visible + .public-privacy-switch-track {
+  outline: 3px solid var(--ring, var(--focus-ring));
+  outline-offset: 3px;
+}
+
+.public-privacy-switch-state {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.public-privacy-switch.is-on .public-privacy-switch-state {
+  color: var(--primary);
+}
+
+.public-privacy-switch-copy {
+  min-width: 0;
+}
+
+.public-privacy-switch-copy strong,
+.public-privacy-switch-copy small {
+  display: block;
+}
+
+.public-privacy-switch-copy strong {
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 750;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.public-privacy-switch-copy small {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
 .public-anonymous-control {
   display: grid;
   grid-template-columns: auto 46px minmax(0, 1fr);
@@ -663,6 +798,12 @@ body:has(.public-access-page) {
     padding: 1rem;
   }
 
+  .public-privacy-switch {
+    margin-bottom: 1.15rem;
+    padding: 0.8rem 0.75rem;
+    column-gap: 0.75rem;
+  }
+
   .public-person-card legend {
     align-items: flex-start;
   }
@@ -679,5 +820,10 @@ body:has(.public-access-page) {
 @media (prefers-reduced-motion: reduce) {
   .public-loading-spinner {
     animation-duration: 1.8s;
+  }
+
+  .public-privacy-switch-track,
+  .public-privacy-switch-track::after {
+    transition: none;
   }
 }

@@ -20,6 +20,7 @@ import {
 import { normalizeCityInput } from '../utils/citySuggest';
 import { createRequestId } from '../utils/requestId';
 import { maskPhoneInput } from '../utils/visitorFollowUp';
+import { projectionPrivacyHint } from '../utils/prayerPrivacy';
 import { PublicAccessMenu } from './PublicAccessMenu';
 import { PublicVehicleNoticeForm, PublicVehicleSuccess } from './PublicVehicleNotice';
 import './PublicAccessPage.css';
@@ -495,6 +496,49 @@ function PublicVisitorsForm({
   );
 }
 
+function PublicPrivacySwitch({
+  id,
+  checked,
+  title,
+  description,
+  onCheckedChange,
+}: {
+  id: string;
+  checked: boolean | undefined;
+  title: string;
+  description: string;
+  onCheckedChange: (next: boolean) => void;
+}) {
+  const on = checked === true;
+  const titleId = `${id}-title`;
+  const descriptionId = `${id}-description`;
+
+  return (
+    <label className={`public-privacy-switch${on ? ' is-on' : ''}`} htmlFor={id}>
+      <span className="public-privacy-switch-control">
+        <input
+          id={id}
+          type="checkbox"
+          role="switch"
+          checked={on}
+          aria-checked={on}
+          aria-labelledby={titleId}
+          aria-describedby={descriptionId}
+          onChange={(event) => onCheckedChange(event.target.checked === true)}
+        />
+        <span className="public-privacy-switch-track" aria-hidden="true" />
+        <span className="public-privacy-switch-state" aria-hidden="true">
+          {on ? 'SIM' : 'NÃO'}
+        </span>
+      </span>
+      <span className="public-privacy-switch-copy">
+        <strong id={titleId}>{title}</strong>
+        <small id={descriptionId}>{description}</small>
+      </span>
+    </label>
+  );
+}
+
 function PublicPrayerForm({
   metadata,
   token,
@@ -524,8 +568,8 @@ function PublicPrayerForm({
       await api.submitPublicPrayer(token, {
         name: anonymous ? '' : name,
         request,
-        isAnonymous: anonymous,
-        allowProjection,
+        isAnonymous: anonymous === true,
+        allowProjection: allowProjection === true,
         requestId,
       });
       onSuccess();
@@ -567,29 +611,23 @@ function PublicPrayerForm({
             </p>
           )}
         </div>
-        <label className="public-anonymous-control">
-          <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} />
-          <span className="public-switch" aria-hidden="true" />
-          <span><strong>Manter meu nome em sigilo</strong><small>Seu pedido aparecerá como “Anônimo”.</small></span>
-        </label>
-
-        <label className="public-anonymous-control">
-          <input
-            type="checkbox"
-            checked={allowProjection}
-            onChange={(event) => setAllowProjection(event.target.checked)}
-          />
-          <span className="public-switch" aria-hidden="true" />
-          <span>
-            <strong>Autorizo exibir no telão</strong>
-            <small>
-              {anonymous
-                ? 'Seu pedido pode ser projetado durante o culto, sem o seu nome.'
-                : 'Seu pedido pode ser projetado durante o culto, com o seu primeiro nome.'}
-            </small>
-          </span>
-        </label>
-
+        <PublicPrivacySwitch
+          id="public-prayer-anonymous"
+          checked={anonymous}
+          title="Manter meu nome em sigilo"
+          description="Seu pedido aparecerá como “Anônimo”."
+          onCheckedChange={(next) => {
+            setAnonymous(next);
+            if (next) setName('');
+          }}
+        />
+        <PublicPrivacySwitch
+          id="public-prayer-projection"
+          checked={allowProjection}
+          title="Autorizo exibir no telão"
+          description={projectionPrivacyHint(anonymous, allowProjection)}
+          onCheckedChange={setAllowProjection}
+        />
         {!anonymous && (
           <div className="public-field">
             <label htmlFor="public-prayer-name">Nome</label>
