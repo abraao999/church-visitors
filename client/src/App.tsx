@@ -14,6 +14,7 @@ import { InviteAcceptPage } from './pages/InviteAcceptPage';
 import { TeamMemberPage } from './pages/TeamMemberPage';
 import { TeamPage } from './pages/TeamPage';
 import { LivePrayerPage } from './pages/LivePrayerPage';
+import { LivePrayerObsPage } from './pages/LivePrayerObsPage';
 import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LoginPage } from './pages/LoginPage';
@@ -72,6 +73,8 @@ export function App() {
           <Route path="/acesso/:token/visitantes" element={<PublicAccessPage />} />
           <Route path="/acesso/:token/oracao" element={<PublicAccessPage />} />
           <Route path="/acesso/:token/veiculos" element={<PublicAccessPage />} />
+          <Route path="/acesso/:token/obs" element={<LivePrayerObsPage />} />
+          <Route path="/live/:token/oracao" element={<PublicAccessPage />} />
           {/* Painéis por link de leitura: abrem na TV sem sessão de responsável. */}
           <Route path="/painel/:token" element={<PanelAccessMenu />} />
           <Route path="/painel/:token/louvores" element={<HymnsPanelPage />} />

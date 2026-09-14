@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
 import { PrayerForm } from '../components/PrayerForm';
 import { PrayerList } from '../components/PrayerList';
+import { LivePrayerAccessCard } from '../components/LivePrayerAccessCard';
 import type { PrayerCareStatus, PrayerRequest } from '../types';
 import { todayLocalISO } from '../utils/date';
 import { canChangePrayerCareStatus, hasPermission } from '../utils/permissions';
@@ -15,6 +16,7 @@ export function PrayerRequestsPage() {
   const canProject = hasPermission(user?.permissions, 'prayers:project') || user?.role === 'owner';
   const canChangeCare = canChangePrayerCareStatus(user?.role);
   const canDelete = hasPermission(user?.permissions, 'prayers:delete') || user?.role === 'owner';
+  const canAccesses = hasPermission(user?.permissions, 'guest_accesses:read') || user?.role === 'owner';
   const [selectedDate, setSelectedDate] = useState(todayLocalISO());
   const [requests, setRequests] = useState<PrayerRequest[]>([]);
   const [loadingRecords, setLoadingRecords] = useState(true);
@@ -73,6 +75,11 @@ export function PrayerRequestsPage() {
           </Link>
         )}
       </section>
+      {canAccesses && (
+        <div className="prayer-live-access">
+          <LivePrayerAccessCard />
+        </div>
+      )}
       <div className="prayer-page-form">
         <PrayerForm onSuccess={loadRequests} />
       </div>

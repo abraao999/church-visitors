@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { GuestAccessOverview } from '../components/GuestAccessOverview';
+import { LivePrayerAccessCard } from '../components/LivePrayerAccessCard';
 import { PortariaDevicesSection } from '../components/PortariaDevicesSection';
 import { useAuth } from '../auth/AuthContext';
 import { hasPermission } from '../utils/permissions';
@@ -208,6 +209,7 @@ export function HomePage() {
       </div>
 
       {canAccesses && <GuestAccessOverview />}
+      {canAccesses && <LivePrayerAccessCard />}
       {canPortariaDevices && !canAccesses && <PortariaDevicesSection />}
 
       {canHolyrics && (

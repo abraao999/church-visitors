@@ -1,0 +1,246 @@
+.live-prayer-access {
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.live-prayer-access-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.live-prayer-access-heading h2 {
+  margin-top: 0.25rem;
+  color: var(--text);
+  font-size: 1.35rem;
+}
+
+.live-prayer-access-heading p {
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.live-prayer-access-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.live-prayer-access-eyebrow .app-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.live-prayer-access-heading > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 46px;
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+  color: var(--primary);
+  font-weight: 750;
+}
+
+.live-prayer-access-heading > a:hover {
+  background: var(--primary-soft);
+}
+
+.live-prayer-access-feedback:empty {
+  display: none;
+}
+
+.live-prayer-access-feedback > span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+  font-size: 0.92rem;
+}
+
+.live-prayer-access-feedback .success {
+  color: var(--success);
+}
+
+.live-prayer-access-feedback .error {
+  color: var(--danger);
+}
+
+.live-prayer-access-card {
+  margin-top: 1.25rem;
+  padding: 1.1rem;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.live-prayer-access-loading {
+  padding: 2rem 0;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.live-prayer-access-content {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.live-prayer-access-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.45rem;
+}
+
+.live-prayer-access-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.35rem;
+}
+
+.live-prayer-access-card-header h3 {
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.live-prayer-access-card-header p {
+  margin-top: 0.1rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.live-prayer-access-card-header > strong {
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.live-prayer-access-card-header > strong.active {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.live-prayer-access-card-header > strong.inactive {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+.live-prayer-access-info label {
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.live-prayer-access-info input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+}
+
+.live-prayer-access-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+
+.live-prayer-access-actions > * {
+  display: flex;
+  flex: 1 1 160px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid var(--primary);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--primary);
+  font-weight: 750;
+}
+
+.live-prayer-access-actions .app-icon,
+.live-prayer-access-empty button .app-icon {
+  width: 19px;
+  height: 19px;
+}
+
+.live-prayer-obs-steps {
+  margin: 0.55rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.live-prayer-access-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 190px;
+  padding: 1.2rem;
+  border-radius: 12px;
+  background: var(--surface-muted);
+  text-align: center;
+}
+
+.live-prayer-access-empty > .app-icon {
+  width: 34px;
+  height: 34px;
+  color: var(--accent);
+}
+
+.live-prayer-access-empty p {
+  max-width: 360px;
+  margin: 0.65rem 0 1rem;
+  color: var(--text-muted);
+}
+
+.live-prayer-access-empty button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.55rem 0.9rem;
+  border: 1.5px solid var(--primary);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--primary);
+  font-weight: 750;
+}
+
+@media (max-width: 720px) {
+  .live-prayer-access-heading {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .live-prayer-access-heading > a {
+    padding-left: 0;
+  }
+
+  .live-prayer-access-content {
+    grid-template-columns: 1fr;
+  }
+}

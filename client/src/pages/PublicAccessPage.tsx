@@ -506,6 +506,7 @@ function PublicPrayerForm({
   onSuccess: () => void;
   showMenu: boolean;
 }) {
+  const location = useLocation();
   const requestId = useRef(createRequestId()).current;
   const [anonymous, setAnonymous] = useState(false);
   const [allowProjection, setAllowProjection] = useState(false);
@@ -543,7 +544,11 @@ function PublicPrayerForm({
         <span className="public-prayer-icon"><AppIcon name="prayer" /></span>
         <span className="public-access-badge"><AppIcon name="check" /> Canal oficial de oração</span>
         <h1>Pedido de oração</h1>
-        <p>Compartilhe seu pedido com a equipe da igreja.</p>
+        <p>
+          {location.pathname.startsWith('/live/')
+            ? 'Quem está assistindo a transmissão pode enviar o pedido por aqui.'
+            : 'Compartilhe seu pedido com a equipe da igreja.'}
+        </p>
       </section>
 
       <div className="public-access-permission">

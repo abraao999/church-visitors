@@ -196,6 +196,11 @@
   font-weight: 750;
 }
 
+.guest-access-details > label + input + label {
+  display: block;
+  margin-top: 0.85rem;
+}
+
 .guest-access-form-grid input,
 .guest-access-form-grid select {
   min-height: 50px;

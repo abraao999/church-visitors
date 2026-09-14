@@ -22,3 +22,8 @@
 .guest-qr-compact .guest-qr-local-warning {
   max-width: 100%;
 }
+
+.guest-qr-print img {
+  background: #ffffff;
+  padding: 0.35rem;
+}

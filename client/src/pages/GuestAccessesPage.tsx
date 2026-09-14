@@ -3,9 +3,14 @@ import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
 import { PortariaDevicesSection } from '../components/PortariaDevicesSection';
-import { GuestAccessQr, guestAccessUrl } from '../components/GuestAccessQr';
+import { GuestAccessQr, guestAccessUrl, livePrayerObsUrl } from '../components/GuestAccessQr';
 import type { GuestAccess, GuestAccessType } from '../types';
-import { OPTION_LABELS } from '../utils/publicAccess';
+import {
+  isLivePrayerAccess,
+  LIVE_PRAYER_ACCESS_NAME,
+  LIVE_PRAYER_TYPES,
+  OPTION_LABELS,
+} from '../utils/publicAccess';
 import { hasPermission } from '../utils/permissions';
 import './GuestAccessesPage.css';
 
@@ -102,11 +107,14 @@ export function GuestAccessesPage() {
     });
   }
 
-  function openCreate(mode: 'portal' | 'panel' = 'portal') {
+  function openCreate(mode: 'portal' | 'panel' | 'live' = 'portal') {
     setEditing(null);
     if (mode === 'panel') {
       setTypes([PANEL_OPTION]);
       setName('Painéis da TV');
+    } else if (mode === 'live') {
+      setTypes([...LIVE_PRAYER_TYPES]);
+      setName(LIVE_PRAYER_ACCESS_NAME);
     } else {
       setTypes([...FORM_OPTIONS]);
       setName('Portal público da igreja');
@@ -225,6 +233,16 @@ export function GuestAccessesPage() {
     }
   }
 
+  async function copyObsOverlay(access: GuestAccess) {
+    setError('');
+    try {
+      await copyText(livePrayerObsUrl(access.token));
+      setFeedback('Endereço da sobreposição do OBS copiado.');
+    } catch {
+      setError('Não foi possível copiar. Selecione o endereço e copie manualmente.');
+    }
+  }
+
   return (
     <div className="guest-access-page">
       <header className="guest-access-heading">
@@ -232,12 +250,15 @@ export function GuestAccessesPage() {
           <span className="page-eyebrow"><AppIcon name="lock" /> Compartilhamento seguro</span>
           <h1>Acessos sem login</h1>
           <p>
-            Crie um portal público para os visitantes ou um acesso de leitura para as TVs da igreja.
+            Crie um portal público, o QR da oração da live para o OBS, ou um acesso de leitura para as TVs.
           </p>
         </div>
         <div className="guest-access-heading-actions">
           <button type="button" className="btn btn-primary" onClick={() => openCreate('portal')}>
             <AppIcon name="plus" /> Criar portal público
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={() => openCreate('live')}>
+            <AppIcon name="prayer" /> Criar oração da live
           </button>
           {canManagePanels && (
             <button type="button" className="btn btn-secondary" onClick={() => openCreate('panel')}>
@@ -373,7 +394,9 @@ export function GuestAccessesPage() {
             const currentTypes = accessTypes(access);
             const panel = isPanel(access);
             const portal = isPortal(access);
+            const livePrayer = isLivePrayerAccess(access);
             const link = guestAccessUrl(access.token, currentTypes, 'shared_link');
+            const obsLink = livePrayer ? livePrayerObsUrl(access.token) : '';
             return (
               <article className="guest-access-card card" key={access.id}>
                 <div className="guest-access-card-main">
@@ -382,7 +405,7 @@ export function GuestAccessesPage() {
                   </div>
                   <div className="guest-access-card-title">
                     <span>
-                      {panel ? 'Acesso de painel' : portal ? 'Portal público' : 'Acesso específico'}
+                      {panel ? 'Acesso de painel' : portal ? 'Portal público' : livePrayer ? 'Oração da live' : 'Acesso específico'}
                     </span>
                     <h2>{access.name}</h2>
                     <p>
@@ -394,10 +417,16 @@ export function GuestAccessesPage() {
                 </div>
 
                 <div className="guest-access-card-content">
-                  <GuestAccessQr token={access.token} name={access.name} types={currentTypes} />
+                  <GuestAccessQr
+                    token={access.token}
+                    name={access.name}
+                    types={currentTypes}
+                    contrast={livePrayer ? 'print' : 'theme'}
+                    downloadLabel={livePrayer ? 'Baixar QR para o OBS' : 'Baixar QR Code'}
+                  />
                   <div className="guest-access-details">
                     <label htmlFor={`link-${access.id}`}>
-                      {panel ? 'Link para abrir na TV' : 'Link do acesso'}
+                      {panel ? 'Link para abrir na TV' : livePrayer ? 'Link do pedido' : 'Link do acesso'}
                     </label>
                     <input
                       id={`link-${access.id}`}
@@ -405,6 +434,17 @@ export function GuestAccessesPage() {
                       readOnly
                       onFocus={(event) => event.currentTarget.select()}
                     />
+                    {livePrayer && (
+                      <>
+                        <label htmlFor={`obs-${access.id}`}>Sobreposição para o OBS</label>
+                        <input
+                          id={`obs-${access.id}`}
+                          value={obsLink}
+                          readOnly
+                          onFocus={(event) => event.currentTarget.select()}
+                        />
+                      </>
+                    )}
                     <div className="guest-access-meta">
                       <span>
                         <AppIcon name="calendar" />
@@ -422,6 +462,27 @@ export function GuestAccessesPage() {
                         <AppIcon name="copy" />
                         Copiar link
                       </button>
+                      {livePrayer && (
+                        <>
+                          <button
+                            type="button"
+                            className="guest-action-button"
+                            onClick={() => copyObsOverlay(access)}
+                          >
+                            <AppIcon name="copy" />
+                            Copiar OBS
+                          </button>
+                          <a
+                            className="guest-action-button"
+                            href={obsLink}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <AppIcon name="external" />
+                            Abrir sobreposição
+                          </a>
+                        </>
+                      )}
                       <button type="button" className="guest-action-button" onClick={() => openEdit(access)}>
                         <AppIcon name="edit" />
                         Editar opções
