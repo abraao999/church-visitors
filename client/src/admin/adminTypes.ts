@@ -8,6 +8,16 @@ export interface PlatformAdmin {
   role: PlatformAdminRole;
 }
 
+export interface PlatformAdminRow extends PlatformAdmin {
+  active: boolean;
+  lastSeenAt: string | null;
+  createdAt: string;
+}
+
+export interface PlatformAdminList {
+  items: PlatformAdminRow[];
+}
+
 export interface PlatformOverview {
   churchesTotal: number;
   churchesActive: number;
@@ -51,6 +61,34 @@ export interface PlatformChurchList {
   totalPages: number;
 }
 
+export type PlatformAuditOperation =
+  | 'login_succeeded'
+  | 'login_blocked'
+  | 'logout'
+  | 'church_assisted_created'
+  | 'church_suspended'
+  | 'church_reactivated'
+  | 'verification_resent'
+  | 'password_reset_requested'
+  | 'admin_changed';
+
+export interface PlatformActivityList {
+  items: Array<{
+    id: string;
+    adminName: string;
+    adminRole: PlatformAdminRole | null;
+    operation: PlatformAuditOperation;
+    churchName: string | null;
+    churchId: string | null;
+    reason: string | null;
+    createdAt: string;
+  }>;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface PlatformChurchDetail {
   id: string;
   name: string;
@@ -82,4 +120,63 @@ export const SITUATION_LABELS: Record<ChurchSituation, string> = {
   ativa: 'Ativa',
   pendente: 'Pendente',
   suspensa: 'Suspensa',
+};
+
+export type HealthOverall = 'healthy' | 'warning' | 'critical' | 'unknown';
+export type HealthServiceStatus = 'healthy' | 'warning' | 'critical' | 'not_configured' | 'unknown';
+
+export interface PlatformHealth {
+  checkedAt: string;
+  overall: HealthOverall;
+  services: Array<{
+    key: 'api' | 'database' | 'email' | 'storage';
+    label: string;
+    status: HealthServiceStatus;
+    message: string;
+    latencyMs?: number;
+  }>;
+  jobs: Array<{
+    key: 'retention';
+    label: string;
+    scheduleLabel: string;
+    lastStartedAt?: string;
+    lastCompletedAt?: string;
+    nextRunAt?: string;
+    durationMs?: number;
+    status: 'completed' | 'failed' | 'running' | 'never_run';
+    summary?: {
+      policiesFound: number;
+      churchesProcessed: number;
+      churchesSkipped: number;
+      failures: number;
+    };
+  }>;
+  incidents: Array<{
+    id: string;
+    source: string;
+    severity: 'warning' | 'critical';
+    title: string;
+    message: string;
+    createdAt: string;
+  }>;
+  deployment: {
+    environment?: string;
+    version?: string;
+    commit?: string;
+  };
+}
+
+export const HEALTH_OVERALL_LABELS: Record<HealthOverall, string> = {
+  healthy: 'Funcionando normalmente',
+  warning: 'Disponível com atenção',
+  critical: 'Indisponibilidade detectada',
+  unknown: 'Não foi possível verificar',
+};
+
+export const HEALTH_STATUS_LABELS: Record<HealthServiceStatus, string> = {
+  healthy: 'Operacional',
+  warning: 'Atenção',
+  critical: 'Indisponível',
+  not_configured: 'Não configurado',
+  unknown: 'Desconhecido',
 };

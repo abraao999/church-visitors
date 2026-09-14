@@ -1,0 +1,215 @@
+.admin-health-heading,
+.admin-health-title,
+.admin-health-overall,
+.admin-health-overall-copy,
+.admin-health-section-heading,
+.admin-health-service-heading,
+.admin-health-service-status,
+.admin-health-incident-main,
+.admin-health-incident-copy,
+.admin-health-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-health-heading,
+.admin-health-overall,
+.admin-health-section-heading,
+.admin-health-service-heading,
+.admin-health-incident-main {
+  justify-content: space-between;
+}
+
+.admin-health-heading,
+.admin-health-section-heading {
+  align-items: flex-start;
+  margin-bottom: 1.1rem;
+}
+
+.admin-health-title {
+  align-items: flex-start;
+}
+
+.admin-health-title-icon,
+.admin-health-service-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-muted);
+  color: var(--text);
+  flex: 0 0 auto;
+}
+
+.admin-health-title h1,
+.admin-health-service h3,
+.admin-health h2,
+.admin-health p {
+  margin-top: 0;
+}
+
+.admin-health-title p,
+.admin-health-section-heading p,
+.admin-health-service p,
+.admin-health-routine span,
+.admin-health-incident span,
+.admin-health-deploy p {
+  color: var(--text-muted);
+  margin-bottom: 0;
+}
+
+.admin-health-overall {
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.3rem;
+}
+
+.admin-health-overall-copy {
+  align-items: flex-start;
+}
+
+.admin-health-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex: 0 0 auto;
+}
+
+.admin-health-dot.is-healthy,
+.admin-health-dot.is-completed {
+  background: #2f9e6a;
+}
+
+.admin-health-dot.is-warning {
+  background: #d29a1a;
+}
+
+.admin-health-dot.is-critical,
+.admin-health-dot.is-failed {
+  background: var(--danger, #c23b3b);
+}
+
+.admin-health-dot.is-not_configured,
+.admin-health-dot.is-unknown,
+.admin-health-dot.is-never_run {
+  background: var(--text-muted);
+}
+
+.admin-health-services {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-health-service {
+  min-height: 156px;
+}
+
+.admin-health-service h3 {
+  margin: 0.9rem 0 0.5rem;
+}
+
+.admin-health-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.admin-health-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.admin-health-routine,
+.admin-health-incident {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-health-routine {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.2fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr);
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.admin-health-routine strong,
+.admin-health-incident strong,
+.admin-health-routine span,
+.admin-health-incident span {
+  display: block;
+}
+
+.admin-health-routine-summary {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.admin-health-incident-copy {
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.admin-health-incident-detail {
+  margin: 0.75rem 0 0 1.4rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--border);
+  color: var(--text-muted);
+}
+
+.admin-health-deploy {
+  margin-top: 1.5rem;
+}
+
+.admin-health-legend {
+  flex-wrap: wrap;
+  margin-top: 1.4rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 900px) {
+  .admin-health-services {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-health-detail {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-health-heading,
+  .admin-health-overall,
+  .admin-health-section-heading,
+  .admin-health-incident-main {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-health-services,
+  .admin-health-routine {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-health-incident-detail {
+    margin-left: 0;
+  }
+
+  .admin-health-heading .btn {
+    min-height: 44px;
+  }
+}

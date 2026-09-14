@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { recordSystemHealthEvent } from '../models/SystemHealthEvent.js';
 import {
   buildEmailActionLink,
   getEmailFrom,
@@ -219,6 +220,14 @@ function createResendClient(): Resend {
   return new Resend(apiKey);
 }
 
+function recordEmailDeliveryIncident(): void {
+  void recordSystemHealthEvent({
+    source: 'email',
+    type: 'email_delivery_failed',
+    severity: 'warning',
+  });
+}
+
 async function sendTransactionalEmail(input: {
   to: string;
   subject: string;
@@ -255,6 +264,7 @@ async function sendTransactionalEmail(input: {
       throw new EmailDeliveryError();
     }
   } catch (error) {
+    recordEmailDeliveryIncident();
     if (error instanceof EmailDeliveryError) throw error;
     console.error('Falha ao enviar e-mail transacional');
     throw new EmailDeliveryError();

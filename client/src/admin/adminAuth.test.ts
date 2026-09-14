@@ -25,9 +25,10 @@ test('rotas administrativas ficam fora do Layout das igrejas', () => {
   const adminHome = app.indexOf('path="/admin"');
   const churches = app.indexOf('path="/admin/igrejas"');
   const detail = app.indexOf('path="/admin/igrejas/:churchId"');
+  const health = app.indexOf('path="/admin/saude"');
   const protectedIndex = app.indexOf('element={<ProtectedRoute');
   const layoutIndex = app.indexOf('element={<Layout />}');
-  assert.ok(adminLogin > 0 && adminHome > 0 && churches > 0 && detail > 0);
+  assert.ok(adminLogin > 0 && adminHome > 0 && churches > 0 && detail > 0 && health > 0);
   assert.ok(adminLogin < protectedIndex);
   assert.ok(adminHome < layoutIndex);
   assert.match(app, /AdminProtectedRoute/);
@@ -75,4 +76,27 @@ test('rota /admin sem sessão volta ao login administrativo', () => {
   const guard = readFileSync(join(clientSrc, 'admin/AdminProtectedRoute.tsx'), 'utf8');
   assert.match(guard, /Navigate to="\/admin\/login"/);
   assert.match(guard, /Carregando o painel administrativo/);
+});
+
+test('tela de saúde está no menu, protegida e cobre os estados', () => {
+  const app = readFileSync(join(clientSrc, 'App.tsx'), 'utf8');
+  const layout = readFileSync(join(clientSrc, 'admin/AdminLayout.tsx'), 'utf8');
+  const page = readFileSync(join(clientSrc, 'admin/AdminHealthPage.tsx'), 'utf8');
+  const types = readFileSync(join(clientSrc, 'admin/adminTypes.ts'), 'utf8');
+  const css = readFileSync(join(clientSrc, 'admin/AdminHealthPage.css'), 'utf8');
+  const healthIndex = app.indexOf('path="/admin/saude"');
+  const protectedIndex = app.indexOf('element={<AdminProtectedRoute');
+  assert.ok(healthIndex > protectedIndex);
+  assert.match(layout, /to: '\/admin\/saude'/);
+  assert.match(layout, /label: 'Saúde'/);
+  assert.equal(layout.includes("label: 'Saúde', icon: 'heartHand'"), false);
+  assert.match(page, /Atualizando/);
+  assert.match(page, /Tentar novamente/);
+  assert.match(page, /Nenhum incidente técnico recente/);
+  assert.match(types, /Funcionando normalmente/);
+  assert.match(types, /Disponível com atenção/);
+  assert.match(types, /Indisponibilidade detectada/);
+  assert.match(page, /Não configurado/);
+  assert.match(page, /aria-live/);
+  assert.match(css, /max-width: 520px/);
 });

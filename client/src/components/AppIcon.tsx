@@ -46,7 +46,11 @@ export type AppIconName =
   | 'close'
   | 'menu'
   | 'chart'
-  | 'mail';
+  | 'mail'
+  | 'activity'
+  | 'server'
+  | 'database'
+  | 'storage';
 
 export function AppIcon({ name, className = '' }: { name: AppIconName; className?: string }) {
   const content = {
@@ -98,6 +102,10 @@ export function AppIcon({ name, className = '' }: { name: AppIconName; className
     menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
     chart: <><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-5" /><path d="M12 16V8" /><path d="M16 16v-3" /></>,
     mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m4 7 8 6 8-6" /></>,
+    activity: <><path d="M22 12h-4l-3 7-6-14-3 7H2" /></>,
+    server: <><rect x="3" y="4" width="18" height="7" rx="2" /><rect x="3" y="13" width="18" height="7" rx="2" /><path d="M7 7.5h.01M7 16.5h.01" /></>,
+    database: <><ellipse cx="12" cy="6" rx="8" ry="3" /><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6" /><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" /></>,
+    storage: <><path d="M4 6h16v4H4zM4 14h16v4H4z" /><path d="M8 8h.01M8 16h.01" /></>,
   }[name];
 
   return (

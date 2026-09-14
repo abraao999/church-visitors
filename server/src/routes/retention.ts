@@ -10,9 +10,9 @@ import {
   parseRetentionPolicy,
   policyValues,
   previewRetention,
-  runAutomaticRetention,
   runRetentionPolicy,
 } from '../services/retention.js';
+import { runRetentionCronWithHealth } from '../services/platformHealth.js';
 import { sendPrivateJson } from '../utils/publicRecord.js';
 import { isPlaceholderSecret } from '../utils/configuredSecret.js';
 import { validCronAuthorization } from '../utils/cronSecret.js';
@@ -67,8 +67,8 @@ router.get('/cron', async (req, res) => {
   }
 
   try {
-    const result = await runAutomaticRetention();
-    return res.json({ ok: result.failed === 0, ...result });
+    const result = await runRetentionCronWithHealth();
+    return res.json({ ok: result.ok, selected: result.selected, completed: result.completed, failed: result.failed, skipped: result.skipped });
   } catch {
     return res.status(500).json({ error: 'A rotina automática não pôde ser concluída.' });
   }

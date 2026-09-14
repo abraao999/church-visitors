@@ -9,12 +9,12 @@ import './AdminLayout.css';
 const NAV = [
   { to: '/admin', label: 'Visão geral', icon: 'chart' as const, end: true },
   { to: '/admin/igrejas', label: 'Igrejas', icon: 'pin' as const, end: false },
+  { to: '/admin/administradores', label: 'Administradores', icon: 'users' as const, end: false },
+  { to: '/admin/atividades', label: 'Atividades', icon: 'clipboard' as const, end: false },
+  { to: '/admin/saude', label: 'Saúde', icon: 'activity' as const, end: false },
 ];
 
 const SOON = [
-  { label: 'Usuários', icon: 'users' as const },
-  { label: 'Atividades', icon: 'clipboard' as const },
-  { label: 'Saúde', icon: 'heartHand' as const },
   { label: 'Configurações', icon: 'settings' as const },
 ];
 

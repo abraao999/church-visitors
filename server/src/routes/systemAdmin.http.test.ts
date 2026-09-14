@@ -402,4 +402,38 @@ describe('painel administrativo da plataforma', () => {
     assert.equal(serialized.includes('token'), false);
     assert.equal(detail.owner?.email, 'ana@igreja.test');
   });
+
+  test('saúde rejeita sessão comum e aceita viewer', async () => {
+    const { res, state } = mockRes();
+    await requirePlatformAdmin({ headers: {} } as PlatformAdminRequest, res, () => undefined);
+    assert.equal(state.statusCode, 401);
+
+    const adminId = new Types.ObjectId();
+    stubMethod(PlatformAdmin, 'findById', async () => ({
+      _id: adminId,
+      name: 'Ada',
+      email: 'ada@eclesiafy.com.br',
+      role: 'viewer',
+      active: true,
+      tokenVersion: 0,
+    }));
+    const token = signPlatformAdminToken({
+      adminId: String(adminId),
+      name: 'Ada',
+      email: 'ada@eclesiafy.com.br',
+      role: 'viewer',
+      tokenVersion: 0,
+    });
+    const { res: allowedRes, state: allowed } = mockRes();
+    let nextCalled = false;
+    await requirePlatformAdmin(
+      { headers: { cookie: `${PLATFORM_ADMIN_COOKIE}=${token}` } } as PlatformAdminRequest,
+      allowedRes,
+      () => {
+        nextCalled = true;
+      }
+    );
+    assert.equal(nextCalled, true);
+    assert.equal(allowed.statusCode, 200);
+  });
 });

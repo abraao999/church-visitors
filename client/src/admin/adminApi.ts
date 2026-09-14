@@ -1,8 +1,12 @@
 import { ApiError } from '../api/client';
 import type {
   PlatformAdmin,
+  PlatformAdminList,
+  PlatformAdminRole,
+  PlatformActivityList,
   PlatformChurchDetail,
   PlatformChurchList,
+  PlatformHealth,
   PlatformOverview,
 } from './adminTypes';
 
@@ -55,6 +59,43 @@ export const adminApi = {
   async overview(): Promise<PlatformOverview> {
     const response = await adminFetch(`${API_BASE}/overview`);
     return handleResponse<PlatformOverview>(response);
+  },
+
+  async health(): Promise<PlatformHealth> {
+    const response = await adminFetch(`${API_BASE}/health`);
+    return handleResponse<PlatformHealth>(response);
+  },
+
+  async activities(query: { q?: string; operation?: string; page?: number }): Promise<PlatformActivityList> {
+    const params = new URLSearchParams();
+    if (query.q) params.set('q', query.q);
+    if (query.operation) params.set('operation', query.operation);
+    if (query.page) params.set('page', String(query.page));
+    const response = await adminFetch(`${API_BASE}/activities?${params.toString()}`);
+    return handleResponse<PlatformActivityList>(response);
+  },
+
+  async admins(): Promise<PlatformAdminList> {
+    const response = await adminFetch(`${API_BASE}/admins`);
+    return handleResponse<PlatformAdminList>(response);
+  },
+
+  async createAdmin(data: { name: string; email: string; password: string; role: PlatformAdminRole }): Promise<void> {
+    const response = await adminFetch(`${API_BASE}/admins`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    await handleResponse<{ id: string }>(response);
+  },
+
+  async updateAdmin(id: string, data: { role?: PlatformAdminRole; active?: boolean }): Promise<void> {
+    const response = await adminFetch(`${API_BASE}/admins/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    await handleResponse<{ ok: true }>(response);
   },
 
   async churches(query: { q?: string; situacao?: string; page?: number }): Promise<PlatformChurchList> {

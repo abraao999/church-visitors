@@ -6,7 +6,12 @@ import { GuestAccess } from '../models/GuestAccess.js';
 import { HolyricsSettings } from '../models/HolyricsSettings.js';
 import { PendingOwnerRegistration } from '../models/PendingOwnerRegistration.js';
 import { PlatformAdmin, type PlatformAdminRole } from '../models/PlatformAdmin.js';
-import { recordPlatformAudit } from '../models/PlatformAuditEvent.js';
+import {
+  PLATFORM_AUDIT_OPERATIONS,
+  PlatformAuditEvent,
+  recordPlatformAudit,
+  type PlatformAuditOperation,
+} from '../models/PlatformAuditEvent.js';
 import { PortariaDevice } from '../models/PortariaDevice.js';
 import { PrayerRequest } from '../models/PrayerRequest.js';
 import { Service } from '../models/Service.js';
@@ -197,6 +202,179 @@ export async function loadPlatformAdminOverview() {
     pendingItems,
     usage,
   };
+}
+
+export async function listPlatformAuditEvents(input: {
+  q?: string;
+  operation?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const page = Number.isInteger(input.page) && (input.page as number) > 0 ? (input.page as number) : 1;
+  const pageSize = Math.min(50, Math.max(1, Number.isInteger(input.pageSize) ? (input.pageSize as number) : 20));
+  const q = normalizedSearch(input.q || '');
+  const operation = PLATFORM_AUDIT_OPERATIONS.includes(input.operation as PlatformAuditOperation)
+    ? input.operation
+    : '';
+  const match: Record<string, unknown> = {};
+  if (operation) match.operation = operation;
+  const regex = q ? new RegExp(escapeRegex(q), 'i') : null;
+  const start = (page - 1) * pageSize;
+
+  const [result] = await PlatformAuditEvent.aggregate<{
+    items: Array<{
+      _id: Types.ObjectId;
+      platformAdminName?: string;
+      platformAdminRole?: PlatformAdminRole;
+      operation: PlatformAuditOperation;
+      targetType?: string;
+      targetId?: string;
+      reason?: string;
+      createdAt: Date;
+      church?: { name?: string };
+    }>;
+    total: Array<{ count: number }>;
+  }>([
+    { $match: match },
+    {
+      $lookup: {
+        from: 'churches',
+        localField: 'churchId',
+        foreignField: '_id',
+        as: 'churchDocs',
+      },
+    },
+    { $addFields: { church: { $first: '$churchDocs' } } },
+    ...(regex
+      ? [{ $match: { $or: [{ platformAdminName: regex }, { 'church.name': regex }] } }]
+      : []),
+    { $sort: { createdAt: -1 as const } },
+    {
+      $facet: {
+        items: [
+          { $skip: start },
+          { $limit: pageSize },
+          {
+            $project: {
+              platformAdminName: 1,
+              platformAdminRole: 1,
+              operation: 1,
+              targetType: 1,
+              targetId: 1,
+              reason: 1,
+              createdAt: 1,
+              'church.name': 1,
+            },
+          },
+        ],
+        total: [{ $count: 'count' }],
+      },
+    },
+  ]);
+
+  const total = result?.total[0]?.count || 0;
+  return {
+    items: (result?.items || []).map((event) => ({
+      id: String(event._id),
+      adminName: event.platformAdminName || 'Sistema',
+      adminRole: event.platformAdminRole || null,
+      operation: event.operation,
+      churchName: event.church?.name || null,
+      churchId: event.targetType === 'church' ? event.targetId || null : null,
+      reason: event.reason || null,
+      createdAt: event.createdAt.toISOString(),
+    })),
+    page,
+    pageSize,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
+}
+
+export async function listPlatformAdmins() {
+  const admins = await PlatformAdmin.find(
+    {},
+    'name email role active lastSeenAt createdAt'
+  ).sort({ active: -1, role: 1, name: 1 });
+  return {
+    items: admins.map((admin) => ({
+      id: String(admin._id),
+      name: admin.name,
+      email: admin.email,
+      role: admin.role,
+      active: admin.active !== false,
+      lastSeenAt: admin.lastSeenAt?.toISOString() || null,
+      createdAt: admin.createdAt.toISOString(),
+    })),
+  };
+}
+
+export async function createPlatformAdmin(
+  input: { name: string; email: string; password: string; role: string },
+  actor: PlatformAdminActor
+) {
+  const name = input.name.trim().replace(/\s+/g, ' ').slice(0, 120);
+  const email = normalizeEmail(input.email);
+  const password = input.password;
+  const role = input.role === 'support' || input.role === 'viewer' ? input.role : '';
+  if (!name || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !role) throw new Error('invalid');
+  if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) throw new Error('password');
+  if (await PlatformAdmin.exists({ email })) throw new Error('duplicate');
+
+  const admin = await PlatformAdmin.create({
+    name,
+    email,
+    passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS),
+    role,
+    active: true,
+    emailVerifiedAt: new Date(),
+    tokenVersion: 0,
+  });
+  await recordPlatformAudit({
+    ...actorIds(actor),
+    operation: 'admin_changed',
+    targetType: 'platform_admin',
+    targetId: String(admin._id),
+    metadata: { action: 'created', role },
+  });
+  return { id: String(admin._id) };
+}
+
+export async function updatePlatformAdmin(
+  adminId: string,
+  input: { role?: string; active?: boolean },
+  actor: PlatformAdminActor
+) {
+  if (!Types.ObjectId.isValid(adminId)) throw new Error('not_found');
+  const admin = await PlatformAdmin.findById(adminId);
+  if (!admin) throw new Error('not_found');
+  const nextRole = input.role === 'platform_owner' || input.role === 'support' || input.role === 'viewer'
+    ? input.role
+    : admin.role;
+  const nextActive = typeof input.active === 'boolean' ? input.active : admin.active !== false;
+  if (String(admin._id) === actor.adminId && (!nextActive || nextRole !== 'platform_owner')) throw new Error('self');
+
+  const removesOwner = admin.active !== false && admin.role === 'platform_owner' && (!nextActive || nextRole !== 'platform_owner');
+  if (removesOwner) {
+    const owners = await PlatformAdmin.countDocuments({ role: 'platform_owner', active: true });
+    if (owners <= 1) throw new Error('last_owner');
+  }
+
+  const changed = admin.role !== nextRole || (admin.active !== false) !== nextActive;
+  admin.role = nextRole;
+  admin.active = nextActive;
+  if (changed) admin.tokenVersion = (admin.tokenVersion || 0) + 1;
+  await admin.save();
+  if (changed) {
+    await recordPlatformAudit({
+      ...actorIds(actor),
+      operation: 'admin_changed',
+      targetType: 'platform_admin',
+      targetId: String(admin._id),
+      metadata: { action: nextActive ? 'updated' : 'deactivated', role: nextRole },
+    });
+  }
+  return { ok: true as const };
 }
 
 export async function listPlatformChurches(input: {

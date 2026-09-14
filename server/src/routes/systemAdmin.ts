@@ -15,9 +15,12 @@ import { EmailConfirmError } from '../services/ownerRegistration.js';
 import { PasswordResetError } from '../services/passwordReset.js';
 import {
   authenticatePlatformAdmin,
+  createPlatformAdmin,
   createAssistedChurch,
   getPlatformChurchDetail,
   listPlatformChurches,
+  listPlatformAuditEvents,
+  listPlatformAdmins,
   loadPlatformAdminOverview,
   PLATFORM_CHURCH_NOT_FOUND,
   PLATFORM_FORBIDDEN,
@@ -27,11 +30,13 @@ import {
   resendPlatformVerification,
   sendPlatformPasswordReset,
   suspendPlatformChurch,
+  updatePlatformAdmin,
 } from '../services/platformAdmin.js';
 import { clientIp, consumeRateLimit, sendRateLimited } from '../utils/rateLimit.js';
 import { normalizeEmail } from '../utils/emailCrypto.js';
 import { isEmailTokenSecretError, EMAIL_TOKEN_SECRET_HELP } from '../utils/emailConfig.js';
 import { clearPlatformAdminCookie, setPlatformAdminCookie } from '../utils/platformAdminSession.js';
+import { loadPlatformHealth } from '../services/platformHealth.js';
 
 const router = Router();
 export const LOGIN_IP_LIMIT = 20;
@@ -135,6 +140,78 @@ router.get('/overview', requirePlatformAdmin, async (_req, res) => {
     return res.json(await loadPlatformAdminOverview());
   } catch {
     return res.status(503).json({ error: 'Não foi possível carregar a visão geral.' });
+  }
+});
+
+router.get('/health', requirePlatformAdmin, async (req, res) => {
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('Vary', 'Cookie, Authorization');
+  if ('churchId' in req.query || (req.body && typeof req.body === 'object' && 'churchId' in req.body)) {
+    return res.status(400).json({ error: 'O identificador da igreja não deve ser enviado.' });
+  }
+  try {
+    return res.json(await loadPlatformHealth());
+  } catch {
+    return res.status(503).json({ error: 'Não foi possível consultar a saúde do sistema.' });
+  }
+});
+
+router.get('/activities', requirePlatformAdmin, async (req, res) => {
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q : '';
+    const operation = typeof req.query.operation === 'string' ? req.query.operation : '';
+    const page = Number(req.query.page);
+    const pageSize = Number(req.query.pageSize);
+    return res.json(
+      await listPlatformAuditEvents({
+        q,
+        operation,
+        page: Number.isInteger(page) ? page : 1,
+        pageSize: Number.isInteger(pageSize) ? pageSize : 20,
+      })
+    );
+  } catch {
+    return res.status(503).json({ error: 'Não foi possível carregar as atividades.' });
+  }
+});
+
+router.get('/admins', requirePlatformAdmin, async (_req, res) => {
+  try {
+    return res.json(await listPlatformAdmins());
+  } catch {
+    return res.status(503).json({ error: 'Não foi possível carregar os administradores.' });
+  }
+});
+
+router.post('/admins', requirePlatformAdmin, requirePlatformRole('platform_owner'), async (req: PlatformAdminRequest, res) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    return res.status(201).json(await createPlatformAdmin({
+      name: typeof body.name === 'string' ? body.name : '',
+      email: typeof body.email === 'string' ? body.email : '',
+      password: typeof body.password === 'string' ? body.password : '',
+      role: typeof body.role === 'string' ? body.role : '',
+    }, req.platformAdmin!));
+  } catch (error) {
+    if (error instanceof Error && error.message === 'invalid') return res.status(400).json({ error: 'Informe nome, e-mail e função válidos.' });
+    if (error instanceof Error && error.message === 'password') return res.status(400).json({ error: 'A senha temporária deve ter ao menos 8 caracteres, com letra e número.' });
+    if (error instanceof Error && error.message === 'duplicate') return res.status(400).json({ error: 'Já existe um administrador com este e-mail.' });
+    return res.status(503).json({ error: 'Não foi possível criar o administrador.' });
+  }
+});
+
+router.patch('/admins/:adminId', requirePlatformAdmin, requirePlatformRole('platform_owner'), async (req: PlatformAdminRequest, res) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    return res.json(await updatePlatformAdmin(readChurchId(req.params.adminId), {
+      role: typeof body.role === 'string' ? body.role : undefined,
+      active: typeof body.active === 'boolean' ? body.active : undefined,
+    }, req.platformAdmin!));
+  } catch (error) {
+    if (error instanceof Error && error.message === 'not_found') return res.status(404).json({ error: 'Administrador não encontrado.' });
+    if (error instanceof Error && error.message === 'self') return res.status(400).json({ error: 'Você não pode reduzir ou desativar o próprio acesso.' });
+    if (error instanceof Error && error.message === 'last_owner') return res.status(400).json({ error: 'A plataforma precisa manter ao menos um administrador principal ativo.' });
+    return res.status(503).json({ error: 'Não foi possível alterar o administrador.' });
   }
 });
 

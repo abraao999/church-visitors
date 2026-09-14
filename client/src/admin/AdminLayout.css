@@ -420,6 +420,254 @@
   margin: 0.45rem 0;
 }
 
+.admin-activity-list {
+  overflow: hidden;
+}
+
+.admin-activity-row {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-activity-row:last-child {
+  border-bottom: 0;
+}
+
+.admin-activity-icon {
+  width: 10px;
+  height: 10px;
+  margin-top: 0.3rem;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.admin-activity-icon.is-login_blocked,
+.admin-activity-icon.is-church_suspended {
+  background: var(--danger);
+}
+
+.admin-activity-icon.is-church_reactivated,
+.admin-activity-icon.is-login_succeeded {
+  background: var(--success);
+}
+
+.admin-activity-copy {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.admin-activity-copy span,
+.admin-activity-copy small,
+.admin-activity-row time {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.admin-activity-copy a {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.admin-activity-row time {
+  white-space: nowrap;
+}
+
+.admin-pagination {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-page-heading .btn,
+.admin-dialog-title,
+.admin-list-heading,
+.admin-admin-identity,
+.admin-admin-meta,
+.admin-security-ok {
+  display: flex;
+  align-items: center;
+}
+
+.admin-page-heading .btn {
+  gap: 0.45rem;
+}
+
+.admin-page-heading .btn .app-icon,
+.admin-admin-meta .app-icon,
+.admin-security-ok .app-icon,
+.admin-account-toggle .app-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-security-ok {
+  gap: 0.4rem;
+  color: var(--success);
+  font-size: 1.15rem !important;
+}
+
+.admin-list-heading {
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-admin-card {
+  padding: 1.1rem;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+
+.admin-admin-card.is-inactive {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+.admin-admin-identity {
+  gap: 0.75rem;
+}
+
+.admin-admin-avatar {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.admin-admin-identity > div {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-admin-identity strong small {
+  margin-left: 0.35rem;
+  padding: 0.14rem 0.35rem;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.68rem;
+}
+
+.admin-admin-identity > div > span {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  text-overflow: ellipsis;
+}
+
+.admin-account-state {
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.admin-account-state.is-off {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+.admin-admin-role {
+  margin-top: 1rem;
+  padding: 0.85rem;
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.admin-admin-role label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-admin-role select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 650;
+}
+
+.admin-admin-role p {
+  margin-top: 0.45rem;
+  line-height: 1.4;
+}
+
+.admin-admin-meta {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.admin-admin-meta span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.admin-account-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  margin-top: 0.85rem;
+}
+
+.admin-account-toggle.is-danger {
+  color: var(--danger);
+}
+
+.admin-dialog-title {
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.admin-dialog-title p,
+.admin-dialog .form-group small {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.admin-dialog .form-group {
+  margin-top: 0.9rem;
+}
+
+.admin-dialog .form-group small {
+  display: block;
+  margin-top: 0.35rem;
+  line-height: 1.4;
+}
+
 .admin-ghost {
   border: 0;
   background: transparent;
@@ -483,6 +731,10 @@
     grid-template-columns: 1fr;
   }
 
+  .admin-admin-grid {
+    grid-template-columns: 1fr;
+  }
+
   .admin-login-copy {
     padding: 1.6rem;
     border-right: 0;
@@ -502,5 +754,13 @@
   .admin-detail-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .admin-activity-row {
+    grid-template-columns: 12px minmax(0, 1fr);
+  }
+
+  .admin-activity-row time {
+    grid-column: 2;
   }
 }

@@ -40,6 +40,9 @@ import { AdminChurchesPage } from './admin/AdminChurchesPage';
 import { AdminLayout } from './admin/AdminLayout';
 import { AdminLoginPage } from './admin/AdminLoginPage';
 import { AdminOverviewPage } from './admin/AdminOverviewPage';
+import { AdminActivitiesPage } from './admin/AdminActivitiesPage';
+import { AdminAdministratorsPage } from './admin/AdminAdministratorsPage';
+import { AdminHealthPage } from './admin/AdminHealthPage';
 import { AdminProtectedRoute } from './admin/AdminProtectedRoute';
 
 export function App() {
@@ -55,6 +58,9 @@ export function App() {
                 <Route path="/admin" element={<AdminOverviewPage />} />
                 <Route path="/admin/igrejas" element={<AdminChurchesPage />} />
                 <Route path="/admin/igrejas/:churchId" element={<AdminChurchDetailPage />} />
+                <Route path="/admin/atividades" element={<AdminActivitiesPage />} />
+                <Route path="/admin/administradores" element={<AdminAdministratorsPage />} />
+                <Route path="/admin/saude" element={<AdminHealthPage />} />
               </Route>
             </Route>
           </Route>
