@@ -157,11 +157,9 @@ const ROLE_PERMISSIONS: Record<TeamRole, readonly Permission[]> = {
     'vehicle_notices:read',
     'vehicle_notices:announce',
     'vehicle_notices:resolve',
-    'vehicle_notices:archive',
     'portaria_devices:read',
     'portaria_devices:create',
     'portaria_devices:update',
-    'portaria_devices:revoke',
   ],
   intercession: [
     'prayers:create',

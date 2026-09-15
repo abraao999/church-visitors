@@ -56,8 +56,9 @@ describe('funções e permissões da equipe', () => {
   test('portaria gerencia aparelhos e cultos de consulta, mídia não', () => {
     const portaria = permissionsForRole('portaria');
     assert.equal(hasPermission(portaria, 'portaria_devices:create'), true);
+    assert.equal(hasPermission(portaria, 'portaria_devices:revoke'), false);
     assert.equal(hasPermission(portaria, 'services:read'), true);
-    assert.equal(hasPermission(portaria, 'vehicle_notices:archive'), true);
+    assert.equal(hasPermission(portaria, 'vehicle_notices:archive'), false);
     assert.equal(hasPermission(permissionsForRole('midia'), 'portaria_devices:read'), false);
     assert.equal(hasPermission(permissionsForRole('intercession'), 'prayers:project'), true);
     assert.equal(hasPermission(permissionsForRole('intercession'), 'panels:open'), false);

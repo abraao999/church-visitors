@@ -1,6 +1,6 @@
 import { Router, type Response } from 'express';
 import { getJwtSecret, requireAuth, type AuthenticatedRequest } from '../middleware/auth.js';
-import { requireAnyPermission } from '../middleware/requirePermission.js';
+import { requirePermission } from '../middleware/requirePermission.js';
 import { fetchWorshipPanel } from '../services/panelData.js';
 import { parseDateOnly } from '../utils/dayRange.js';
 import { sendPrivateJson } from '../utils/publicRecord.js';
@@ -28,7 +28,7 @@ export async function listWorshipPanel(req: AuthenticatedRequest, res: Response)
 router.get(
   '/',
   requireAuth,
-  requireAnyPermission('panels:open', 'prayers:project', 'visitors:read'),
+  requirePermission('panels:open'),
   async (req: AuthenticatedRequest, res: Response, next) => {
     try {
       const allowed = await consumeRateLimit(
