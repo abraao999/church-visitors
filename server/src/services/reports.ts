@@ -71,13 +71,15 @@ export async function loadReportScope(
 ) {
   const source = options.source && options.source !== 'all' ? { source: options.source } : {};
   const service = options.serviceId ? { serviceId: new Types.ObjectId(options.serviceId) } : {};
+  const realRecords = { isTraining: { $ne: true } };
   const [visitors, prayers, vehicles, services, summaries] = await Promise.all([
-    Visitor.find(withChurch(churchId, { anonymizedAt: { $exists: false }, ...visitorTimeFilter(range), ...source, ...service }))
+    Visitor.find(withChurch(churchId, { anonymizedAt: { $exists: false }, ...realRecords, ...visitorTimeFilter(range), ...source, ...service }))
       .select('city source visitDate createdAt capturedAt visitKind serviceId')
       .lean(),
     PrayerRequest.find(
       withChurch(churchId, {
         createdAt: { $gte: range.from, $lte: range.to },
+        ...realRecords,
         ...service,
       })
     )
@@ -89,6 +91,7 @@ export async function loadReportScope(
           { capturedAt: { $gte: range.from, $lte: range.to } },
           { capturedAt: { $exists: false }, createdAt: { $gte: range.from, $lte: range.to } },
         ],
+        ...realRecords,
         ...source,
         ...service,
       })
@@ -101,6 +104,7 @@ export async function loadReportScope(
           { scheduledStartAt: { $gte: range.from, $lte: range.to } },
           { date: { $gte: range.from, $lte: range.to } },
         ],
+        ...realRecords,
         ...(options.serviceId ? { _id: new Types.ObjectId(options.serviceId) } : {}),
       })
     )
@@ -506,7 +510,7 @@ export async function buildAccessReport(churchId: string, range: ReportRange) {
 }
 
 export async function buildServiceReport(churchId: string, serviceId: string, range: ReportRange) {
-  const service = await Service.findOne(withChurch(churchId, { _id: serviceId })).lean();
+  const service = await Service.findOne(withChurch(churchId, { _id: serviceId, isTraining: { $ne: true } })).lean();
   if (!service) return null;
   const scoped = await loadReportScope(churchId, range, { serviceId });
   const timeZone = await timezoneForReports(churchId);
@@ -535,12 +539,13 @@ export async function consentedFollowUpRows(churchId: string, range: ReportRange
   const followUps = await VisitorFollowUp.find(
     withChurch(churchId, {
       consent: true,
+      isTraining: { $ne: true },
       anonymizedAt: { $exists: false },
       createdAt: { $lte: range.to },
     })
   ).lean();
   const visitorIds = followUps.map((item) => item.visitorId);
-  const visitors = await Visitor.find(withChurch(churchId, { _id: { $in: visitorIds } }))
+  const visitors = await Visitor.find(withChurch(churchId, { _id: { $in: visitorIds }, isTraining: { $ne: true } }))
     .select('name city visitDate serviceId')
     .lean();
   const visitorMap = new Map(visitors.map((item) => [String(item._id), item]));

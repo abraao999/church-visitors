@@ -13,6 +13,7 @@ import {
 import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
 import { resolveActiveService, timezoneForChurch } from '../services/activeService.js';
 import { fetchHymnPanel } from '../services/panelData.js';
+import { trainingModeEnabled } from '../services/trainingMode.js';
 import {
   cancelOccurrence,
   closeOccurrence,
@@ -388,6 +389,7 @@ router.post('/', requireAuth, requirePermission('services:create'), async (req: 
       actor,
       data: payload.data,
       hymns: hymnsResult.data,
+      isTraining: await trainingModeEnabled(req.auth!.churchId),
     });
 
     const timeZone = await timezoneForChurch(req.auth!.churchId);

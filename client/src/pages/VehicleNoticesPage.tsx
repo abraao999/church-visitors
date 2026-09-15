@@ -287,7 +287,10 @@ export function VehicleNoticesPage() {
                     <AppIcon name="car" />
                   </span>
                   <div className="vehicle-notice-plate">
-                    <strong>{notice.plate}</strong>
+                    <strong>
+                      {notice.plate}
+                      {notice.isTraining && <span className="vehicle-training-badge">TESTE</span>}
+                    </strong>
                     <span>{notice.vehicleModel}</span>
                   </div>
                   <div className="vehicle-notice-action">

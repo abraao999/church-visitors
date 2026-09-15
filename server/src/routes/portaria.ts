@@ -15,6 +15,7 @@ import {
 } from '../models/VehicleNotice.js';
 import type { Relationship } from '../constants/relationships.js';
 import { resolveServiceAtCapture } from '../services/activeService.js';
+import { trainingModeEnabled } from '../services/trainingMode.js';
 import { createFollowUpRecord } from '../services/visitorFollowUp.js';
 import { CHURCH_TIMEZONE } from '../utils/dayRange.js';
 import {
@@ -379,6 +380,7 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
     }
 
     const serviceId = await linkedServiceId(device.churchId, captured);
+    const isTraining = await trainingModeEnabled(device.churchId);
     const origin = { deviceId: device.deviceId, name: device.deviceName };
 
     const created = await Visitor.insertMany(
@@ -394,6 +396,7 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
         capturedAt: captured,
         source: 'portaria_device' as const,
         portariaDevice: origin,
+        isTraining,
         ...(serviceId ? { serviceId } : {}),
         ...(index === 0 && requestId ? { requestId } : {}),
       }))
@@ -410,6 +413,7 @@ export async function createPortariaVisitors(req: PortariaDeviceRequest, res: Re
           nextContactAt: followUpAt,
           consent: true,
           source: 'portaria_device',
+          isTraining,
         });
       }
     }
@@ -500,6 +504,7 @@ export async function createPortariaVehicleNotice(req: PortariaDeviceRequest, re
     }
 
     const serviceId = await linkedServiceId(device.churchId, captured);
+    const isTraining = await trainingModeEnabled(device.churchId);
 
     await VehicleNotice.create({
       churchId,
@@ -516,6 +521,7 @@ export async function createPortariaVehicleNotice(req: PortariaDeviceRequest, re
       source: 'portaria_device',
       portariaDevice: { deviceId: device.deviceId, name: device.deviceName },
       archived: false,
+      isTraining,
     });
 
     await markPortariaDeviceUsed(device).catch(() => undefined);

@@ -1,0 +1,147 @@
+.training-section {
+  margin-top: 1.25rem;
+  padding: 1.5rem;
+}
+
+.training-title-row,
+.training-summary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.training-title-row {
+  justify-content: flex-start;
+}
+
+.training-seed-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.training-seed-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  min-height: 96px;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.training-seed-card:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
+  background: var(--surface-muted);
+}
+
+.training-seed-card:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.training-seed-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.training-seed-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.training-seed-icon .app-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.training-seed-card strong,
+.training-seed-card small {
+  display: block;
+}
+
+.training-seed-card strong {
+  font-size: 0.98rem;
+}
+
+.training-seed-card small {
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.training-summary {
+  margin-top: 1.4rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.training-summary h3 {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.training-summary p {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.training-summary ul {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 1rem;
+  list-style: none;
+}
+
+.training-summary li {
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.training-summary li span,
+.training-summary li strong {
+  display: block;
+}
+
+.training-summary li span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.training-summary li strong {
+  margin-top: 0.25rem;
+  color: var(--text);
+  font-size: 1.25rem;
+}
+
+@media (max-width: 720px) {
+  .training-seed-grid,
+  .training-summary ul {
+    grid-template-columns: 1fr;
+  }
+
+  .training-summary-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .training-summary-heading .btn {
+    width: 100%;
+  }
+}

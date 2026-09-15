@@ -20,6 +20,7 @@ export interface IVisitorFollowUp extends Document {
   createdBy?: IActor;
   updatedBy?: IActor;
   anonymizedAt?: Date;
+  isTraining?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +43,7 @@ const visitorFollowUpSchema = new Schema<IVisitorFollowUp>(
     createdBy: { type: actorSchema, required: false },
     updatedBy: { type: actorSchema, required: false },
     anonymizedAt: { type: Date },
+    isTraining: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }
 );
@@ -50,6 +52,7 @@ visitorFollowUpSchema.index({ churchId: 1, visitorId: 1 }, { unique: true });
 visitorFollowUpSchema.index({ churchId: 1, status: 1, nextContactAt: 1 });
 visitorFollowUpSchema.index({ churchId: 1, nextContactAt: 1, createdAt: -1 });
 visitorFollowUpSchema.index({ churchId: 1, assignedTo: 1 });
+visitorFollowUpSchema.index({ churchId: 1, isTraining: 1, createdAt: -1 });
 
 export const VisitorFollowUp = mongoose.model<IVisitorFollowUp>(
   'VisitorFollowUp',

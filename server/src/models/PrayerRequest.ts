@@ -28,6 +28,7 @@ export interface IPrayerRequest extends Document {
     changedAt: Date;
     changedBy?: IActor;
   }>;
+  isTraining?: boolean;
   createdAt: Date;
 }
 
@@ -60,6 +61,7 @@ const prayerRequestSchema = new Schema<IPrayerRequest>(
       ],
       default: undefined,
     },
+    isTraining: { type: Boolean, default: false, index: true },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
@@ -71,5 +73,6 @@ prayerRequestSchema.index({ churchId: 1, requestId: 1 }, REQUEST_ID_UNIQUE_INDEX
 prayerRequestSchema.index({ churchId: 1, serviceId: 1, createdAt: -1 });
 prayerRequestSchema.index({ churchId: 1, createdAt: 1 });
 prayerRequestSchema.index({ churchId: 1, careStatus: 1, createdAt: -1 });
+prayerRequestSchema.index({ churchId: 1, isTraining: 1, createdAt: -1 });
 
 export const PrayerRequest = mongoose.model<IPrayerRequest>('PrayerRequest', prayerRequestSchema);

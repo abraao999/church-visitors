@@ -81,7 +81,8 @@ function publicUser(
   },
   churchName: string,
   branding?: PublicChurchBranding,
-  visitorFollowUpEnabled = false
+  visitorFollowUpEnabled = false,
+  trainingModeEnabled = false
 ) {
   const role = user.role || 'owner';
   return {
@@ -94,6 +95,7 @@ function publicUser(
     permissions: resolvePermissions(user),
     branding: branding || { name: churchName },
     visitorFollowUpEnabled: visitorFollowUpEnabled === true,
+    trainingModeEnabled: trainingModeEnabled === true,
   };
 }
 
@@ -113,7 +115,8 @@ function issueSession(
   },
   churchName: string,
   branding?: PublicChurchBranding,
-  visitorFollowUpEnabled = false
+  visitorFollowUpEnabled = false,
+  trainingModeEnabled = false
 ) {
   const payload: AuthContext = {
     userId: String(user._id),
@@ -125,7 +128,7 @@ function issueSession(
     tokenVersion: user.tokenVersion ?? 0,
   };
   setSessionCookie(req, res, signToken(payload));
-  return { user: publicUser(user, churchName, branding, visitorFollowUpEnabled) };
+  return { user: publicUser(user, churchName, branding, visitorFollowUpEnabled, trainingModeEnabled) };
 }
 
 export async function registerAccount(
@@ -457,7 +460,7 @@ export async function loginAccount(
     }
 
     const church = await Church.findOne({ _id: user.churchId }).select(
-      'name active approvalStatus visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor'
+      'name active approvalStatus visitorFollowUpEnabled trainingModeEnabled branding.logoUrl branding.primaryColor branding.accentColor'
     );
     if (!church || church.active === false) {
       return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
@@ -476,7 +479,8 @@ export async function loginAccount(
         user as IUser & { churchId: Types.ObjectId },
         church.name,
         publicChurchBranding(church),
-        church.visitorFollowUpEnabled === true
+        church.visitorFollowUpEnabled === true,
+        church.trainingModeEnabled === true
       )
     );
   } catch (error) {
@@ -517,7 +521,7 @@ export async function changePassword(req: AuthenticatedRequest, res: Response) {
     }
 
     const church = await Church.findOne({ _id: user.churchId }).select(
-      'name active approvalStatus visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor'
+      'name active approvalStatus visitorFollowUpEnabled trainingModeEnabled branding.logoUrl branding.primaryColor branding.accentColor'
     );
     if (!church || church.active === false || church.approvalStatus === 'pending') {
       return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
@@ -534,7 +538,8 @@ export async function changePassword(req: AuthenticatedRequest, res: Response) {
         user as IUser & { churchId: Types.ObjectId },
         church.name,
         publicChurchBranding(church),
-        church.visitorFollowUpEnabled === true
+        church.visitorFollowUpEnabled === true,
+        church.trainingModeEnabled === true
       )
     );
   } catch (error) {
@@ -576,7 +581,7 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
     }
 
     const church = await Church.findOne({ _id: req.auth!.churchId }).select(
-      'name active approvalStatus visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor'
+      'name active approvalStatus visitorFollowUpEnabled trainingModeEnabled branding.logoUrl branding.primaryColor branding.accentColor'
     );
     if (!church || church.active === false || church.approvalStatus === 'pending') {
       return res.status(403).json({ error: 'O acesso desta igreja está indisponível.' });
@@ -590,7 +595,8 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
         user,
         church.name,
         publicChurchBranding(church),
-        church.visitorFollowUpEnabled === true
+        church.visitorFollowUpEnabled === true,
+        church.trainingModeEnabled === true
       ),
     });
   } catch {

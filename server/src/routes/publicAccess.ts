@@ -25,6 +25,7 @@ import { parseVehiclePlate } from '../utils/vehiclePlate.js';
 import { Types } from 'mongoose';
 import { publicAccessMetadata } from '../utils/branding.js';
 import { createFollowUpRecord } from '../services/visitorFollowUp.js';
+import { trainingModeEnabled } from '../services/trainingMode.js';
 import {
   FOLLOW_UP_PHONE_REQUIRED_ERROR,
   isValidFollowUpPhone,
@@ -242,6 +243,7 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
     }
 
     const serviceId = await activeServiceId(access.churchId);
+    const isTraining = await trainingModeEnabled(String(access.churchId));
     const followUpEnabled = access.visitorFollowUpEnabled === true;
     const contactConsent = followUpEnabled && body.contactConsent === true;
     const phone = contactConsent ? normalizeFollowUpPhone(body.phone) : '';
@@ -261,6 +263,7 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
         visitDate: new Date(),
         source: 'guest_access' as const,
         guestAccess,
+        isTraining,
         ...(serviceId ? { serviceId } : {}),
         ...(index === 0 && requestId ? { requestId } : {}),
       }))
@@ -276,6 +279,7 @@ export async function createPublicVisitors(req: GuestAccessRequest, res: Respons
           nextContactAt: next.date,
           consent: true,
           source: 'guest_access',
+          isTraining,
         });
       }
     }
@@ -335,6 +339,7 @@ export async function createPublicPrayerRequest(req: GuestAccessRequest, res: Re
     }
 
     const serviceId = await activeServiceId(access.churchId);
+    const isTraining = await trainingModeEnabled(String(access.churchId));
 
     await PrayerRequest.create({
       churchId: access.churchId,
@@ -345,6 +350,7 @@ export async function createPublicPrayerRequest(req: GuestAccessRequest, res: Re
       allowProjection: body.allowProjection === true,
       requestId,
       serviceId,
+      isTraining,
       guestAccess: {
         guestAccessId: access.guestAccessId,
         name: access.accessName,
@@ -438,6 +444,7 @@ export async function createPublicVehicleNotice(req: GuestAccessRequest, res: Re
     }
 
     const serviceId = await activeServiceId(access.churchId);
+    const isTraining = await trainingModeEnabled(String(access.churchId));
 
     await VehicleNotice.create({
       churchId,
@@ -452,6 +459,7 @@ export async function createPublicVehicleNotice(req: GuestAccessRequest, res: Re
       serviceId,
       status: 'pending',
       source: 'guest_access',
+      isTraining,
       guestAccess: {
         guestAccessId: access.guestAccessId,
         name: access.accessName,

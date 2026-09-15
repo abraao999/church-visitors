@@ -28,6 +28,7 @@ export interface IVisitor extends Document {
   panelObservation?: string;
   showObservationOnPanel?: boolean;
   visitKind?: VisitKind;
+  isTraining?: boolean;
   createdAt: Date;
 }
 
@@ -58,6 +59,7 @@ const visitorSchema = new Schema<IVisitor>(
     panelObservation: { type: String, trim: true, maxlength: 80, default: '' },
     showObservationOnPanel: { type: Boolean, default: false },
     visitKind: { type: String, enum: VISIT_KINDS, default: 'unknown' },
+    isTraining: { type: Boolean, default: false, index: true },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
@@ -67,6 +69,7 @@ visitorSchema.index({ churchId: 1, 'guestAccess.guestAccessId': 1 });
 visitorSchema.index({ churchId: 1, requestId: 1 }, REQUEST_ID_UNIQUE_INDEX);
 visitorSchema.index({ churchId: 1, serviceId: 1, createdAt: -1 });
 visitorSchema.index({ churchId: 1, anonymizedAt: 1, visitDate: 1 });
+visitorSchema.index({ churchId: 1, isTraining: 1, createdAt: -1 });
 
 export { RELATIONSHIPS, type Relationship };
 export const Visitor = mongoose.model<IVisitor>('Visitor', visitorSchema);

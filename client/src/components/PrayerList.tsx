@@ -44,6 +44,7 @@ export function PrayerList({ requests, onDelete, onCareChange }: Props) {
             <div className="private-record-copy">
               <div className="private-record-name-row">
                 <strong>{item.isAnonymous ? 'Anônimo' : item.name}</strong>
+                {item.isTraining && <span className="private-training-badge">TESTE</span>}
                 <span className={`private-origin-badge ${item.source === 'guest_access' ? 'guest' : 'owner'}`}>
                   {item.source === 'guest_access' ? 'Acesso de oração' : 'Responsável'}
                 </span>

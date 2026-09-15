@@ -51,6 +51,7 @@ export interface AuthUser {
   permissions: string[];
   branding?: ChurchBranding;
   visitorFollowUpEnabled?: boolean;
+  trainingModeEnabled?: boolean;
 }
 
 export interface PendingRegistrationResponse {
@@ -170,6 +171,23 @@ export interface ChurchProfile {
   address: string;
   active: boolean;
   visitorFollowUpEnabled?: boolean;
+  trainingModeEnabled?: boolean;
+}
+
+export type TrainingSeedKind = 'visitors' | 'prayers' | 'vehicle' | 'service';
+
+export interface TrainingSummary {
+  visitors: number;
+  prayers: number;
+  vehicleNotices: number;
+  services: number;
+  followUps: number;
+  total: number;
+}
+
+export interface TrainingOverview {
+  enabled: boolean;
+  summary: TrainingSummary;
 }
 
 export interface RetentionPolicy {
@@ -336,6 +354,7 @@ export interface Visitor {
   panelObservation?: string;
   showObservationOnPanel?: boolean;
   visitKind?: VisitKind;
+  isTraining?: boolean;
   createdAt: string;
 }
 
@@ -351,6 +370,7 @@ export interface PrayerRequest {
   serviceId?: string;
   careStatus?: PrayerCareStatus;
   careChangedAt?: string;
+  isTraining?: boolean;
   createdAt: string;
 }
 
@@ -388,6 +408,7 @@ export interface FollowUpListItem {
   nextContactIsToday?: boolean;
   consent?: boolean;
   phone?: string;
+  isTraining?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -555,6 +576,7 @@ export interface Service {
   autoOpenedAt?: string;
   status?: ServiceStatus;
   statusLabel?: string;
+  isTraining?: boolean;
   now?: string;
   series?: RecurrenceSeries | null;
   counts?: {
@@ -706,6 +728,7 @@ export interface VehicleNotice {
   status: VehicleNoticeStatus;
   source: 'guest_access' | 'owner';
   guestAccessName?: string;
+  isTraining?: boolean;
   announcedAt?: string;
   resolvedAt?: string;
   createdAt: string;

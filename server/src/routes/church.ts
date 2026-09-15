@@ -3,6 +3,14 @@ import { Church } from '../models/Church.js';
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth.js';
 import { requireAnyPermission, requirePermission } from '../middleware/requirePermission.js';
 import { normalizeChurchName } from '../utils/church.js';
+import { toActor } from '../middleware/auth.js';
+import {
+  clearTrainingData,
+  getTrainingOverview,
+  seedTrainingData,
+  setTrainingMode,
+  type TrainingSeedKind,
+} from '../services/trainingMode.js';
 import {
   deleteChurchLogo,
   getChurchBranding,
@@ -38,6 +46,7 @@ function publicChurch(church: {
   address?: string;
   active: boolean;
   visitorFollowUpEnabled?: boolean;
+  trainingModeEnabled?: boolean;
 }) {
   return {
     id: String(church._id),
@@ -48,6 +57,7 @@ function publicChurch(church: {
     address: church.address || '',
     active: church.active,
     visitorFollowUpEnabled: church.visitorFollowUpEnabled === true,
+    trainingModeEnabled: church.trainingModeEnabled === true,
   };
 }
 
@@ -82,6 +92,9 @@ router.patch('/', requireAuth, requirePermission('church:update'), async (req: A
     if (typeof req.body?.visitorFollowUpEnabled === 'boolean') {
       church.visitorFollowUpEnabled = req.body.visitorFollowUpEnabled === true;
     }
+    if (typeof req.body?.trainingModeEnabled === 'boolean') {
+      church.trainingModeEnabled = req.body.trainingModeEnabled === true;
+    }
     await church.save();
 
     return res.json(publicChurch(church));
@@ -108,6 +121,68 @@ router.patch(
       return res.json(publicChurch(church));
     } catch {
       return res.status(500).json({ error: 'Não foi possível salvar o acompanhamento de visitantes.' });
+    }
+  }
+);
+
+router.get(
+  '/training',
+  requireAuth,
+  requirePermission('church:update'),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      return res.json(await getTrainingOverview(req.auth!.churchId));
+    } catch {
+      return res.status(500).json({ error: 'Não foi possível carregar o treinamento.' });
+    }
+  }
+);
+
+router.patch(
+  '/training',
+  requireAuth,
+  requirePermission('church:update'),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (req.body && typeof req.body === 'object' && 'churchId' in req.body) {
+        return res.status(400).json({ error: 'O identificador da igreja não deve ser enviado.' });
+      }
+      return res.json(await setTrainingMode(req.auth!.churchId, req.body?.enabled === true));
+    } catch {
+      return res.status(500).json({ error: 'Não foi possível atualizar o treinamento.' });
+    }
+  }
+);
+
+router.post(
+  '/training/seed',
+  requireAuth,
+  requirePermission('church:update'),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const kind = req.body?.kind;
+      if (!['visitors', 'prayers', 'vehicle', 'service'].includes(kind)) {
+        return res.status(400).json({ error: 'Informe o tipo de simulação.' });
+      }
+      return res.json(await seedTrainingData(req.auth!.churchId, toActor(req.auth!), kind as TrainingSeedKind));
+    } catch {
+      return res.status(500).json({ error: 'Não foi possível criar os dados de treinamento.' });
+    }
+  }
+);
+
+router.post(
+  '/training/clear',
+  requireAuth,
+  requirePermission('church:update'),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (req.body?.confirmation !== 'APAGAR TESTES') {
+        return res.status(400).json({ error: 'Confirme a limpeza dos dados de treinamento.' });
+      }
+      return res.json(await clearTrainingData(req.auth!.churchId));
+    } catch {
+      return res.status(500).json({ error: 'Não foi possível apagar os dados de treinamento.' });
     }
   }
 );

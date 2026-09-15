@@ -43,6 +43,7 @@ export function VisitorList({ visitors, onDelete }: Props) {
             <div className="private-record-copy">
               <div className="private-record-name-row">
                 <strong>{visitor.name}</strong>
+                {visitor.isTraining && <span className="private-training-badge">TESTE</span>}
                 <span className={`private-origin-badge ${visitor.source === 'guest_access' ? 'guest' : 'owner'}`}>
                   {visitor.source === 'guest_access' ? 'Portaria' : 'Responsável'}
                 </span>

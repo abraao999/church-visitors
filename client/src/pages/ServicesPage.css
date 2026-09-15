@@ -226,6 +226,17 @@
   font-weight: 800;
 }
 
+.service-training-badge {
+  display: inline-flex;
+  padding: 0.16rem 0.52rem;
+  border-radius: 999px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+}
+
 .service-status-scheduled { color: var(--primary); background: var(--primary-soft); }
 .service-status-reception_open,
 .service-status-in_progress { color: var(--success, var(--primary)); background: var(--primary-soft); }

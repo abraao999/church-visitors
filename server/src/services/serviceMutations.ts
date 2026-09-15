@@ -139,6 +139,7 @@ export async function createServices(input: {
   actor: IActor;
   data: ServiceWriteInput;
   hymns: IHymn[];
+  isTraining?: boolean;
 }): Promise<{ service: IService; createdCount: number; series?: IRecurrenceSeries }> {
   const timeZone = await timezoneForChurch(input.churchId);
 
@@ -156,6 +157,7 @@ export async function createServices(input: {
       ...fields,
       hymns: input.hymns,
       createdBy: input.actor,
+      isTraining: input.isTraining === true,
     });
     return { service, createdCount: 1 };
   }
@@ -233,6 +235,7 @@ export async function createServices(input: {
         ...windows[index],
         hymns: [],
         createdBy: input.actor,
+        isTraining: input.isTraining === true,
       }))
     );
     const first = created[0];

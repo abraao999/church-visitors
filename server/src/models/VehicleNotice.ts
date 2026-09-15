@@ -40,6 +40,7 @@ export interface IVehicleNotice extends Document {
   resolvedBy?: Types.ObjectId;
   archived: boolean;
   serviceId?: Types.ObjectId;
+  isTraining?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -96,6 +97,7 @@ const vehicleNoticeSchema = new Schema<IVehicleNotice>(
     resolvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     archived: { type: Boolean, required: true, default: false },
     serviceId: { type: Schema.Types.ObjectId, ref: 'Service' },
+    isTraining: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }
 );
@@ -107,6 +109,7 @@ vehicleNoticeSchema.index({ churchId: 1, requestId: 1 }, REQUEST_ID_UNIQUE_INDEX
 vehicleNoticeSchema.index({ churchId: 1, serviceId: 1, createdAt: -1 });
 vehicleNoticeSchema.index({ churchId: 1, resolvedAt: 1 });
 vehicleNoticeSchema.index({ churchId: 1, archived: 1, updatedAt: 1 });
+vehicleNoticeSchema.index({ churchId: 1, isTraining: 1, createdAt: -1 });
 
 export function isVehicleNoticeAction(value: unknown): value is VehicleNoticeAction {
   return (

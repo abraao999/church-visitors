@@ -259,8 +259,21 @@
 }
 
 .vehicle-notice-plate strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   font-size: 1.15rem;
   letter-spacing: 0.02em;
+}
+
+.vehicle-training-badge {
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
 }
 
 .vehicle-notice-plate span,

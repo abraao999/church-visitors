@@ -14,6 +14,7 @@ import {
 } from '../models/VehicleNotice.js';
 import { resolveActiveService, resolveLinkedServiceId } from '../services/activeService.js';
 import { fetchVehicleNoticePanel } from '../services/panelData.js';
+import { trainingModeEnabled } from '../services/trainingMode.js';
 import {
   alertCursorFilter,
   EMPTY_ALERT_ID,
@@ -52,6 +53,7 @@ function serializeNotice(notice: {
   status: string;
   source: string;
   guestAccess?: { name?: string };
+  isTraining?: boolean;
   announcedAt?: Date;
   resolvedAt?: Date;
   createdAt: Date;
@@ -68,6 +70,7 @@ function serializeNotice(notice: {
     status: notice.status,
     source: notice.source,
     guestAccessName: notice.guestAccess?.name || '',
+    isTraining: notice.isTraining === true,
     announcedAt: notice.announcedAt,
     resolvedAt: notice.resolvedAt,
     createdAt: notice.createdAt,
@@ -367,6 +370,7 @@ export async function createVehicleNoticeOwner(req: AuthenticatedRequest, res: R
     if (linked.error) {
       return res.status(400).json({ error: linked.error });
     }
+    const isTraining = await trainingModeEnabled(req.auth!.churchId);
 
     const notice = await VehicleNotice.create({
       churchId: req.auth!.churchId,
@@ -380,6 +384,7 @@ export async function createVehicleNoticeOwner(req: AuthenticatedRequest, res: R
       source: 'owner',
       createdBy: toActor(req.auth!),
       archived: false,
+      isTraining,
       ...(linked.serviceId ? { serviceId: linked.serviceId } : {}),
     });
 

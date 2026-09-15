@@ -20,6 +20,7 @@ export interface IChurch extends Document {
   active: boolean;
   approvalStatus: ChurchApprovalStatus;
   visitorFollowUpEnabled?: boolean;
+  trainingModeEnabled?: boolean;
   branding?: ChurchBranding;
   createdAt: Date;
   updatedAt: Date;
@@ -42,6 +43,7 @@ const churchSchema = new Schema<IChurch>(
       index: true,
     },
     visitorFollowUpEnabled: { type: Boolean, default: false },
+    trainingModeEnabled: { type: Boolean, default: false },
     branding: {
       type: new Schema(
         {

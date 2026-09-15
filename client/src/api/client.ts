@@ -54,6 +54,8 @@ import type {
   TeamMember,
   TeamOverview,
   TodayCount,
+  TrainingOverview,
+  TrainingSeedKind,
   UpdateServiceDto,
   VehicleNotice,
   VehicleNoticeAlerts,
@@ -692,6 +694,41 @@ export const api = {
       body: JSON.stringify(data),
     });
     return handleResponse<ChurchProfile>(response);
+  },
+
+  async getTrainingOverview(): Promise<TrainingOverview> {
+    const response = await apiFetch(`${API_BASE}/church/training`, {
+      headers: authHeaders(),
+      cache: 'no-store',
+    });
+    return handleResponse<TrainingOverview>(response);
+  },
+
+  async setTrainingMode(enabled: boolean): Promise<TrainingOverview> {
+    const response = await apiFetch(`${API_BASE}/church/training`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ enabled }),
+    });
+    return handleResponse<TrainingOverview>(response);
+  },
+
+  async seedTrainingData(kind: TrainingSeedKind): Promise<TrainingOverview> {
+    const response = await apiFetch(`${API_BASE}/church/training/seed`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ kind }),
+    });
+    return handleResponse<TrainingOverview>(response);
+  },
+
+  async clearTrainingData(): Promise<TrainingOverview> {
+    const response = await apiFetch(`${API_BASE}/church/training/clear`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ confirmation: 'APAGAR TESTES' }),
+    });
+    return handleResponse<TrainingOverview>(response);
   },
 
   async getChurchBranding(): Promise<ChurchBranding> {

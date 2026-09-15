@@ -9,6 +9,7 @@ import { requireAnyPermission, requirePermission } from '../middleware/requirePe
 import { canChangePrayerCareStatus } from '../utils/permissions.js';
 import { resolveLinkedServiceId } from '../services/activeService.js';
 import { fetchPrayerPanel } from '../services/panelData.js';
+import { trainingModeEnabled } from '../services/trainingMode.js';
 import { hasPermission } from '../utils/permissions.js';
 import { endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
 import {
@@ -108,6 +109,7 @@ export async function createPrayerRequest(req: AuthenticatedRequest, res: Respon
     if (linked.error) {
       return res.status(400).json({ error: linked.error });
     }
+    const isTraining = await trainingModeEnabled(req.auth!.churchId);
 
     const prayerRequest = await PrayerRequest.create({
       churchId: req.auth!.churchId,
@@ -117,6 +119,7 @@ export async function createPrayerRequest(req: AuthenticatedRequest, res: Respon
       isAnonymous: anonymous,
       allowProjection: body.allowProjection === true,
       createdBy: toActor(req.auth!),
+      isTraining,
       ...(linked.serviceId ? { serviceId: linked.serviceId } : {}),
     });
 

@@ -11,13 +11,13 @@ import {
  */
 
 export const VISITOR_LIST_FIELDS =
-  'name relationship city visitDate source createdBy.name guestAccess.name serviceId panelObservation showObservationOnPanel visitKind createdAt';
+  'name relationship city visitDate source createdBy.name guestAccess.name serviceId panelObservation showObservationOnPanel visitKind isTraining createdAt';
 
 export const PRAYER_LIST_FIELDS =
-  'name request source isAnonymous allowProjection createdBy.name guestAccess.name serviceId careStatus careChangedAt createdAt';
+  'name request source isAnonymous allowProjection createdBy.name guestAccess.name serviceId careStatus careChangedAt isTraining createdAt';
 
 export const SERVICE_LIST_FIELDS =
-  'title date time hymns.title hymns.artist hymns.performedBy hymns.addedBy.name createdBy.name createdAt updatedAt recurrenceSeriesId scheduledStartAt durationMinutes activationLeadMinutes cancelledAt closedAt extendedUntil openedAt autoOpenedAt';
+  'title date time hymns.title hymns.artist hymns.performedBy hymns.addedBy.name createdBy.name createdAt updatedAt recurrenceSeriesId scheduledStartAt durationMinutes activationLeadMinutes cancelledAt closedAt extendedUntil openedAt autoOpenedAt isTraining';
 
 export function setPrivateCacheHeaders(res: Response): void {
   res.setHeader('Cache-Control', 'private, no-store');
@@ -50,6 +50,7 @@ export function serializeVisitor(visitor: {
   panelObservation?: string;
   showObservationOnPanel?: boolean;
   visitKind?: string;
+  isTraining?: boolean;
   createdAt?: Date | string;
 }) {
   return {
@@ -65,6 +66,7 @@ export function serializeVisitor(visitor: {
     panelObservation: visitor.panelObservation || undefined,
     showObservationOnPanel: visitor.showObservationOnPanel === true,
     visitKind: visitor.visitKind === 'first' || visitor.visitKind === 'returning' ? visitor.visitKind : 'unknown',
+    isTraining: visitor.isTraining === true,
     createdAt: visitor.createdAt,
   };
 }
@@ -81,6 +83,7 @@ export function serializePrayerRequest(item: {
   serviceId?: unknown;
   careStatus?: string;
   careChangedAt?: Date | string;
+  isTraining?: boolean;
   createdAt?: Date | string;
 }) {
   return {
@@ -100,6 +103,7 @@ export function serializePrayerRequest(item: {
         ? item.careStatus
         : 'new',
     careChangedAt: item.careChangedAt,
+    isTraining: item.isTraining === true,
     createdAt: item.createdAt,
   };
 }
@@ -128,6 +132,7 @@ export function serializeService(
     extendedUntil?: Date | string | null;
     openedAt?: Date | string | null;
     autoOpenedAt?: Date | string | null;
+    isTraining?: boolean;
   },
   now = new Date(),
   timeZone?: string
@@ -178,6 +183,7 @@ export function serializeService(
     autoOpenedAt: service.autoOpenedAt ?? undefined,
     status: window.status,
     statusLabel: SERVICE_STATUS_LABELS[window.status],
+    isTraining: service.isTraining === true,
     now,
   };
 }

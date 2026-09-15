@@ -234,6 +234,15 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
             {notice.message}
           </p>
         )}
+        {user?.trainingModeEnabled && (
+          <div className="training-mode-banner" role="status">
+            <span>
+              <AppIcon name="shield" />
+              Modo treinamento ativo: novos registros internos serão marcados como TESTE.
+            </span>
+            <Link to="/igreja">Configurar</Link>
+          </div>
+        )}
         <Outlet />
       </main>
     </div>

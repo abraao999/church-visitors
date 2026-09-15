@@ -227,6 +227,7 @@ export function ServicesPage() {
                         <strong>
                           <Link to={`/cultos/${service._id}`}>{service.title}</Link>
                         </strong>
+                        {service.isTraining && <span className="service-training-badge">TESTE</span>}
                         {service.time && <span className="service-time"><AppIcon name="clock" />{service.time}</span>}
                         {service.statusLabel && (
                           <span className={`service-status-badge ${statusClass(service.status)}`}>

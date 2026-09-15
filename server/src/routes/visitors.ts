@@ -11,6 +11,7 @@ import { Church } from '../models/Church.js';
 import { resolveLinkedServiceId } from '../services/activeService.js';
 import { fetchVisitorPanel } from '../services/panelData.js';
 import { createFollowUpRecord, removeFollowUpForVisitor } from '../services/visitorFollowUp.js';
+import { trainingModeEnabled } from '../services/trainingMode.js';
 import { hasPermission } from '../utils/permissions.js';
 import { CHURCH_TIMEZONE, endOfDay, parseDateOnly, startOfDay } from '../utils/dayRange.js';
 import {
@@ -241,6 +242,7 @@ export async function createVisitors(req: AuthenticatedRequest, res: Response) {
     if (linked.error) {
       return res.status(400).json({ error: linked.error });
     }
+    const isTraining = await trainingModeEnabled(req.auth!.churchId);
 
     const created = await Visitor.insertMany(
       normalized.data.map((person) => ({
@@ -254,6 +256,7 @@ export async function createVisitors(req: AuthenticatedRequest, res: Response) {
         visitDate,
         source: 'owner',
         createdBy,
+        isTraining,
         ...(linked.serviceId ? { serviceId: linked.serviceId } : {}),
       }))
     );
@@ -277,6 +280,7 @@ export async function createVisitors(req: AuthenticatedRequest, res: Response) {
           consent: true,
           source: 'owner',
           createdBy,
+          isTraining,
         });
       }
     }

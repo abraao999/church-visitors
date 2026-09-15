@@ -58,6 +58,19 @@
   color: var(--warning);
 }
 
+.private-training-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 0.18rem 0.52rem;
+  border-radius: 999px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+}
+
 .private-record-meta,
 .private-record-origin {
   margin-top: 0.35rem;

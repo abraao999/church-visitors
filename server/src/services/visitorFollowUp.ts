@@ -73,6 +73,7 @@ export async function createFollowUpRecord(input: {
   consent: boolean;
   source: FollowUpSource;
   createdBy?: { name: string };
+  isTraining?: boolean;
 }) {
   const visitorFilter = tenantRecordFilter(input.churchId, String(input.visitorId));
   if (!visitorFilter) {
@@ -109,6 +110,7 @@ export async function createFollowUpRecord(input: {
       source: input.source,
       createdBy: input.createdBy,
       updatedBy: input.createdBy,
+      isTraining: input.isTraining === true,
     });
     return { followUp: created };
   } catch (error) {
@@ -129,6 +131,7 @@ export function serializeFollowUp(
     status: FollowUpStatus;
     nextContactAt?: Date | string;
     consent?: boolean;
+    isTraining?: boolean;
     createdAt?: Date | string;
     updatedAt?: Date | string;
   },
@@ -150,6 +153,7 @@ export function serializeFollowUp(
     nextContactAt: item.nextContactAt,
     nextContactIsToday: Boolean(nextKey && nextKey === todayKey && item.status !== 'closed'),
     consent: item.consent === true,
+    isTraining: item.isTraining === true,
     phone: options.includePhone && item.phone ? formatFollowUpPhone(item.phone) : undefined,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,

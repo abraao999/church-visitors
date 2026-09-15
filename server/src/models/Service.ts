@@ -24,6 +24,7 @@ export interface IService extends Document {
   openedAt?: Date;
   autoOpenedAt?: Date;
   createdBy?: IActor;
+  isTraining?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,12 +59,14 @@ const serviceSchema = new Schema<IService>(
     openedAt: { type: Date },
     autoOpenedAt: { type: Date },
     createdBy: { type: actorSchema, required: false },
+    isTraining: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }
 );
 
 serviceSchema.index({ churchId: 1, date: 1 });
 serviceSchema.index({ churchId: 1, scheduledStartAt: 1 });
+serviceSchema.index({ churchId: 1, isTraining: 1, createdAt: -1 });
 serviceSchema.index(
   { churchId: 1, recurrenceSeriesId: 1, scheduledStartAt: 1 },
   { unique: true, sparse: true }
