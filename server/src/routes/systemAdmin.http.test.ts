@@ -70,10 +70,11 @@ function mockRes() {
 
 describe('painel administrativo da plataforma', () => {
   test('situação da igreja não inventa estado sem dados', () => {
-    assert.equal(churchSituation({ active: false, city: 'Umuarama', emailVerifiedAt: new Date() }), 'suspensa');
-    assert.equal(churchSituation({ active: true, city: '', emailVerifiedAt: new Date() }), 'pendente');
-    assert.equal(churchSituation({ active: true, city: 'Umuarama', emailVerifiedAt: null }), 'pendente');
-    assert.equal(churchSituation({ active: true, city: 'Umuarama', emailVerifiedAt: new Date() }), 'ativa');
+    assert.equal(churchSituation({ active: false, approvalStatus: 'approved' }), 'suspensa');
+    assert.equal(churchSituation({ active: false, approvalStatus: 'pending' }), 'suspensa');
+    assert.equal(churchSituation({ active: true, approvalStatus: 'pending' }), 'pendente');
+    assert.equal(churchSituation({ active: true, approvalStatus: 'approved' }), 'ativa');
+    assert.equal(churchSituation({ active: true }), 'ativa');
   });
 
   test('sessão de igreja é recusada nas rotas administrativas', async () => {
@@ -195,9 +196,9 @@ describe('painel administrativo da plataforma', () => {
     const guest = readFileSync(join(src, 'middleware/guestAccess.ts'), 'utf8');
     const portaria = readFileSync(join(src, 'middleware/portariaDevice.ts'), 'utf8');
     const worship = readFileSync(join(src, 'routes/worshipPanel.ts'), 'utf8');
-    assert.match(auth, /Church\.exists\(\{ _id: user\.churchId, active: true \}\)/);
-    assert.match(guest, /Church\.findOne\(\{ _id: access\.churchId, active: true \}\)/);
-    assert.match(portaria, /Church\.findOne\(\{ _id: device\.churchId, active: true \}\)/);
+    assert.match(auth, /availableChurchFilter\(user\.churchId\)/);
+    assert.match(guest, /availableChurchFilter\(access\.churchId\)/);
+    assert.match(portaria, /availableChurchFilter\(device\.churchId\)/);
     assert.match(worship, /requireAuth/);
 
     const churchId = new Types.ObjectId();

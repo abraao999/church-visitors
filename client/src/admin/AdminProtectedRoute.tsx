@@ -13,3 +13,15 @@ export function AdminProtectedRoute() {
   }
   return <Outlet />;
 }
+
+export function AdminOwnerRoute() {
+  const { admin, loading } = useAdminAuth();
+
+  if (loading) {
+    return <p className="admin-boot">Carregando o painel administrativo...</p>;
+  }
+  if (admin?.role !== 'platform_owner') {
+    return <Navigate to="/admin" replace />;
+  }
+  return <Outlet />;
+}

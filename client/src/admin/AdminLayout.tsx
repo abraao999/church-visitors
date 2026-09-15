@@ -14,9 +14,7 @@ const NAV = [
   { to: '/admin/saude', label: 'Saúde', icon: 'activity' as const, end: false },
 ];
 
-const SOON = [
-  { label: 'Configurações', icon: 'settings' as const },
-];
+const SETTINGS = { to: '/admin/configuracoes', label: 'Configurações', icon: 'settings' as const, end: false };
 
 export function AdminLayout() {
   const { admin, logout } = useAdminAuth();
@@ -69,13 +67,17 @@ export function AdminLayout() {
               {item.label}
             </NavLink>
           ))}
-          {SOON.map((item) => (
-            <span key={item.label} className="admin-nav-link is-disabled">
-              <AppIcon name={item.icon} />
-              <span>{item.label}</span>
-              <small>Em breve</small>
-            </span>
-          ))}
+          {admin?.role === 'platform_owner' && (
+            <NavLink
+              to={SETTINGS.to}
+              end={SETTINGS.end}
+              className={({ isActive }) => `admin-nav-link${isActive ? ' is-active' : ''}`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <AppIcon name={SETTINGS.icon} />
+              {SETTINGS.label}
+            </NavLink>
+          )}
         </nav>
         <div className="admin-sidebar-spacer" />
         <button type="button" className="admin-nav-link" onClick={() => void logout()}>

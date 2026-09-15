@@ -244,6 +244,43 @@
   height: 20px;
 }
 
+.auth-closed-note {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.auth-platform-notice {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.auth-platform-notice.is-warning {
+  border-left-color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.auth-legal-note {
+  margin: 0.85rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.auth-legal-note a {
+  color: var(--primary);
+}
+
 .auth-live-note {
   display: flex;
   align-items: center;

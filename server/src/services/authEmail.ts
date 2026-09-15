@@ -2,12 +2,9 @@ import { Resend } from 'resend';
 import { recordSystemHealthEvent } from '../models/SystemHealthEvent.js';
 import {
   buildEmailActionLink,
-  getEmailFrom,
-  getEmailReplyTo,
-  getPasswordResetTtlMs,
   getPublicAppOrigin,
-  getVerificationTtlMs,
 } from '../utils/emailConfig.js';
+import { getEffectiveEmailDelivery, getEffectiveEmailTtl } from './platformSettings.js';
 
 export class EmailDeliveryError extends Error {
   constructor() {
@@ -40,10 +37,17 @@ export type OwnerWelcomeEmailInput = {
   idempotencyKey: string;
 };
 
+export type PlatformTestEmailInput = {
+  to: string;
+  name: string;
+  idempotencyKey: string;
+};
+
 export type AuthEmailSender = {
   sendOwnerVerificationEmail(input: OwnerVerificationEmailInput): Promise<void>;
   sendPasswordResetEmail(input: PasswordResetEmailInput): Promise<void>;
   sendOwnerWelcomeEmail(input: OwnerWelcomeEmailInput): Promise<void>;
+  sendPlatformTestEmail(input: PlatformTestEmailInput): Promise<void>;
 };
 
 function escapeHtml(value: string): string {
@@ -212,6 +216,39 @@ export function renderOwnerWelcomeEmail(input: {
   return { subject, html, text };
 }
 
+function renderPlatformTestEmail(input: {
+  name: string;
+  from: string;
+  replyTo?: string;
+}): { subject: string; html: string; text: string } {
+  const name = safeText(input.name);
+  const from = safeText(input.from);
+  const replyTo = input.replyTo ? safeText(input.replyTo) : '';
+  const subject = 'E-mail de teste da Eclesiafy';
+  const text = [
+    `Olá, ${name}.`,
+    'Este é um e-mail de teste das configurações da plataforma Eclesiafy.',
+    `Remetente configurado: ${from}`,
+    replyTo ? `Respostas: ${replyTo}` : 'Nenhum endereço de resposta adicional foi definido.',
+    'Se você não pediu este envio, ignore a mensagem.',
+    'Eclesiafy · app.eclesiafy.com.br',
+  ].join('\n\n');
+  const html = renderEmailDocument({
+    heading: 'E-mail de teste',
+    footer: 'Você recebeu esta mensagem porque um administrador principal pediu um envio de teste na Eclesiafy.',
+    innerHtml: `
+              <p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Olá, ${escapeHtml(name)}.</p>
+              <p style="margin:0 0 16px;font-size:16px;line-height:1.5;">Este é um e-mail de teste das configurações da plataforma.</p>
+              <p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Remetente configurado: <strong>${escapeHtml(from)}</strong></p>
+              <p style="margin:0;font-size:16px;line-height:1.5;">${
+                replyTo
+                  ? `Respostas: <strong>${escapeHtml(replyTo)}</strong>`
+                  : 'Nenhum endereço de resposta adicional foi definido.'
+              }</p>`,
+  });
+  return { subject, html, text };
+}
+
 function createResendClient(): Resend {
   const apiKey = (process.env.RESEND_API_KEY || '').trim();
   if (!apiKey) {
@@ -237,20 +274,20 @@ async function sendTransactionalEmail(input: {
 }): Promise<void> {
   try {
     const resend = createResendClient();
-    const replyTo = getEmailReplyTo();
+    const delivery = await getEffectiveEmailDelivery();
     const result = await resend.emails.send(
       {
-        from: getEmailFrom(),
+        from: delivery.from,
         to: input.to,
         subject: input.subject,
         html: input.html,
         text: input.text,
-        ...(replyTo ? { replyTo } : {}),
+        ...(delivery.replyTo ? { replyTo: delivery.replyTo } : {}),
         headers: {
           'X-Entity-Ref-ID': input.idempotencyKey,
           'Auto-Submitted': 'auto-generated',
           'X-Auto-Response-Suppress': 'All',
-          'List-Unsubscribe': `<mailto:${emailAddressFromFromHeader(getEmailFrom())}>`,
+          'List-Unsubscribe': `<mailto:${emailAddressFromFromHeader(delivery.from)}>`,
         },
         tags: [
           { name: 'category', value: 'transactional' },
@@ -274,12 +311,13 @@ async function sendTransactionalEmail(input: {
 const resendSender: AuthEmailSender = {
   async sendOwnerVerificationEmail(input) {
     const confirmUrl = buildEmailActionLink('/confirmar-email', input.token);
+    const ttl = await getEffectiveEmailTtl();
     const rendered = renderOwnerVerificationEmail({
       name: input.name,
       churchName: input.churchName,
       confirmUrl,
       code: input.code,
-      ttlMinutes: minutesLabel(getVerificationTtlMs()),
+      ttlMinutes: minutesLabel(ttl.verificationMs),
     });
     await sendTransactionalEmail({
       to: input.to,
@@ -292,11 +330,12 @@ const resendSender: AuthEmailSender = {
 
   async sendPasswordResetEmail(input) {
     const resetUrl = buildEmailActionLink('/redefinir-senha', input.token);
+    const ttl = await getEffectiveEmailTtl();
     const rendered = renderPasswordResetEmail({
       name: input.name,
       churchName: input.churchName,
       resetUrl,
-      ttlMinutes: minutesLabel(getPasswordResetTtlMs()),
+      ttlMinutes: minutesLabel(ttl.resetMs),
     });
     await sendTransactionalEmail({
       to: input.to,
@@ -312,6 +351,22 @@ const resendSender: AuthEmailSender = {
       name: input.name,
       churchName: input.churchName,
       appUrl: getPublicAppOrigin(),
+    });
+    await sendTransactionalEmail({
+      to: input.to,
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+      idempotencyKey: input.idempotencyKey,
+    });
+  },
+
+  async sendPlatformTestEmail(input) {
+    const delivery = await getEffectiveEmailDelivery();
+    const rendered = renderPlatformTestEmail({
+      name: input.name,
+      from: delivery.from,
+      replyTo: delivery.replyTo,
     });
     await sendTransactionalEmail({
       to: input.to,
@@ -343,4 +398,8 @@ export async function sendPasswordResetEmail(input: PasswordResetEmailInput): Pr
 
 export async function sendOwnerWelcomeEmail(input: OwnerWelcomeEmailInput): Promise<void> {
   await currentSender.sendOwnerWelcomeEmail(input);
+}
+
+export async function sendPlatformTestEmail(input: PlatformTestEmailInput): Promise<void> {
+  await currentSender.sendPlatformTestEmail(input);
 }

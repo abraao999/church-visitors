@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import { Church } from '../models/Church.js';
 import { User, type UserRole } from '../models/User.js';
+import { availableChurchFilter } from '../utils/church.js';
 import { requireConfiguredSecret } from '../utils/configuredSecret.js';
 import { resolvePermissions, type Permission } from '../utils/permissions.js';
 import { readSessionToken } from '../utils/sessionCookie.js';
@@ -119,7 +120,7 @@ export async function requireAuth(
       throw new Error('Usuário sem vínculo ativo');
     }
 
-    const churchIsActive = await Church.exists({ _id: user.churchId, active: true });
+    const churchIsActive = await Church.exists(availableChurchFilter(user.churchId));
     if (!churchIsActive) {
       throw new Error('Igreja inativa');
     }

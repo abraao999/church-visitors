@@ -19,6 +19,7 @@ import { EmailActionToken } from './EmailActionToken.js';
 import { VehicleNotice } from './VehicleNotice.js';
 import { PortariaDevice } from './PortariaDevice.js';
 import { PortariaPairing } from './PortariaPairing.js';
+import { PlatformSettings } from './PlatformSettings.js';
 import { createChurchSlug, normalizeChurchName } from '../utils/church.js';
 
 function hasIndex(
@@ -40,6 +41,9 @@ test('Church define identidade, estado e timestamps', () => {
   assert.equal(Church.schema.path('name').isRequired, true);
   assert.equal(Church.schema.path('slug').isRequired, true);
   assert.ok(Church.schema.path('active'));
+  assert.ok(Church.schema.path('approvalStatus'));
+  const approvalDefault = (Church.schema.path('approvalStatus') as { defaultValue?: unknown }).defaultValue;
+  assert.equal(typeof approvalDefault === 'function' ? approvalDefault() : approvalDefault, 'approved');
   assert.ok(Church.schema.path('createdAt'));
   assert.ok(Church.schema.path('updatedAt'));
   assert.ok(Church.schema.path('branding'));
@@ -155,6 +159,21 @@ test('modelos privados possuem churchId obrigatório e índices compostos de iso
 
   assert.ok(
     hasIndex(PublicRateLimit.schema.indexes(), { expiresAt: 1 }, { expireAfterSeconds: 0 })
+  );
+});
+
+test('configurações da plataforma são globais e sem churchId', () => {
+  assert.equal(PlatformSettings.schema.path('churchId'), undefined);
+  assert.ok(PlatformSettings.schema.path('key'));
+  assert.ok(PlatformSettings.schema.path('registrations.closedMessage'));
+  assert.ok(PlatformSettings.schema.path('maintenance.windows'));
+  assert.ok(PlatformSettings.schema.path('limits.maxChurches'));
+  assert.ok(PlatformSettings.schema.path('legal.termsUrl'));
+  assert.ok(PlatformSettings.schema.path('email.ttl.verificationMinutes'));
+  assert.ok(PlatformSettings.schema.path('newChurchDefaults.modules.visitorFollowUpEnabled'));
+  assert.ok(PlatformSettings.schema.path('notice.message'));
+  assert.ok(
+    hasIndex(PlatformSettings.schema.indexes(), { key: 1 }, { unique: true })
   );
 });
 

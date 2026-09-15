@@ -16,6 +16,7 @@ export function AdminChurchDetailPage() {
   const [busy, setBusy] = useState('');
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const [approveOpen, setApproveOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [confirmName, setConfirmName] = useState('');
 
@@ -117,6 +118,16 @@ export function AdminChurchDetailPage() {
                 Redefinir acesso
               </button>
             )}
+            {canManageChurches(admin?.role) && data.situation === 'pendente' && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={busy === 'approve'}
+                onClick={() => setApproveOpen(true)}
+              >
+                Aprovar igreja
+              </button>
+            )}
             {canManageChurches(admin?.role) && data.situation !== 'suspensa' && (
               <button type="button" className="btn" style={{ color: 'var(--danger)' }} onClick={() => setSuspendOpen(true)}>
                 Suspender igreja
@@ -151,6 +162,35 @@ export function AdminChurchDetailPage() {
           ))}
         </section>
       </div>
+
+      {approveOpen && (
+        <div className="admin-dialog-backdrop" role="presentation" onClick={() => setApproveOpen(false)}>
+          <div
+            className="card admin-dialog"
+            role="dialog"
+            aria-labelledby={`${titleId}-approve`}
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id={`${titleId}-approve`}>Aprovar igreja</h2>
+            <p>Depois da aprovação, o proprietário poderá entrar normalmente. Uma igreja suspensa permanece suspensa.</p>
+            <div className="admin-actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={busy === 'approve'}
+                onClick={() => {
+                  setApproveOpen(false);
+                  void run('approve', () => adminApi.approveChurch(data.id), 'Igreja aprovada.');
+                }}
+              >
+                Confirmar aprovação
+              </button>
+              <button type="button" className="btn" onClick={() => setApproveOpen(false)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {resetOpen && (
         <div className="admin-dialog-backdrop" role="presentation" onClick={() => setResetOpen(false)}>

@@ -109,7 +109,7 @@ export function AdminChurchesPage() {
           >
             <option value="">Todas</option>
             <option value="ativa">Ativas</option>
-            <option value="pendente">Pendentes</option>
+            <option value="pendente">Aguardando aprovação</option>
             <option value="suspensa">Suspensas</option>
           </select>
         </label>

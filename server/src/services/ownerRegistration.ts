@@ -3,11 +3,7 @@ import { Church } from '../models/Church.js';
 import { recordAuthAudit } from '../models/AuthAuditEvent.js';
 import { PendingOwnerRegistration, type IPendingOwnerRegistration } from '../models/PendingOwnerRegistration.js';
 import { User } from '../models/User.js';
-import {
-  getCodeMaxAttempts,
-  getResendIntervalMs,
-  getVerificationTtlMs,
-} from '../utils/emailConfig.js';
+import { getCodeMaxAttempts } from '../utils/emailConfig.js';
 import { createChurchSlug } from '../utils/church.js';
 import {
   createHighEntropyToken,
@@ -19,6 +15,13 @@ import {
   secretsMatch,
 } from '../utils/emailCrypto.js';
 import { EmailDeliveryError, sendOwnerVerificationEmail, sendOwnerWelcomeEmail } from './authEmail.js';
+import {
+  assertPlatformCanAcceptChurch,
+  createRetentionPolicyForChurch,
+  getEffectiveEmailTtl,
+  getNewChurchCreationPlan,
+  PlatformSettingsError,
+} from './platformSettings.js';
 
 export const EMAIL_CONFIRM_INVALID = 'Este link ou código não é válido.';
 export const EMAIL_CONFIRM_EXPIRED = 'Este link ou código expirou.';
@@ -56,9 +59,10 @@ export type PendingRegistrationPublic = {
   expiresAt: string;
 };
 
-function ttlDates(now = Date.now()) {
-  const verificationExpiresAt = new Date(now + getVerificationTtlMs());
-  const resendAvailableAt = new Date(now + getResendIntervalMs());
+async function ttlDates(now = Date.now()) {
+  const ttl = await getEffectiveEmailTtl();
+  const verificationExpiresAt = new Date(now + ttl.verificationMs);
+  const resendAvailableAt = new Date(now + ttl.resendMs);
   const deleteAfter = new Date(verificationExpiresAt.getTime() + 24 * 60 * 60 * 1000);
   return { verificationExpiresAt, resendAvailableAt, deleteAfter };
 }
@@ -100,8 +104,9 @@ export async function createPendingOwnerRegistration(input: {
   city?: string;
   assisted?: boolean;
 }): Promise<PendingRegistrationPublic> {
+  await assertPlatformCanAcceptChurch();
   const secrets = createChallengeSecrets();
-  const dates = ttlDates();
+  const dates = await ttlDates();
 
   await PendingOwnerRegistration.deleteMany({
     $or: [{ email: input.email }, { username: input.username }],
@@ -218,6 +223,7 @@ export async function confirmPendingOwnerRegistration(input: {
   };
   churchName: string;
   assisted: boolean;
+  approvalStatus: 'pending' | 'approved';
 }> {
   const now = new Date();
   const token = input.token?.trim();
@@ -249,8 +255,12 @@ export async function confirmPendingOwnerRegistration(input: {
         };
         churchName: string;
         assisted: boolean;
+        approvalStatus: 'pending' | 'approved';
       }
     | undefined;
+
+  const plan = await getNewChurchCreationPlan();
+  const approvalStatus = plan.approvalMode === 'manual' ? 'pending' : 'approved';
 
   try {
     await session.withTransaction(async () => {
@@ -277,6 +287,8 @@ export async function confirmPendingOwnerRegistration(input: {
         throw new EmailConfirmError('used', EMAIL_CONFIRM_USED);
       }
 
+      await assertPlatformCanAcceptChurch(session);
+
       const emailVerifiedAt = new Date();
       const [church] = await Church.create(
         [
@@ -284,12 +296,16 @@ export async function confirmPendingOwnerRegistration(input: {
             name: claimed.churchName,
             slug: createChurchSlug(claimed.churchName),
             city: claimed.city || '',
+            timezone: plan.timezone,
+            visitorFollowUpEnabled: plan.visitorFollowUpEnabled,
             active: true,
+            approvalStatus,
           },
         ],
         { session }
       );
       const churchId = church._id as Types.ObjectId;
+      await createRetentionPolicyForChurch(churchId, plan.retention, session);
       const [user] = await User.create(
         [
           {
@@ -321,10 +337,12 @@ export async function confirmPendingOwnerRegistration(input: {
         },
         churchName: claimed.churchName,
         assisted: Boolean(claimed.assisted),
+        approvalStatus,
       };
     });
   } catch (error) {
     if (error instanceof EmailConfirmError) throw error;
+    if (error instanceof PlatformSettingsError) throw error;
     if ((error as { code?: number }).code === 11000) {
       throw new EmailConfirmError('used', EMAIL_CONFIRM_USED);
     }
@@ -342,15 +360,17 @@ export async function confirmPendingOwnerRegistration(input: {
     userId: created.user._id,
   });
 
-  try {
-    await sendOwnerWelcomeEmail({
-      to: created.user.email,
-      name: created.user.name,
-      churchName: created.churchName,
-      idempotencyKey: `owner-welcome:${created.user._id.toString()}`,
-    });
-  } catch {
-    console.error('Falha ao enviar e-mail de cadastro concluído');
+  if (created.approvalStatus === 'approved') {
+    try {
+      await sendOwnerWelcomeEmail({
+        to: created.user.email,
+        name: created.user.name,
+        churchName: created.churchName,
+        idempotencyKey: `owner-welcome:${created.user._id.toString()}`,
+      });
+    } catch {
+      console.error('Falha ao enviar e-mail de cadastro concluído');
+    }
   }
 
   return created;
@@ -361,9 +381,10 @@ export async function resendPendingOwnerRegistration(challengeId: string): Promi
   resendAvailableAt: string;
 }> {
   const now = new Date();
+  const ttl = await getEffectiveEmailTtl();
   const generic = {
     ok: true as const,
-    resendAvailableAt: new Date(now.getTime() + getResendIntervalMs()).toISOString(),
+    resendAvailableAt: new Date(now.getTime() + ttl.resendMs).toISOString(),
   };
 
   const pending = await PendingOwnerRegistration.findOne({ challengeId, consumedAt: null });
@@ -388,7 +409,7 @@ export async function resendPendingOwnerRegistration(challengeId: string): Promi
 
   const token = createHighEntropyToken();
   const code = createVerificationCode();
-  const dates = ttlDates(now.getTime());
+  const dates = await ttlDates(now.getTime());
 
   const updated = await PendingOwnerRegistration.findOneAndUpdate(
     {

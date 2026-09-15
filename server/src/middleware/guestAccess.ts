@@ -4,6 +4,7 @@ import {
   type GuestAccessType,
 } from '../models/GuestAccess.js';
 import { Church } from '../models/Church.js';
+import { availableChurchFilter } from '../utils/church.js';
 import { guestAccessHasScope, resolveGuestAccessTypes } from '../utils/guestAccessTypes.js';
 import { getGuestAccessSecret, parseGuestToken, verifyGuestTokenSignature } from '../utils/guestToken.js';
 import { clientIp, consumeRateLimit, sendRateLimited } from '../utils/rateLimit.js';
@@ -111,7 +112,7 @@ export function requireGuestAccess(requiredScope?: GuestAccessType) {
         });
       }
 
-      const church = await Church.findOne({ _id: access.churchId, active: true })
+      const church = await Church.findOne(availableChurchFilter(access.churchId))
         .select('name timezone visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor')
         .lean();
       if (!church) return rejectInvalid(res);

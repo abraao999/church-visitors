@@ -44,7 +44,8 @@ import { AdminOverviewPage } from './admin/AdminOverviewPage';
 import { AdminActivitiesPage } from './admin/AdminActivitiesPage';
 import { AdminAdministratorsPage } from './admin/AdminAdministratorsPage';
 import { AdminHealthPage } from './admin/AdminHealthPage';
-import { AdminProtectedRoute } from './admin/AdminProtectedRoute';
+import { AdminOwnerRoute, AdminProtectedRoute } from './admin/AdminProtectedRoute';
+import { AdminSettingsPage } from './admin/AdminSettingsPage';
 
 export function App() {
   return (
@@ -62,6 +63,9 @@ export function App() {
                 <Route path="/admin/atividades" element={<AdminActivitiesPage />} />
                 <Route path="/admin/administradores" element={<AdminAdministratorsPage />} />
                 <Route path="/admin/saude" element={<AdminHealthPage />} />
+                <Route element={<AdminOwnerRoute />}>
+                  <Route path="/admin/configuracoes" element={<AdminSettingsPage />} />
+                </Route>
               </Route>
             </Route>
           </Route>

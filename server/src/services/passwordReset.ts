@@ -4,12 +4,12 @@ import { Church } from '../models/Church.js';
 import { EmailActionToken } from '../models/EmailActionToken.js';
 import { recordAuthAudit } from '../models/AuthAuditEvent.js';
 import { User } from '../models/User.js';
-import { getPasswordResetTtlMs } from '../utils/emailConfig.js';
 import {
   createHighEntropyToken,
   hashPasswordResetToken,
 } from '../utils/emailCrypto.js';
 import { EmailDeliveryError, sendPasswordResetEmail } from './authEmail.js';
+import { getEffectiveEmailTtl } from './platformSettings.js';
 
 export const PASSWORD_FORGOT_MESSAGE =
   'Se existir uma conta para este e-mail, enviaremos as instruções.';
@@ -52,8 +52,9 @@ async function equalizeForgotTiming(passwordHash?: string): Promise<void> {
   await bcrypt.compare('forgot-timing', passwordHash || dummyHash());
 }
 
-function ttlDates(now = Date.now()) {
-  const expiresAt = new Date(now + getPasswordResetTtlMs());
+async function ttlDates(now = Date.now()) {
+  const ttl = await getEffectiveEmailTtl();
+  const expiresAt = new Date(now + ttl.resetMs);
   const deleteAfter = new Date(expiresAt.getTime() + 24 * 60 * 60 * 1000);
   return { expiresAt, deleteAfter };
 }
@@ -88,7 +89,7 @@ export async function requestPasswordReset(email: string): Promise<{ message: st
     return { message: PASSWORD_FORGOT_MESSAGE };
   }
 
-  const dates = ttlDates(now.getTime());
+  const dates = await ttlDates(now.getTime());
   await EmailActionToken.updateMany(
     {
       userId: user._id,
@@ -142,7 +143,7 @@ export async function requestPasswordResetForOwner(userId: Types.ObjectId): Prom
 
   const token = createHighEntropyToken();
   const tokenHash = hashPasswordResetToken(token);
-  const dates = ttlDates(now.getTime());
+  const dates = await ttlDates(now.getTime());
   await EmailActionToken.updateMany(
     {
       userId: user._id,

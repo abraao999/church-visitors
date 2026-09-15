@@ -69,7 +69,8 @@ export type EmailConfirmCode = 'invalid' | 'expired' | 'used' | 'unavailable' | 
 
 export type EmailConfirmationResponse =
   | { user: AuthUser }
-  | { needsPassword: true; emailMasked: string };
+  | { needsPassword: true; emailMasked: string; pendingApproval?: boolean }
+  | { pendingApproval: true; message: string };
 
 export interface EmailResendResponse {
   ok: true;
@@ -96,7 +97,8 @@ export type ConfirmEmailScreenState =
   | 'used'
   | 'temporary'
   | 'missing'
-  | 'needsPassword';
+  | 'needsPassword'
+  | 'pendingApproval';
 
 export type ResetPasswordScreenState =
   | 'validating'

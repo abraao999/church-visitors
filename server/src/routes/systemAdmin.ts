@@ -10,10 +10,11 @@ import {
   type PlatformAdminRequest,
 } from '../middleware/platformAdminAuth.js';
 import { recordPlatformAudit } from '../models/PlatformAuditEvent.js';
-import { EmailDeliveryError } from '../services/authEmail.js';
+import { EmailDeliveryError, sendPlatformTestEmail } from '../services/authEmail.js';
 import { EmailConfirmError } from '../services/ownerRegistration.js';
 import { PasswordResetError } from '../services/passwordReset.js';
 import {
+  approvePlatformChurch,
   authenticatePlatformAdmin,
   createPlatformAdmin,
   createAssistedChurch,
@@ -32,6 +33,13 @@ import {
   suspendPlatformChurch,
   updatePlatformAdmin,
 } from '../services/platformAdmin.js';
+import {
+  loadAdminPlatformSettings,
+  parseSettingsTestEmailBody,
+  PlatformSettingsError,
+  TEST_EMAIL_RATE_LIMIT_MS,
+  updatePlatformSettings,
+} from '../services/platformSettings.js';
 import { clientIp, consumeRateLimit, sendRateLimited } from '../utils/rateLimit.js';
 import { normalizeEmail } from '../utils/emailCrypto.js';
 import { isEmailTokenSecretError, EMAIL_TOKEN_SECRET_HELP } from '../utils/emailConfig.js';
@@ -133,6 +141,102 @@ router.post('/auth/logout', requirePlatformAdmin, async (req: PlatformAdminReque
 
 router.get('/auth/me', requirePlatformAdmin, async (req: PlatformAdminRequest, res) => {
   return res.json({ admin: publicAdmin(req.platformAdmin!) });
+});
+
+router.get('/settings', requirePlatformAdmin, requirePlatformRole('platform_owner'), async (req, res) => {
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('Vary', 'Cookie, Authorization');
+  if ('churchId' in req.query || (req.body && typeof req.body === 'object' && 'churchId' in req.body)) {
+    return res.status(400).json({ error: 'O identificador da igreja não deve ser enviado.' });
+  }
+  try {
+    return res.json(await loadAdminPlatformSettings());
+  } catch {
+    return res.status(503).json({ error: 'Não foi possível carregar as configurações.' });
+  }
+});
+
+router.patch('/settings', requirePlatformAdmin, requirePlatformRole('platform_owner'), async (req: PlatformAdminRequest, res) => {
+  res.setHeader('Cache-Control', 'private, no-store');
+  if (req.body && typeof req.body === 'object' && 'churchId' in req.body) {
+    return res.status(400).json({ error: 'O identificador da igreja não deve ser enviado no corpo.' });
+  }
+  try {
+    const result = await updatePlatformSettings(req.body);
+    await recordPlatformAudit({
+      platformAdminId: new Types.ObjectId(req.platformAdmin!.adminId),
+      platformAdminName: req.platformAdmin!.name,
+      platformAdminRole: req.platformAdmin!.role,
+      operation: 'platform_settings_updated',
+      targetType: 'platform_settings',
+      targetId: 'global',
+      metadata: result.changes,
+    });
+    return res.json(result.settings);
+  } catch (error) {
+    if (error instanceof PlatformSettingsError) {
+      return res.status(error.status).json({ error: error.message, ...(error.code ? { code: error.code } : {}) });
+    }
+    return res.status(503).json({ error: 'Não foi possível salvar as configurações.' });
+  }
+});
+
+router.post('/settings/email/test', requirePlatformAdmin, requirePlatformRole('platform_owner'), async (req: PlatformAdminRequest, res) => {
+  res.setHeader('Cache-Control', 'private, no-store');
+  try {
+    parseSettingsTestEmailBody(req.body);
+  } catch (error) {
+    if (error instanceof PlatformSettingsError) {
+      return res.status(error.status).json({ error: error.message, ...(error.code ? { code: error.code } : {}) });
+    }
+    return res.status(400).json({ error: 'Não foi possível enviar o e-mail de teste.' });
+  }
+
+  try {
+    const secret = getPlatformAdminJwtSecret();
+    const allowed = await consumeRateLimit(
+      secret,
+      'platform-test-email',
+      req.platformAdmin!.adminId,
+      1,
+      TEST_EMAIL_RATE_LIMIT_MS
+    );
+    if (!allowed) {
+      res.setHeader('Retry-After', '60');
+      return res.status(429).json({
+        error: 'Aguarde um minuto antes de enviar outro e-mail de teste.',
+        code: 'test_email_rate_limited',
+      });
+    }
+  } catch (error) {
+    if (isPlatformAdminJwtSecretError(error)) {
+      return res.status(503).json({ error: PLATFORM_ADMIN_JWT_SECRET_HELP });
+    }
+    return res.status(503).json({ error: 'Não foi possível enviar o e-mail de teste.' });
+  }
+
+  try {
+    await sendPlatformTestEmail({
+      to: req.platformAdmin!.email,
+      name: req.platformAdmin!.name,
+      idempotencyKey: `platform-test:${req.platformAdmin!.adminId}:${Math.floor(Date.now() / TEST_EMAIL_RATE_LIMIT_MS)}`,
+    });
+    await recordPlatformAudit({
+      platformAdminId: new Types.ObjectId(req.platformAdmin!.adminId),
+      platformAdminName: req.platformAdmin!.name,
+      platformAdminRole: req.platformAdmin!.role,
+      operation: 'platform_test_email_sent',
+      targetType: 'platform_settings',
+      targetId: 'global',
+      metadata: { ok: true },
+    });
+    return res.json({ ok: true });
+  } catch (error) {
+    if (error instanceof EmailDeliveryError) {
+      return res.status(503).json({ error: error.message });
+    }
+    return res.status(503).json({ error: 'Não foi possível enviar o e-mail de teste.' });
+  }
 });
 
 router.get('/overview', requirePlatformAdmin, async (_req, res) => {
@@ -254,6 +358,9 @@ router.post('/churches', requirePlatformAdmin, requirePlatformRole('platform_own
     if (error instanceof Error && error.message === 'duplicate') {
       return res.status(400).json({ error: 'Já existe uma conta com este e-mail.' });
     }
+    if (error instanceof PlatformSettingsError) {
+      return res.status(error.status).json({ error: error.message, ...(error.code ? { code: error.code } : {}) });
+    }
     if (error instanceof EmailDeliveryError) {
       return res.status(503).json({ error: error.message });
     }
@@ -299,6 +406,23 @@ router.post('/churches/:churchId/suspend', requirePlatformAdmin, requirePlatform
       return res.status(400).json({ error: 'Digite o nome da igreja para confirmar.' });
     }
     return res.status(503).json({ error: 'Não foi possível suspender a igreja.' });
+  }
+});
+
+router.post('/churches/:churchId/approve', requirePlatformAdmin, requirePlatformRole('platform_owner'), async (req: PlatformAdminRequest, res) => {
+  const churchId = readChurchId(req.params.churchId);
+  const tenantError = rejectChurchIdFromClient(
+    req.body && typeof req.body === 'object' ? req.body : {},
+    churchId
+  );
+  if (tenantError) return res.status(400).json({ error: tenantError });
+  try {
+    return res.json(await approvePlatformChurch(churchId, req.platformAdmin!));
+  } catch (error) {
+    if (error instanceof Error && error.message === 'not_found') {
+      return res.status(404).json({ error: PLATFORM_CHURCH_NOT_FOUND });
+    }
+    return res.status(503).json({ error: 'Não foi possível aprovar a igreja.' });
   }
 });
 

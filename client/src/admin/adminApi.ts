@@ -8,6 +8,8 @@ import type {
   PlatformChurchList,
   PlatformHealth,
   PlatformOverview,
+  PlatformSettings,
+  PlatformSettingsUpdate,
 } from './adminTypes';
 
 const API_BASE = '/api/system-admin';
@@ -145,6 +147,38 @@ export const adminApi = {
   async sendPasswordReset(id: string): Promise<void> {
     const response = await adminFetch(`${API_BASE}/churches/${encodeURIComponent(id)}/send-password-reset`, {
       method: 'POST',
+    });
+    await handleResponse<{ ok: true }>(response);
+  },
+
+  async getSettings(): Promise<PlatformSettings> {
+    const response = await adminFetch(`${API_BASE}/settings`);
+    return handleResponse<PlatformSettings>(response);
+  },
+
+  async updateSettings(data: PlatformSettingsUpdate): Promise<PlatformSettings> {
+    const response = await adminFetch(`${API_BASE}/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<PlatformSettings>(response);
+  },
+
+  async sendTestEmail(): Promise<void> {
+    const response = await adminFetch(`${API_BASE}/settings/email/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    await handleResponse<{ ok: true }>(response);
+  },
+
+  async approveChurch(churchId: string): Promise<void> {
+    const response = await adminFetch(`${API_BASE}/churches/${encodeURIComponent(churchId)}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
     });
     await handleResponse<{ ok: true }>(response);
   },

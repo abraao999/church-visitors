@@ -42,6 +42,10 @@ const COPY: Record<ConfirmEmailScreenState, { title: string; text: string }> = {
     title: 'E-mail confirmado',
     text: 'Enviamos um segundo e-mail para você criar a própria senha. Olhe também o spam.',
   },
+  pendingApproval: {
+    title: 'E-mail confirmado',
+    text: 'Seu e-mail foi confirmado. O cadastro aguarda aprovação da Eclesiafy.',
+  },
 };
 
 export function ConfirmEmailPage() {
@@ -62,7 +66,9 @@ export function ConfirmEmailPage() {
       .then((result) => {
         if (cancelled) return;
         clearPendingChallengeId();
-        setState(result.needsPassword ? 'needsPassword' : 'confirmed');
+        if (result.pendingApproval) setState('pendingApproval');
+        else if (result.needsPassword) setState('needsPassword');
+        else setState('confirmed');
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -108,6 +114,11 @@ export function ConfirmEmailPage() {
         {state === 'needsPassword' && (
           <Link className="btn btn-primary auth-submit" to="/esqueci-senha">
             Abrir recuperação de senha
+          </Link>
+        )}
+        {state === 'pendingApproval' && (
+          <Link className="btn btn-primary auth-submit" to="/login">
+            Voltar ao login
           </Link>
         )}
         {state === 'used' && (

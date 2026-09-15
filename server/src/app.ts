@@ -6,6 +6,7 @@ import { getPlatformAdminJwtSecret } from './middleware/platformAdminAuth.js';
 import { getEmailTokenSecret } from './utils/emailConfig.js';
 import { getGuestAccessSecret } from './utils/guestToken.js';
 import authRouter from './routes/auth.js';
+import platformPublicRouter from './routes/platformPublic.js';
 import systemAdminRouter from './routes/systemAdmin.js';
 import visitorsRouter from './routes/visitors.js';
 import prayerRequestsRouter from './routes/prayerRequests.js';
@@ -82,6 +83,7 @@ export function createApp() {
   });
 
   app.use('/api/auth', authRouter);
+  app.use('/api/platform', platformPublicRouter);
   app.use('/api/system-admin', systemAdminRouter);
   app.use('/api/visitors', visitorsRouter);
   app.use('/api/prayer-requests', prayerRequestsRouter);

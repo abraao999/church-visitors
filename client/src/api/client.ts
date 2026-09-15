@@ -141,6 +141,17 @@ function reportQuery(params: ReportQuery): string {
 }
 
 export const api = {
+  async platformPublic(): Promise<{
+    registrationsEnabled: boolean;
+    closedMessage?: string;
+    maintenance: { enabled: boolean; message: string };
+    legal?: { termsUrl?: string; privacyUrl?: string };
+    notice?: { enabled: true; message: string; tone: 'info' | 'warning' };
+  }> {
+    const response = await apiFetch(`${API_BASE}/platform/public`);
+    return handleResponse(response);
+  },
+
   async register(data: {
     churchName: string;
     name: string;

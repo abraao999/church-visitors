@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import {
   clearPendingChallengeId,
@@ -34,12 +35,49 @@ export function LoginPage() {
     emailMasked?: string;
     resendAvailableAt?: string;
   } | null>(null);
+  const [registrationsEnabled, setRegistrationsEnabled] = useState(true);
+  const [closedMessage, setClosedMessage] = useState(
+    'Novos cadastros estão temporariamente indisponíveis.'
+  );
+  const [legal, setLegal] = useState<{ termsUrl?: string; privacyUrl?: string }>({});
+  const [notice, setNotice] = useState<{ message: string; tone: 'info' | 'warning' } | null>(null);
 
   useEffect(() => {
     const stored = readPendingChallengeId();
     if (stored) {
       setPending({ challengeId: stored });
     }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .platformPublic()
+      .then((status) => {
+        if (cancelled) return;
+        setRegistrationsEnabled(status.registrationsEnabled !== false);
+        setLegal({
+          termsUrl: String(status.legal?.termsUrl || '').trim() || undefined,
+          privacyUrl: String(status.legal?.privacyUrl || '').trim() || undefined,
+        });
+        const noticeMessage = status.notice?.enabled ? String(status.notice.message || '').trim() : '';
+        setNotice(
+          noticeMessage
+            ? { message: noticeMessage, tone: status.notice?.tone === 'warning' ? 'warning' : 'info' }
+            : null
+        );
+        if (status.registrationsEnabled === false) {
+          setMode('login');
+          const message = String(status.closedMessage || '').trim();
+          setClosedMessage(message || 'Novos cadastros estão temporariamente indisponíveis.');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRegistrationsEnabled(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (!loading && user) {
@@ -52,6 +90,10 @@ export function LoginPage() {
     setSubmitting(true);
 
     try {
+      if (mode === 'register' && !registrationsEnabled) {
+        setError(closedMessage);
+        return;
+      }
       if (mode === 'login') {
         await login(loginValue, password);
         navigate(from, { replace: true });
@@ -123,6 +165,16 @@ export function LoginPage() {
             </p>
           </div>
 
+          {notice && (
+            <p
+              className={`auth-platform-notice${notice.tone === 'warning' ? ' is-warning' : ''}`}
+              role="status"
+            >
+              {notice.message}
+            </p>
+          )}
+
+          {registrationsEnabled ? (
           <div className="auth-tabs" role="tablist" aria-label="Acesso à conta">
             <button
               type="button"
@@ -149,6 +201,11 @@ export function LoginPage() {
               Criar conta
             </button>
           </div>
+          ) : (
+            <p className="auth-closed-note" role="status">
+              {closedMessage}
+            </p>
+          )}
 
           {error && (
             <p id="auth-form-error" className="error-message auth-error" role="alert">
@@ -269,6 +326,19 @@ export function LoginPage() {
               {!submitting && <AppIcon name="arrow" />}
             </button>
           </form>
+
+          {(legal.termsUrl || legal.privacyUrl) && (
+            <p className="auth-legal-note">
+              {mode === 'register' ? 'Ao criar a conta, você concorda com ' : 'Consulte '}
+              {legal.termsUrl ? (
+                <a href={legal.termsUrl} target="_blank" rel="noopener noreferrer">os termos de uso</a>
+              ) : null}
+              {legal.termsUrl && legal.privacyUrl ? ' e ' : ''}
+              {legal.privacyUrl ? (
+                <a href={legal.privacyUrl} target="_blank" rel="noopener noreferrer">a política de privacidade</a>
+              ) : null}.
+            </p>
+          )}
 
           <p className="auth-live-note">
             <AppIcon name="prayer" />

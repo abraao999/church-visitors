@@ -20,6 +20,7 @@ import { Visitor } from '../models/Visitor.js';
 import { normalizeChurchName } from '../utils/church.js';
 import { createHighEntropyToken, normalizeEmail } from '../utils/emailCrypto.js';
 import { escapeRegex, normalizedSearch } from '../utils/safeRegex.js';
+import { sendOwnerWelcomeEmail } from './authEmail.js';
 import { createPendingOwnerRegistration, resendPendingOwnerRegistration } from './ownerRegistration.js';
 import { requestPasswordResetForOwner } from './passwordReset.js';
 
@@ -70,11 +71,12 @@ function daysAgo(days: number): Date {
 
 export function churchSituation(input: {
   active: boolean;
+  approvalStatus?: string | null;
   city?: string;
   emailVerifiedAt?: Date | null;
 }): ChurchSituation {
   if (!input.active) return 'suspensa';
-  if (!input.emailVerifiedAt || !(input.city || '').trim()) return 'pendente';
+  if (input.approvalStatus === 'pending') return 'pendente';
   return 'ativa';
 }
 
@@ -120,6 +122,7 @@ export async function loadPlatformAdminOverview() {
     churchesTotal,
     churchesActive,
     churchesSuspended,
+    churchesAwaitingApproval,
     usersActive,
     churchesThisMonth,
     usersSeenToday,
@@ -131,8 +134,9 @@ export async function loadPlatformAdminOverview() {
     churchesWithPortaria,
   ] = await Promise.all([
     Church.countDocuments({}),
-    Church.countDocuments({ active: true }),
+    Church.countDocuments({ active: true, approvalStatus: { $ne: 'pending' } }),
     Church.countDocuments({ active: false }),
+    Church.countDocuments({ approvalStatus: 'pending' }),
     User.countDocuments({ active: true }),
     Church.countDocuments({ createdAt: { $gte: month } }),
     User.countDocuments({ lastSeenAt: { $gte: today } }),
@@ -152,6 +156,15 @@ export async function loadPlatformAdminOverview() {
     href: string;
   }> = [];
 
+  if (churchesAwaitingApproval > 0) {
+    pendingItems.push({
+      key: 'approval',
+      title: `${churchesAwaitingApproval} igreja${churchesAwaitingApproval === 1 ? '' : 's'} aguardando aprovação`,
+      detail: 'O e-mail já foi confirmado e o acesso espera a liberação da plataforma',
+      actionLabel: 'Revisar igrejas',
+      href: '/admin/igrejas?situacao=pendente',
+    });
+  }
   if (unconfirmedOwners > 0) {
     pendingItems.push({
       key: 'unconfirmed',
@@ -195,7 +208,7 @@ export async function loadPlatformAdminOverview() {
     churchesTotal,
     churchesActive,
     churchesSuspended,
-    churchesPending: incompleteChurches + unconfirmedOwners,
+    churchesPending: churchesAwaitingApproval + incompleteChurches + unconfirmedOwners,
     usersActive,
     churchesThisMonth,
     usersSeenToday,
@@ -451,12 +464,7 @@ export async function listPlatformChurches(input: {
             'suspensa',
             {
               $cond: [
-                {
-                  $or: [
-                    { $eq: [{ $ifNull: ['$owner.emailVerifiedAt', null] }, null] },
-                    { $eq: [{ $ifNull: ['$city', ''] }, ''] },
-                  ],
-                },
+                { $eq: [{ $ifNull: ['$approvalStatus', 'approved'] }, 'pending'] },
                 'pendente',
                 'ativa',
               ],
@@ -500,7 +508,7 @@ export async function getPlatformChurchDetail(churchId: string) {
     throw new Error('not_found');
   }
   const id = new Types.ObjectId(churchId);
-  const church = await Church.findById(id, 'name city active createdAt visitorFollowUpEnabled branding');
+  const church = await Church.findById(id, 'name city active approvalStatus createdAt visitorFollowUpEnabled branding');
   if (!church) throw new Error('not_found');
 
   const owner = await User.findOne(
@@ -533,8 +541,7 @@ export async function getPlatformChurchDetail(churchId: string) {
     city: church.city || '',
     situation: churchSituation({
       active: church.active !== false,
-      city: church.city,
-      emailVerifiedAt: owner?.emailVerifiedAt,
+      approvalStatus: church.approvalStatus,
     }),
     createdAt: church.createdAt.toISOString(),
     lastSeenAt: owner?.lastSeenAt?.toISOString() || null,
@@ -648,6 +655,43 @@ export async function reactivatePlatformChurch(churchId: string, actor: Platform
     churchId: church._id as Types.ObjectId,
   });
   return { ok: true as const };
+}
+
+export async function approvePlatformChurch(churchId: string, actor: PlatformAdminActor) {
+  if (!Types.ObjectId.isValid(churchId)) throw new Error('not_found');
+  const church = await Church.findById(churchId);
+  if (!church) throw new Error('not_found');
+
+  if (church.approvalStatus !== 'pending') {
+    return { ok: true as const, alreadyApproved: true };
+  }
+
+  church.approvalStatus = 'approved';
+  await church.save();
+
+  await recordPlatformAudit({
+    ...actorIds(actor),
+    operation: 'church_approved',
+    targetType: 'church',
+    targetId: String(church._id),
+    churchId: church._id as Types.ObjectId,
+  });
+
+  const owner = await User.findOne({ churchId: church._id, role: 'owner' }, 'name email');
+  if (owner?.email) {
+    try {
+      await sendOwnerWelcomeEmail({
+        to: owner.email,
+        name: owner.name,
+        churchName: church.name,
+        idempotencyKey: `owner-welcome:${String(owner._id)}`,
+      });
+    } catch {
+      // A aprovação não depende do e-mail de boas-vindas.
+    }
+  }
+
+  return { ok: true as const, alreadyApproved: false };
 }
 
 export async function sendPlatformPasswordReset(churchId: string, actor: PlatformAdminActor) {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useVehicleAlerts, VehicleAlertProvider } from '../alerts/VehicleAlertProvider';
 import { formatPendingBadge, pendingBadgeLabel } from '../alerts/vehicleAlertLogic';
+import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { useBranding } from '../theme/BrandingContext';
 import { AppIcon, type AppIconName } from './AppIcon';
@@ -56,6 +57,8 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
   const { user, logout } = useAuth();
   const { branding } = useBranding();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
+  const [notice, setNotice] = useState<{ message: string; tone: 'info' | 'warning' } | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const drawerOpenRef = useRef(false);
   const brandName = branding?.name?.trim() || user?.churchName?.trim() || 'Church Visitors';
@@ -72,6 +75,32 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
   useEffect(() => {
     document.title = brandName;
   }, [brandName]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .platformPublic()
+      .then((status) => {
+        if (cancelled) return;
+        const message = status.maintenance?.enabled ? String(status.maintenance.message || '').trim() : '';
+        setMaintenanceMessage(message);
+        const noticeMessage = status.notice?.enabled ? String(status.notice.message || '').trim() : '';
+        setNotice(
+          noticeMessage
+            ? { message: noticeMessage, tone: status.notice?.tone === 'warning' ? 'warning' : 'info' }
+            : null
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMaintenanceMessage('');
+          setNotice(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!drawerOpenRef.current) return;
@@ -192,6 +221,19 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
       />
 
       <main className="app-main container">
+        {maintenanceMessage && (
+          <p className="platform-maintenance-banner" role="status">
+            {maintenanceMessage}
+          </p>
+        )}
+        {notice && (
+          <p
+            className={`platform-notice-banner${notice.tone === 'warning' ? ' is-warning' : ''}`}
+            role="status"
+          >
+            {notice.message}
+          </p>
+        )}
         <Outlet />
       </main>
     </div>

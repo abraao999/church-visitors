@@ -14,6 +14,9 @@ const OPERATION_LABELS: Record<PlatformAuditOperation, string> = {
   verification_resent: 'Confirmação reenviada',
   password_reset_requested: 'Redefinição enviada',
   admin_changed: 'Administrador alterado',
+  platform_settings_updated: 'Configurações atualizadas',
+  platform_test_email_sent: 'E-mail de teste enviado',
+  church_approved: 'Igreja aprovada',
 };
 
 export function AdminActivitiesPage() {

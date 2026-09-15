@@ -1,0 +1,306 @@
+.admin-settings {
+  display: grid;
+  gap: 1.1rem;
+  min-width: 0;
+}
+
+.admin-settings-dirty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.admin-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 0.9rem 1rem;
+}
+
+.admin-settings-fieldset {
+  margin: 0.4rem 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.admin-settings-fieldset legend {
+  margin-bottom: 0.65rem;
+  font-weight: 700;
+}
+
+.admin-settings-radio,
+.admin-switch {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.85rem;
+  min-height: 44px;
+  margin-bottom: 0.85rem;
+  padding: 0.85rem 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: inset 4px 0 0 transparent;
+}
+
+.admin-settings-radio {
+  grid-template-columns: 22px minmax(0, 1fr);
+  cursor: pointer;
+}
+
+.admin-settings-radio input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.admin-settings-radio span,
+.admin-switch-copy {
+  min-width: 0;
+}
+
+.admin-settings-radio strong,
+.admin-settings-radio small,
+.admin-switch-copy strong,
+.admin-switch-copy small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.admin-settings-radio small,
+.admin-switch-copy small,
+.admin-settings .form-group small {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.admin-switch {
+  cursor: pointer;
+}
+
+.admin-switch.is-on {
+  border-color: color-mix(in srgb, var(--primary) 70%, var(--border));
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  box-shadow: inset 4px 0 0 var(--primary);
+}
+
+.admin-switch.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.78;
+}
+
+.admin-switch-control {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 58px;
+  min-height: 44px;
+}
+
+.admin-switch-control > input {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  min-width: 44px;
+  height: 100%;
+  min-height: 44px;
+  margin: 0;
+  opacity: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: inherit;
+}
+
+.admin-switch-track {
+  position: relative;
+  box-sizing: border-box;
+  width: 58px;
+  height: 34px;
+  flex: 0 0 34px;
+  border: 1.5px solid color-mix(in srgb, var(--text) 38%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 32%, var(--surface));
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.admin-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--text) 28%, transparent);
+  transform: translateY(-50%);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.admin-switch.is-on .admin-switch-track,
+.admin-switch-control > input:checked + .admin-switch-track {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.admin-switch.is-on .admin-switch-track::after,
+.admin-switch-control > input:checked + .admin-switch-track::after {
+  background: var(--on-primary);
+  transform: translate(23px, -50%);
+}
+
+.admin-switch-control > input:focus-visible + .admin-switch-track {
+  outline: 3px solid var(--ring, var(--focus-ring));
+  outline-offset: 3px;
+}
+
+.admin-switch-state {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.admin-switch.is-on .admin-switch-state {
+  color: var(--primary);
+}
+
+.admin-settings-retention {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.4rem;
+}
+
+.admin-settings-modules {
+  margin: 0.2rem 0 1rem;
+}
+
+.admin-settings-modules h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.admin-settings-modules p {
+  margin: 0 0 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.admin-settings-retention h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.admin-settings-retention ul {
+  margin: 0.55rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--text-muted);
+}
+
+.admin-settings-test {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.admin-settings-test .btn,
+.admin-settings-windows-head .btn,
+.admin-settings-windows li > .btn {
+  width: fit-content;
+}
+
+.admin-settings-preview {
+  margin: 0 0 0.85rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.admin-settings-windows {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.4rem;
+}
+
+.admin-settings-windows-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.admin-settings-windows h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.admin-settings-windows > p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.admin-settings-windows ul {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-settings-windows li {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.admin-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  position: sticky;
+  bottom: 0;
+  padding: 0.85rem 0 0.2rem;
+  background: var(--bg);
+}
+
+.admin-settings-actions .btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+@media (max-width: 520px) {
+  .admin-settings-actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-settings-actions .btn,
+  .admin-settings-retention .btn,
+  .admin-settings-test .btn,
+  .admin-settings-windows-head .btn,
+  .admin-settings-windows li > .btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-switch-track,
+  .admin-switch-track::after {
+    transition: none;
+  }
+}

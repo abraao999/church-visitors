@@ -44,7 +44,7 @@ test('todas as situações de link têm estado visual', () => {
   assert.equal(resetStateFromStatus('invalid'), 'invalid');
 
   const confirmPage = readFileSync(join(clientSrc, 'pages/ConfirmEmailPage.tsx'), 'utf8');
-  for (const state of ['verifying', 'confirmed', 'invalid', 'expired', 'used', 'temporary', 'missing', 'needsPassword']) {
+  for (const state of ['verifying', 'confirmed', 'invalid', 'expired', 'used', 'temporary', 'missing', 'needsPassword', 'pendingApproval']) {
     assert.equal(confirmPage.includes(`${state}:`), true);
   }
   const resetPage = readFileSync(join(clientSrc, 'pages/ResetPasswordPage.tsx'), 'utf8');

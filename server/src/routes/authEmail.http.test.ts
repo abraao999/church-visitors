@@ -6,6 +6,8 @@ import mongoose, { Types } from 'mongoose';
 import { Church } from '../models/Church.js';
 import { EmailActionToken } from '../models/EmailActionToken.js';
 import { PendingOwnerRegistration } from '../models/PendingOwnerRegistration.js';
+import { PlatformSettings } from '../models/PlatformSettings.js';
+import { RetentionPolicy } from '../models/RetentionPolicy.js';
 import { User } from '../models/User.js';
 import { EmailDeliveryError, setAuthEmailSender, type AuthEmailSender } from '../services/authEmail.js';
 import {
@@ -52,6 +54,7 @@ function stubAuthEmails(overrides: Partial<AuthEmailSender> = {}): void {
     sendOwnerVerificationEmail: async () => undefined,
     sendPasswordResetEmail: async () => undefined,
     sendOwnerWelcomeEmail: async () => undefined,
+    sendPlatformTestEmail: async () => undefined,
     ...overrides,
   });
 }
@@ -98,6 +101,23 @@ function stubSession() {
     withTransaction: async (fn: () => Promise<void>) => fn(),
     endSession: async () => undefined,
   }));
+  stubMethod(PlatformSettings, 'findOne', async () => ({
+    registrations: { enabled: true, approvalMode: 'automatic' },
+    newChurchDefaults: {
+      timezone: 'America/Sao_Paulo',
+      visitorFollowUpEnabled: false,
+      retention: {
+        enabled: false,
+        visitorsMonths: 24,
+        prayersDays: 90,
+        vehicleNoticesDays: 30,
+        guestAccessesDays: 90,
+        teamInvitationsDays: 90,
+        portariaDevicesDays: 180,
+      },
+    },
+  }));
+  stubMethod(RetentionPolicy, 'create', async () => [{}]);
 }
 
 describe('cadastro pendente do proprietário', () => {

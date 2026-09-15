@@ -13,6 +13,10 @@ export const EMAIL_TOKEN_SECRET_HELP =
 const BLOCKED_PRODUCTION_HOST =
   /^(localhost|127\.0\.0\.1|\[::1\])$|\.localhost$|\.vercel\.app$/i;
 
+export function isBlockedProductionHost(host: string): boolean {
+  return BLOCKED_PRODUCTION_HOST.test(host);
+}
+
 function positiveInt(value: string | undefined, fallback: number): number {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;

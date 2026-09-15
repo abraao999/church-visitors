@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { Church } from '../models/Church.js';
+import { availableChurchFilter } from '../utils/church.js';
 import { PortariaDevice } from '../models/PortariaDevice.js';
 import { getGuestAccessSecret } from '../utils/guestToken.js';
 import { clientIp, consumeRateLimit, sendRateLimited } from '../utils/rateLimit.js';
@@ -101,7 +102,7 @@ export function requirePortariaDevice(requiredPermission?: PortariaDevicePermiss
         });
       }
 
-      const church = await Church.findOne({ _id: device.churchId, active: true })
+      const church = await Church.findOne(availableChurchFilter(device.churchId))
         .select('name timezone visitorFollowUpEnabled')
         .lean();
       if (!church) return rejectInvalid(res);

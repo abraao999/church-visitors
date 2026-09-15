@@ -8,6 +8,8 @@ export interface ChurchBranding {
   updatedAt?: Date;
 }
 
+export type ChurchApprovalStatus = 'pending' | 'approved';
+
 export interface IChurch extends Document {
   name: string;
   slug: string;
@@ -16,6 +18,7 @@ export interface IChurch extends Document {
   address?: string;
   timezone?: string;
   active: boolean;
+  approvalStatus: ChurchApprovalStatus;
   visitorFollowUpEnabled?: boolean;
   branding?: ChurchBranding;
   createdAt: Date;
@@ -32,6 +35,12 @@ const churchSchema = new Schema<IChurch>(
     address: { type: String, trim: true, maxlength: 200, default: '' },
     timezone: { type: String, trim: true, default: 'America/Sao_Paulo', maxlength: 64 },
     active: { type: Boolean, default: true, index: true },
+    approvalStatus: {
+      type: String,
+      enum: ['pending', 'approved'],
+      default: 'approved',
+      index: true,
+    },
     visitorFollowUpEnabled: { type: Boolean, default: false },
     branding: {
       type: new Schema(

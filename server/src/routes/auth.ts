@@ -30,6 +30,14 @@ import {
 import { publicChurchBranding, type PublicChurchBranding } from '../utils/branding.js';
 import { normalizeChurchName } from '../utils/church.js';
 import { isEmailTokenSecretError, EMAIL_TOKEN_SECRET_HELP } from '../utils/emailConfig.js';
+import {
+  PlatformSettingsError,
+  REGISTRATION_PENDING_APPROVAL,
+  REGISTRATIONS_CLOSED_CODE,
+  REGISTRATIONS_CLOSED_ERROR,
+  areRegistrationsEnabled,
+  assertPlatformCanAcceptChurch,
+} from '../services/platformSettings.js';
 import { maskEmail, normalizeEmail } from '../utils/emailCrypto.js';
 import { readLoginIdentifier } from '../utils/loginIdentifier.js';
 import { resolvePermissions, type Permission, type TeamRole } from '../utils/permissions.js';
@@ -133,6 +141,22 @@ export async function registerAccount(
       });
     }
 
+    if (!(await areRegistrationsEnabled())) {
+      return res.status(403).json({
+        error: REGISTRATIONS_CLOSED_ERROR,
+        code: REGISTRATIONS_CLOSED_CODE,
+      });
+    }
+
+    try {
+      await assertPlatformCanAcceptChurch();
+    } catch (error) {
+      if (error instanceof PlatformSettingsError) {
+        return res.status(error.status).json({ error: error.message, ...(error.code ? { code: error.code } : {}) });
+      }
+      throw error;
+    }
+
     const name = typeof body.name === 'string' ? body.name.trim() : '';
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const username = typeof body.username === 'string' ? body.username.trim().toLowerCase() : '';
@@ -180,6 +204,9 @@ export async function registerAccount(
   } catch (error) {
     if (error instanceof EmailDeliveryError) {
       return res.status(503).json({ error: error.message });
+    }
+    if (error instanceof PlatformSettingsError) {
+      return res.status(error.status).json({ error: error.message, ...(error.code ? { code: error.code } : {}) });
     }
     if ((error as { code?: number }).code === 11000) {
       return res.status(400).json({ error: REGISTER_GENERIC_ERROR });
@@ -237,6 +264,13 @@ export async function confirmOwnerEmail(
       return res.status(201).json({
         needsPassword: true,
         emailMasked: maskEmail(created.user.email),
+        ...(created.approvalStatus === 'pending' ? { pendingApproval: true } : {}),
+      });
+    }
+    if (created.approvalStatus === 'pending') {
+      return res.status(201).json({
+        pendingApproval: true,
+        message: REGISTRATION_PENDING_APPROVAL,
       });
     }
     return res.status(201).json(
@@ -250,6 +284,9 @@ export async function confirmOwnerEmail(
   } catch (error) {
     if (error instanceof EmailConfirmError) {
       return sendConfirmError(res, error);
+    }
+    if (error instanceof PlatformSettingsError) {
+      return res.status(error.status).json({ error: error.message, ...(error.code ? { code: error.code } : {}) });
     }
     if (isJwtSecretError(error)) {
       return res.status(503).json({ error: JWT_SECRET_HELP });
@@ -419,11 +456,14 @@ export async function loginAccount(
       return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
     }
 
-    const church = await Church.findOne({ _id: user.churchId, active: true }).select(
-      'name visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor'
+    const church = await Church.findOne({ _id: user.churchId }).select(
+      'name active approvalStatus visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor'
     );
-    if (!church) {
+    if (!church || church.active === false) {
       return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
+    }
+    if (church.approvalStatus === 'pending') {
+      return res.status(403).json({ error: REGISTRATION_PENDING_APPROVAL, code: 'pending_approval' });
     }
 
     user.lastSeenAt = new Date();
@@ -476,10 +516,10 @@ export async function changePassword(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ error: 'Senha atual incorreta' });
     }
 
-    const church = await Church.findOne({ _id: user.churchId, active: true }).select(
-      'name visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor'
+    const church = await Church.findOne({ _id: user.churchId }).select(
+      'name active approvalStatus visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor'
     );
-    if (!church) {
+    if (!church || church.active === false || church.approvalStatus === 'pending') {
       return res.status(403).json({ error: LOGIN_UNAVAILABLE_ERROR });
     }
 
@@ -535,10 +575,10 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
-    const church = await Church.findOne({ _id: req.auth!.churchId, active: true }).select(
-      'name visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor'
+    const church = await Church.findOne({ _id: req.auth!.churchId }).select(
+      'name active approvalStatus visitorFollowUpEnabled branding.logoUrl branding.primaryColor branding.accentColor'
     );
-    if (!church) {
+    if (!church || church.active === false || church.approvalStatus === 'pending') {
       return res.status(403).json({ error: 'O acesso desta igreja está indisponível.' });
     }
 

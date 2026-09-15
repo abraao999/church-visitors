@@ -27,6 +27,7 @@ export function EmailConfirmationPanel({
   const [resending, setResending] = useState(false);
   const [nextResendAt, setNextResendAt] = useState(resendAvailableAt);
   const [seconds, setSeconds] = useState(() => resendSecondsLeft(resendAvailableAt));
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -46,8 +47,13 @@ export function EmailConfirmationPanel({
     }
     setSubmitting(true);
     try {
-      await confirmEmail({ challengeId, code: digits });
+      const result = await confirmEmail({ challengeId, code: digits });
       clearPendingChallengeId();
+      if (result.pendingApproval) {
+        setPendingApproval(true);
+        setStatus('Seu e-mail foi confirmado. O cadastro aguarda aprovação da Eclesiafy.');
+        return;
+      }
       setStatus('E-mail confirmado.');
       onConfirmed();
     } catch (err) {
@@ -84,13 +90,19 @@ export function EmailConfirmationPanel({
       <div className="auth-confirm-icon" aria-hidden="true">
         <AppIcon name="mail" />
       </div>
-      <h2>Confirme seu e-mail</h2>
+      <h2>{pendingApproval ? 'E-mail confirmado' : 'Confirme seu e-mail'}</h2>
       <p>
+        {pendingApproval
+          ? 'Seu e-mail foi confirmado. O cadastro aguarda aprovação da Eclesiafy.'
+          : (
+          <>
         Enviamos uma mensagem para{' '}
         <strong>{emailMasked || 'o e-mail informado'}</strong>.
         Use o código de seis dígitos ou o botão do e-mail para confirmar.
+          </>
+            )}
       </p>
-      <EmailSpamNote />
+      {!pendingApproval && <EmailSpamNote />}
 
       {error && (
         <p id={errorId} className="error-message auth-error" role="alert">
@@ -103,7 +115,7 @@ export function EmailConfirmationPanel({
         </p>
       )}
 
-      <form onSubmit={handleSubmit} className="auth-form">
+      {!pendingApproval && <form onSubmit={handleSubmit} className="auth-form">
         <div className="form-group auth-field">
           <label htmlFor="email-code">Código de seis dígitos</label>
           <input
@@ -122,8 +134,10 @@ export function EmailConfirmationPanel({
         <button type="submit" className="btn btn-primary auth-submit" disabled={submitting}>
           {submitting ? 'Confirmando...' : 'Confirmar código'}
         </button>
-      </form>
+      </form>}
 
+      {!pendingApproval && (
+        <>
       <p className="auth-resend-note" aria-live="polite">
         {seconds > 0
           ? `Você poderá reenviar em ${seconds}s.`
@@ -137,8 +151,10 @@ export function EmailConfirmationPanel({
       >
         {resending ? 'Reenviando...' : 'Reenviar e-mail'}
       </button>
+        </>
+      )}
       <button type="button" className="auth-text-link" onClick={onBack}>
-        Voltar e corrigir o e-mail
+        {pendingApproval ? 'Voltar ao login' : 'Voltar e corrigir o e-mail'}
       </button>
     </div>
   );

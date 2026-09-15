@@ -11,6 +11,9 @@ export const PLATFORM_AUDIT_OPERATIONS = [
   'verification_resent',
   'password_reset_requested',
   'admin_changed',
+  'platform_settings_updated',
+  'platform_test_email_sent',
+  'church_approved',
 ] as const;
 
 export type PlatformAuditOperation = (typeof PLATFORM_AUDIT_OPERATIONS)[number];
