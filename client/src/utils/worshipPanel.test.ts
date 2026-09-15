@@ -69,6 +69,34 @@ test('links e QR Codes passam a apontar ao painel unificado', () => {
   assert.equal(LEGACY_PANEL_PATHS.has('visitantes'), true);
 });
 
+test('painel do culto possui PWA separado sem token no manifesto', () => {
+  const manifest = JSON.parse(
+    readFileSync(join(root, '../public/panel.webmanifest'), 'utf8')
+  );
+  assert.equal(manifest.short_name, 'Painel do culto');
+  assert.equal(manifest.start_url, '/paineis/culto');
+  assert.equal(manifest.scope, '/');
+  assert.equal(manifest.display, 'standalone');
+  assert.equal(manifest.orientation, 'landscape');
+  assert.equal(JSON.stringify(manifest).includes(':token'), false);
+  assert.equal(JSON.stringify(manifest).includes('token'), false);
+
+  const hook = readFileSync(join(root, 'pages/panels/usePanelPwaManifest.ts'), 'utf8');
+  assert.match(hook, /panel\.webmanifest/);
+  assert.match(hook, /registerPortariaServiceWorker/);
+
+  const panelPages = [
+    'PanelAccessMenu.tsx',
+    'WorshipPanelPage.tsx',
+    'HymnsPanelPage.tsx',
+    'VehicleNoticesPanelPage.tsx',
+  ];
+  for (const file of panelPages) {
+    const source = readFileSync(join(root, 'pages/panels', file), 'utf8');
+    assert.match(source, /usePanelPwaManifest\(\)/);
+  }
+});
+
 test('o menu lateral mantém exatamente os mesmos itens, textos e ordem', () => {
   assert.deepEqual(
     NAV_ITEMS.map((item) => ({ to: item.to, label: item.label, short: item.short, icon: item.icon })),
@@ -124,6 +152,11 @@ test('o CSS do painel cobre as resoluções de TV sem rolagem', () => {
 
 test('o service worker continua sem cachear a API privada do painel', () => {
   const policy = readFileSync(join(root, 'pwa/cachePolicy.ts'), 'utf8');
+  const viteSw = readFileSync(join(root, '../vite.portaria-sw.ts'), 'utf8');
   assert.match(policy, /\/api\//);
   assert.match(policy, /network-only/);
+  assert.match(policy, /\/paineis\/culto/);
+  assert.match(policy, /\/painel\//);
+  assert.match(viteSw, /panel\.webmanifest/);
+  assert.match(viteSw, /navigationCacheKey/);
 });

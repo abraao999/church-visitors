@@ -133,10 +133,10 @@ export function GuestAccessOverview() {
                 onFocus={(event) => event.currentTarget.select()}
               />
               <div className="access-overview-actions">
-                <button type="button" onClick={() => copy(portal)}>
+                <button type="button" className="guest-action-button primary" onClick={() => copy(portal)}>
                   <AppIcon name="copy" />Copiar link
                 </button>
-                <Link to="/acessos">Gerenciar acesso</Link>
+                <Link className="guest-action-button" to="/acessos">Gerenciar acesso</Link>
               </div>
             </div>
           </div>

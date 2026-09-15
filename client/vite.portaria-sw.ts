@@ -2,8 +2,10 @@ import type { Plugin } from 'vite';
 
 const DEFAULT_PRECACHE = [
   '/portaria',
+  '/paineis/culto',
   '/index.html',
   '/manifest.webmanifest',
+  '/panel.webmanifest',
   '/theme-init.js',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -23,8 +25,19 @@ function cachePolicy(url, method) {
   if (url.pathname.startsWith('/assets/')) return 'cache-first';
   if (/\\.(?:js|css|woff2?|png|svg|webmanifest|ico)$/.test(url.pathname)) return 'cache-first';
   if (url.pathname === '/theme-init.js' || url.pathname.startsWith('/icons/')) return 'cache-first';
-  if (url.pathname === '/portaria' || url.pathname.startsWith('/portaria/')) return 'network-first-nav';
+  if (
+    url.pathname === '/portaria' ||
+    url.pathname.startsWith('/portaria/') ||
+    url.pathname === '/paineis/culto' ||
+    url.pathname.startsWith('/painel/')
+  ) return 'network-first-nav';
   return 'network-only';
+}
+
+function navigationCacheKey(url) {
+  if (url.pathname === '/portaria' || url.pathname.startsWith('/portaria/')) return '/portaria';
+  if (url.pathname === '/paineis/culto' || url.pathname.startsWith('/painel/')) return '/paineis/culto';
+  return url.pathname;
 }
 
 self.addEventListener('install', (event) => {
@@ -80,11 +93,11 @@ self.addEventListener('fetch', (event) => {
       .then((response) => {
         if (response.ok) {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('/portaria', copy));
+          caches.open(CACHE_NAME).then((cache) => cache.put(navigationCacheKey(url), copy));
         }
         return response;
       })
-      .catch(() => caches.match('/portaria').then((cached) => cached || caches.match('/index.html')))
+      .catch(() => caches.match(navigationCacheKey(url)).then((cached) => cached || caches.match('/index.html')))
   );
 });
 `;

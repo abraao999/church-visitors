@@ -571,18 +571,6 @@ body:has(.public-access-page) {
   outline-offset: 3px;
 }
 
-.public-privacy-switch-state {
-  color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  line-height: 1;
-}
-
-.public-privacy-switch.is-on .public-privacy-switch-state {
-  color: var(--primary);
-}
-
 .public-privacy-switch-copy {
   min-width: 0;
 }

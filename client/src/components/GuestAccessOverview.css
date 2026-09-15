@@ -214,32 +214,6 @@
   text-overflow: ellipsis;
 }
 
-.access-overview-info button,
-.access-overview-info > a,
-.access-overview-empty button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  min-height: 44px;
-  padding: 0.55rem 0.75rem;
-  border: 1.5px solid var(--primary);
-  border-radius: 9px;
-  background: var(--surface);
-  color: var(--primary);
-  font-weight: 750;
-}
-
-.access-overview-info button .app-icon,
-.access-overview-empty button .app-icon {
-  width: 19px;
-  height: 19px;
-}
-
-.access-overview-info > a {
-  border-color: transparent;
-}
-
 .access-overview-empty {
   display: flex;
   flex-direction: column;
@@ -282,13 +256,43 @@
 }
 
 .access-overview-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
 }
 
 .access-overview-actions > * {
-  flex: 1 1 160px;
+  width: 100%;
+}
+
+.access-overview-empty button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 48px;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid var(--primary);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--primary);
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.access-overview-empty button:hover:not(:disabled) {
+  background: var(--primary-soft);
+}
+
+.access-overview-empty button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.access-overview-empty button .app-icon {
+  width: 19px;
+  height: 19px;
 }
 
 @media (max-width: 1100px) {
@@ -307,6 +311,10 @@
   .access-overview-heading {
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .access-overview-actions {
+    grid-template-columns: 1fr;
   }
 
   .access-overview-heading > a {

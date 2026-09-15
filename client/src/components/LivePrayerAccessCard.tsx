@@ -154,16 +154,29 @@ export function LivePrayerAccessCard() {
                 onFocus={(event) => event.currentTarget.select()}
               />
               <div className="live-prayer-access-actions">
-                <button type="button" onClick={() => copy('Link do pedido', formUrl)}>
+                <button
+                  type="button"
+                  className="live-prayer-access-action is-primary"
+                  onClick={() => copy('Link do pedido', formUrl)}
+                >
                   <AppIcon name="copy" />Copiar link
                 </button>
-                <button type="button" onClick={() => copy('Endereço do OBS', obsUrl)}>
+                <button
+                  type="button"
+                  className="live-prayer-access-action"
+                  onClick={() => copy('Endereço do OBS', obsUrl)}
+                >
                   <AppIcon name="copy" />Copiar OBS
                 </button>
-                <a href={obsUrl} target="_blank" rel="noreferrer">
+                <a className="live-prayer-access-action" href={obsUrl} target="_blank" rel="noreferrer">
                   <AppIcon name="external" />Abrir sobreposição
                 </a>
-                <button type="button" onClick={() => void downloadObsQr()} disabled={localLink}>
+                <button
+                  type="button"
+                  className="live-prayer-access-action"
+                  onClick={() => void downloadObsQr()}
+                  disabled={localLink}
+                >
                   <AppIcon name="download" />Baixar QR para o OBS
                 </button>
               </div>

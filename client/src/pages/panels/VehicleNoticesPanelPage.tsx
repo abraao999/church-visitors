@@ -15,6 +15,7 @@ import {
   type VehiclePanelNotice,
 } from '../../utils/vehicleNoticesTv';
 import { usePanelAccess } from './usePanelAccess';
+import { usePanelPwaManifest } from './usePanelPwaManifest';
 import './VehicleNoticesPanelPage.css';
 
 const ACTION_ICONS: Record<string, AppIconName> = {
@@ -28,6 +29,7 @@ const ACTION_ICONS: Record<string, AppIconName> = {
 export function VehicleNoticesPanelPage() {
   const { token, churchName: brandName } = usePanelAccess();
   const { branding } = useBranding();
+  usePanelPwaManifest();
   const [notices, setNotices] = useState<VehiclePanelNotice[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);

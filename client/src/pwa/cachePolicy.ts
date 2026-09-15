@@ -7,14 +7,19 @@ export function cachePolicyFor(url: URL, method = 'GET'): CachePolicy {
   if (url.pathname.startsWith('/assets/')) return 'cache-first';
   if (/\.(?:js|css|woff2?|png|svg|webmanifest|ico)$/.test(url.pathname)) return 'cache-first';
   if (url.pathname === '/theme-init.js' || url.pathname.startsWith('/icons/')) return 'cache-first';
-  if (url.pathname === '/portaria' || url.pathname.startsWith('/portaria/')) {
+  if (
+    url.pathname === '/portaria' ||
+    url.pathname.startsWith('/portaria/') ||
+    url.pathname === '/paineis/culto' ||
+    url.pathname.startsWith('/painel/')
+  ) {
     return 'network-first-nav';
   }
   return 'network-only';
 }
 
 export function navigationCacheKey(url: URL): string {
-  return url.pathname === '/portaria' || url.pathname.startsWith('/portaria/')
-    ? '/portaria'
-    : url.pathname;
+  if (url.pathname === '/portaria' || url.pathname.startsWith('/portaria/')) return '/portaria';
+  if (url.pathname === '/paineis/culto' || url.pathname.startsWith('/painel/')) return '/paineis/culto';
+  return url.pathname;
 }

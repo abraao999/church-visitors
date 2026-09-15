@@ -157,25 +157,48 @@
 }
 
 .live-prayer-access-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  margin-top: 0.35rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.6rem;
 }
 
 .live-prayer-access-actions > * {
-  display: flex;
-  flex: 1 1 160px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
-  min-height: 44px;
-  padding: 0.55rem 0.75rem;
+  min-height: 48px;
+  padding: 0.6rem 0.8rem;
   border: 1.5px solid var(--primary);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--surface);
   color: var(--primary);
+  font-size: 0.9rem;
   font-weight: 750;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.live-prayer-access-actions > *:hover:not(:disabled) {
+  background: var(--primary-soft);
+}
+
+.live-prayer-access-actions > *:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.live-prayer-access-actions > .is-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+.live-prayer-access-actions > .is-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
 }
 
 .live-prayer-access-actions .app-icon,
@@ -242,5 +265,19 @@
 
   .live-prayer-access-content {
     grid-template-columns: 1fr;
+  }
+
+  .live-prayer-access-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1180px) {
+  .live-prayer-access-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .live-prayer-access-actions > * {
+    white-space: normal;
   }
 }

@@ -212,9 +212,6 @@ function AdminSwitch({
           onChange={(event) => onCheckedChange?.(event.target.checked === true)}
         />
         <span className="admin-switch-track" aria-hidden="true" />
-        <span className="admin-switch-state" aria-hidden="true">
-          {checked ? 'SIM' : 'NÃO'}
-        </span>
       </span>
       <span className="admin-switch-copy">
         <strong id={titleId}>{title}</strong>

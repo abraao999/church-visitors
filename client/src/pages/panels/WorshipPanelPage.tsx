@@ -14,6 +14,7 @@ import {
   WORSHIP_ROTATE_MS,
 } from '../../utils/worshipPanel';
 import { usePanelAccess } from './usePanelAccess';
+import { usePanelPwaManifest } from './usePanelPwaManifest';
 import './WorshipPanelPage.css';
 
 const EMPTY_PANEL: WorshipPanelPayload = {
@@ -27,6 +28,7 @@ const EMPTY_PANEL: WorshipPanelPayload = {
 export function WorshipPanelPage() {
   const { token, churchName: accessName, invalidToken } = usePanelAccess();
   const { branding, setPublicBranding } = useBranding();
+  usePanelPwaManifest();
   const [panel, setPanel] = useState<WorshipPanelPayload>(EMPTY_PANEL);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);

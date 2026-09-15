@@ -4,6 +4,7 @@ import { BrandMark } from '../../components/BrandMark';
 import { useBranding } from '../../theme/BrandingContext';
 import { PANEL_OPTIONS, panelPath } from '../../utils/publicAccess';
 import { usePanelAccess } from './usePanelAccess';
+import { usePanelPwaManifest } from './usePanelPwaManifest';
 import '../PublicAccessMenu.css';
 
 /**
@@ -13,6 +14,7 @@ import '../PublicAccessMenu.css';
 export function PanelAccessMenu() {
   const { token, churchName, invalidToken } = usePanelAccess();
   const { branding } = useBranding();
+  usePanelPwaManifest();
 
   if (!token || invalidToken) {
     return (

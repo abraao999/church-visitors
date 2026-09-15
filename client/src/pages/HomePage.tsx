@@ -7,8 +7,8 @@ import { LivePrayerAccessCard } from '../components/LivePrayerAccessCard';
 import { PortariaDevicesSection } from '../components/PortariaDevicesSection';
 import { useAuth } from '../auth/AuthContext';
 import { hasPermission } from '../utils/permissions';
-import type { Service } from '../types';
-import { formatTodayLabel } from '../utils/date';
+import type { GuestAccess, PortariaDevice, Service } from '../types';
+import { formatTodayLabel, todayLocalISO } from '../utils/date';
 import { countdownLabel } from '../utils/serviceSchedule';
 import './HomePage.css';
 
@@ -52,6 +52,32 @@ const QUICK_ACTIONS: Array<{
   },
 ];
 
+type PendingItemTone = 'blue' | 'yellow' | 'red' | 'green' | 'muted';
+
+type PendingItem = {
+  id: string;
+  icon: AppIconName;
+  tone: PendingItemTone;
+  title: string;
+  description: string;
+  to: string;
+  action: string;
+};
+
+function daysUntil(value?: string) {
+  if (!value) return null;
+  const diff = new Date(value).getTime() - Date.now();
+  return Math.ceil(diff / 86_400_000);
+}
+
+function staleDevices(devices: PortariaDevice[]) {
+  const sevenDaysAgo = Date.now() - 7 * 86_400_000;
+  return devices.filter((device) => (
+    device.active &&
+    (!device.lastUsedAt || new Date(device.lastUsedAt).getTime() < sevenDaysAgo)
+  ));
+}
+
 export function HomePage() {
   const { user } = useAuth();
   const canVisitors = hasPermission(user?.permissions, 'visitors:read') || user?.role === 'owner';
@@ -60,6 +86,11 @@ export function HomePage() {
   const canHolyrics = hasPermission(user?.permissions, 'holyrics:read') || user?.role === 'owner';
   const canPortariaDevices =
     hasPermission(user?.permissions, 'portaria_devices:read') || user?.role === 'owner';
+  const canVehicleNotices = hasPermission(user?.permissions, 'vehicle_notices:read') || user?.role === 'owner';
+  const canPanels = hasPermission(user?.permissions, 'panels:open') || user?.role === 'owner';
+  const canFollowUp =
+    Boolean(user?.visitorFollowUpEnabled) &&
+    (hasPermission(user?.permissions, 'follow_up:read') || user?.role === 'owner');
   const visibleActions = QUICK_ACTIONS.filter((action) => {
     if (action.to === '/visitantes') return canVisitors || hasPermission(user?.permissions, 'visitors:create');
     if (action.to === '/oracao') return canPrayers || hasPermission(user?.permissions, 'prayers:create');
@@ -75,6 +106,7 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [statsError, setStatsError] = useState('');
   const [activeService, setActiveService] = useState<Service | null>(null);
+  const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
   const canServices = hasPermission(user?.permissions, 'services:read') || user?.role === 'owner';
 
   const loadData = useCallback(async () => {
@@ -87,21 +119,166 @@ export function HomePage() {
         tasks.push(api.getPrayerRequestStats().then((p) => setPrayerCount(p.count)));
       }
       await Promise.all(tasks);
+      const pending: PendingItem[] = [];
       if (canServices) {
         try {
           const data = await api.getActiveService();
           setActiveService(data.service);
+          if (data.service && (data.service.counts?.hymns ?? data.service.hymns?.length ?? 0) === 0) {
+            pending.push({
+              id: 'service-hymns',
+              icon: 'music',
+              tone: 'yellow',
+              title: 'Culto ativo sem louvores',
+              description: `${data.service.title} ainda não possui louvores definidos.`,
+              to: `/cultos/${data.service._id}`,
+              action: 'Preparar culto',
+            });
+          }
         } catch {
           setActiveService(null);
         }
       }
+      await Promise.all([
+        canFollowUp
+          ? api.getFollowUps({ status: 'awaiting' }).then((data) => {
+              if (data.summary.awaiting > 0) {
+                pending.push({
+                  id: 'follow-up-awaiting',
+                  icon: 'heartHand',
+                  tone: 'blue',
+                  title: `${data.summary.awaiting} visitante${data.summary.awaiting === 1 ? '' : 's'} aguardando acolhimento`,
+                  description: 'Há visitantes que aceitaram acompanhamento e ainda precisam de contato.',
+                  to: '/acompanhamento',
+                  action: 'Ver acompanhamento',
+                });
+              }
+              if (data.summary.today > 0) {
+                pending.push({
+                  id: 'follow-up-today',
+                  icon: 'clock',
+                  tone: 'yellow',
+                  title: `${data.summary.today} contato${data.summary.today === 1 ? '' : 's'} para hoje`,
+                  description: 'A equipe tem retornos programados para hoje.',
+                  to: '/acompanhamento',
+                  action: 'Abrir agenda',
+                });
+              }
+            }).catch(() => undefined)
+          : Promise.resolve(),
+        canPrayers
+          ? api.getPrayerRequests(todayLocalISO()).then((items) => {
+              const news = items.filter((item) => (item.careStatus ?? 'new') === 'new').length;
+              if (news > 0) {
+                pending.push({
+                  id: 'prayers-new',
+                  icon: 'prayer',
+                  tone: 'yellow',
+                  title: `${news} pedido${news === 1 ? '' : 's'} de oração novo${news === 1 ? '' : 's'}`,
+                  description: 'Revise os pedidos recebidos hoje e marque o cuidado da equipe.',
+                  to: '/oracao',
+                  action: 'Ver pedidos',
+                });
+              }
+            }).catch(() => undefined)
+          : Promise.resolve(),
+        canVehicleNotices
+          ? api.getVehicleNoticeStats(todayLocalISO()).then((stats) => {
+              if (stats.pending > 0) {
+                pending.push({
+                  id: 'vehicle-pending',
+                  icon: 'car',
+                  tone: 'red',
+                  title: `${stats.pending} aviso${stats.pending === 1 ? '' : 's'} de veículo pendente${stats.pending === 1 ? '' : 's'}`,
+                  description: 'Há solicitações de veículos aguardando anúncio ou resolução.',
+                  to: '/avisos-veiculos',
+                  action: 'Abrir avisos',
+                });
+              }
+            }).catch(() => undefined)
+          : Promise.resolve(),
+        canAccesses
+          ? api.getGuestAccesses().then((accesses: GuestAccess[]) => {
+              const expiring = accesses.filter((access) => {
+                const days = daysUntil(access.expiresAt);
+                return access.active && days !== null && days >= 0 && days <= 7;
+              }).length;
+              if (expiring > 0) {
+                pending.push({
+                  id: 'access-expiring',
+                  icon: 'link',
+                  tone: 'yellow',
+                  title: `${expiring} acesso${expiring === 1 ? '' : 's'} público${expiring === 1 ? '' : 's'} perto de vencer`,
+                  description: 'Renove ou confira os links e QR Codes antes do próximo culto.',
+                  to: '/acessos',
+                  action: 'Gerenciar acessos',
+                });
+              }
+              const missingPanel = !accesses.some((access) => access.active && access.types.includes('panels:read'));
+              if (missingPanel && canPanels) {
+                pending.push({
+                  id: 'panel-access-missing',
+                  icon: 'panels',
+                  tone: 'blue',
+                  title: 'Nenhum acesso de TV ativo',
+                  description: 'Crie um acesso sem login para abrir os painéis em computadores da igreja.',
+                  to: '/acessos',
+                  action: 'Criar acesso',
+                });
+              }
+            }).catch(() => undefined)
+          : Promise.resolve(),
+        canHolyrics
+          ? api.getHolyricsSettings().then((settings) => {
+              const configured = settings.mode === 'internet' ? settings.hasApiKey : settings.hasToken;
+              if (!configured) {
+                pending.push({
+                  id: 'holyrics-disconnected',
+                  icon: 'music',
+                  tone: 'muted',
+                  title: 'Holyrics sem conexão configurada',
+                  description: 'Configure a integração para enviar letras aos painéis com mais facilidade.',
+                  to: '/configuracoes',
+                  action: 'Configurar',
+                });
+              }
+            }).catch(() => undefined)
+          : Promise.resolve(),
+        canPortariaDevices
+          ? api.getPortariaDevices().then((devices) => {
+              const stale = staleDevices(devices).length;
+              if (stale > 0) {
+                pending.push({
+                  id: 'portaria-stale',
+                  icon: 'users',
+                  tone: 'muted',
+                  title: `${stale} dispositivo${stale === 1 ? '' : 's'} da portaria sem sincronizar`,
+                  description: 'Confira se os aparelhos da portaria ainda estão em uso.',
+                  to: '/acessos',
+                  action: 'Ver dispositivos',
+                });
+              }
+            }).catch(() => undefined)
+          : Promise.resolve(),
+      ]);
+      setPendingItems(pending);
       setStatsError('');
     } catch {
       setStatsError('Não foi possível atualizar os números de hoje.');
     } finally {
       setLoading(false);
     }
-  }, [canVisitors, canPrayers, canServices]);
+  }, [
+    canVisitors,
+    canPrayers,
+    canServices,
+    canFollowUp,
+    canVehicleNotices,
+    canAccesses,
+    canPanels,
+    canHolyrics,
+    canPortariaDevices,
+  ]);
 
   useEffect(() => {
     loadData();
@@ -168,6 +345,44 @@ export function HomePage() {
             <Link to="/oracao">Ver pedidos <AppIcon name="arrow" /></Link>
           </div>
         </article>
+        )}
+      </section>
+
+      <section className="home-pending-center card" aria-labelledby="home-pending-title">
+        <div className="home-pending-heading">
+          <div>
+            <span className="home-pending-eyebrow"><AppIcon name="check" /> Central de pendências</span>
+            <h2 id="home-pending-title">O que precisa de atenção</h2>
+            <p>Itens importantes do dia, reunidos em um só lugar.</p>
+          </div>
+          <span className={`home-pending-count${pendingItems.length === 0 ? ' is-clear' : ''}`}>
+            {loading ? '...' : pendingItems.length}
+          </span>
+        </div>
+
+        {loading ? (
+          <p className="home-pending-empty">Verificando pendências...</p>
+        ) : pendingItems.length === 0 ? (
+          <div className="home-pending-empty is-clear">
+            <AppIcon name="check" />
+            <p>Nenhuma pendência importante agora.</p>
+          </div>
+        ) : (
+          <div className="home-pending-list">
+            {pendingItems.map((item) => (
+              <Link key={item.id} to={item.to} className={`home-pending-item is-${item.tone}`}>
+                <span className="home-pending-icon"><AppIcon name={item.icon} /></span>
+                <span className="home-pending-copy">
+                  <strong>{item.title}</strong>
+                  <span>{item.description}</span>
+                </span>
+                <span className="home-pending-action">
+                  {item.action}
+                  <AppIcon name="arrow" />
+                </span>
+              </Link>
+            ))}
+          </div>
         )}
       </section>
 

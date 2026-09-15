@@ -161,17 +161,6 @@
   outline-offset: 3px;
 }
 
-.admin-switch-state {
-  color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
-.admin-switch.is-on .admin-switch-state {
-  color: var(--primary);
-}
-
 .admin-settings-retention {
   display: flex;
   flex-wrap: wrap;

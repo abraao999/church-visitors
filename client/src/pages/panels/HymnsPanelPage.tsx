@@ -4,9 +4,11 @@ import { DisplayPanel } from '../../components/DisplayPanel';
 import type { ServicePanelItem } from '../../types';
 import { todayLocalISO } from '../../utils/date';
 import { usePanelAccess } from './usePanelAccess';
+import { usePanelPwaManifest } from './usePanelPwaManifest';
 
 export function HymnsPanelPage() {
   const { token } = usePanelAccess();
+  usePanelPwaManifest();
   const [services, setServices] = useState<ServicePanelItem[]>([]);
   const [loading, setLoading] = useState(true);
 

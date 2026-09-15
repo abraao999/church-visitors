@@ -527,9 +527,6 @@ function PublicPrivacySwitch({
           onChange={(event) => onCheckedChange(event.target.checked === true)}
         />
         <span className="public-privacy-switch-track" aria-hidden="true" />
-        <span className="public-privacy-switch-state" aria-hidden="true">
-          {on ? 'SIM' : 'NÃO'}
-        </span>
       </span>
       <span className="public-privacy-switch-copy">
         <strong id={titleId}>{title}</strong>
