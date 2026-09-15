@@ -103,9 +103,13 @@ export function LivePrayerObsPage() {
             />
             <div>
               <strong>{metadata.churchName}</strong>
-              <span>Pedido de oração</span>
+              <span>Ao vivo</span>
             </div>
           </header>
+          <div className="obs-prayer-purpose">
+            <strong>Envie seu pedido de oração</strong>
+            <span>Aponte a câmera para o QR Code</span>
+          </div>
           {qrUrl ? (
             <img
               className="obs-prayer-qr"
@@ -117,7 +121,7 @@ export function LivePrayerObsPage() {
           ) : (
             <div className="obs-prayer-qr-placeholder">Gerando QR Code...</div>
           )}
-          <p className="obs-prayer-hint">Aponte a câmera e envie seu pedido</p>
+          <p className="obs-prayer-hint">É rápido, seguro e vai para a equipe da igreja</p>
         </section>
       )}
     </main>
