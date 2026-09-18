@@ -26,6 +26,7 @@ import { Types } from 'mongoose';
 import { publicAccessMetadata } from '../utils/branding.js';
 import { createFollowUpRecord } from '../services/visitorFollowUp.js';
 import { trainingModeEnabled } from '../services/trainingMode.js';
+import { loadPublicPlatformStatus } from '../services/platformSettings.js';
 import {
   FOLLOW_UP_PHONE_REQUIRED_ERROR,
   isValidFollowUpPhone,
@@ -134,8 +135,13 @@ export async function createPublicAccessEvent(req: GuestAccessRequest, res: Resp
   }
 }
 
-router.get('/:token', requireGuestAccess(), (req: GuestAccessRequest, res: Response) => {
-  res.json(publicAccessMetadata(req.guestAccess!));
+router.get('/:token', requireGuestAccess(), async (req: GuestAccessRequest, res: Response) => {
+  const metadata = publicAccessMetadata(req.guestAccess!);
+  const platform = await loadPublicPlatformStatus();
+  res.json({
+    ...metadata,
+    ...(platform.legal ? { legal: platform.legal } : {}),
+  });
 });
 
 router.post('/:token/events', requireGuestAccess(), createPublicAccessEvent);

@@ -5,6 +5,7 @@ import { AppIcon } from '../components/AppIcon';
 import { CitySuggestField } from '../components/CitySuggestField';
 import { PanelObservationFields } from '../components/PanelObservationFields';
 import { BrandMark } from '../components/BrandMark';
+import { PublicDataConsent } from '../components/PublicDataConsent';
 import { useBranding } from '../theme/BrandingContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { type PublicAccessMetadata, type VehicleNoticeAction, type VisitKind } from '../types';
@@ -212,6 +213,8 @@ function PublicVisitorsForm({
   const [contactConsent, setContactConsent] = useState(false);
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [dataConsent, setDataConsent] = useState(false);
+  const [dataConsentError, setDataConsentError] = useState('');
   const followUpEnabled = metadata.visitorFollowUpEnabled === true;
 
   function updatePerson(id: number, name: string) {
@@ -258,12 +261,14 @@ function PublicVisitorsForm({
       ? ''
       : 'Informe se esta é a primeira visita da família ou grupo.';
     setVisitKindError(nextVisitKindError);
+    const nextDataConsentError = dataConsent ? '' : 'Aceite o uso dos dados para enviar.';
+    setDataConsentError(nextDataConsentError);
     if (followUpEnabled && contactConsent && phone.replace(/\D/g, '').length < 10) {
       setPhoneError('Informe o telefone ou WhatsApp para o contato.');
       return false;
     }
     setPhoneError('');
-    return !nextCityError && !nextVisitKindError && Object.keys(nextNameErrors).length === 0;
+    return !nextCityError && !nextVisitKindError && !nextDataConsentError && Object.keys(nextNameErrors).length === 0;
   }
 
   async function submit(event: React.FormEvent) {
@@ -486,6 +491,19 @@ function PublicVisitorsForm({
           </section>
         )}
 
+        <PublicDataConsent
+          purpose="visitors"
+          churchName={metadata.churchName}
+          checked={dataConsent}
+          disabled={submitting}
+          error={dataConsentError}
+          legal={metadata.legal}
+          onChange={(checked) => {
+            setDataConsent(checked);
+            if (checked) setDataConsentError('');
+          }}
+        />
+
         <button type="submit" className="public-primary-button" disabled={submitting}>
           {!submitting && <AppIcon name="check" />}
           {submitting ? 'Cadastrando...' : submitLabel}
@@ -555,10 +573,16 @@ function PublicPrayerForm({
   const [request, setRequest] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [dataConsent, setDataConsent] = useState(false);
+  const [dataConsentError, setDataConsentError] = useState('');
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (submitting) return;
+    if (!dataConsent) {
+      setDataConsentError('Aceite o uso dos dados para enviar.');
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
@@ -658,6 +682,18 @@ function PublicPrayerForm({
             aria-describedby={error ? 'public-prayer-error' : undefined}
           />
         </div>
+        <PublicDataConsent
+          purpose="prayer"
+          churchName={metadata.churchName}
+          checked={dataConsent}
+          disabled={submitting}
+          error={dataConsentError}
+          legal={metadata.legal}
+          onChange={(checked) => {
+            setDataConsent(checked);
+            if (checked) setDataConsentError('');
+          }}
+        />
         <button type="submit" className="public-primary-button" disabled={submitting}>
           {!submitting && <AppIcon name="prayer" />}
           {submitting ? 'Enviando...' : 'Enviar pedido'}

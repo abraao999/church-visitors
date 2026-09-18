@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
 import { BrandMark } from '../components/BrandMark';
+import { PublicDataConsent } from '../components/PublicDataConsent';
 import { useBranding } from '../theme/BrandingContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
@@ -13,6 +14,7 @@ import {
 } from '../types';
 import { isValidVehiclePlate, maskVehiclePlateInput } from '../utils/vehiclePlate';
 import { createRequestId } from '../utils/requestId';
+import './PublicAccessPage.css';
 import './PublicVehicleNotice.css';
 import './PublicAccessMenu.css';
 
@@ -132,6 +134,8 @@ export function PublicVehicleNoticeForm({
   const [plateError, setPlateError] = useState('');
   const [modelError, setModelError] = useState('');
   const [otherError, setOtherError] = useState('');
+  const [dataConsent, setDataConsent] = useState(false);
+  const [dataConsentError, setDataConsentError] = useState('');
 
   const otherRequired = requestedAction === 'other';
   const actionLabel = VEHICLE_NOTICE_ACTION_LABELS[requestedAction];
@@ -148,6 +152,7 @@ export function PublicVehicleNoticeForm({
     setPlateError('');
     setModelError('');
     setOtherError('');
+    setDataConsentError('');
 
     if (!isValidVehiclePlate(plate)) {
       setPlateError('Confira a placa do veículo.');
@@ -159,6 +164,10 @@ export function PublicVehicleNoticeForm({
     }
     if (otherRequired && !otherDescription.trim()) {
       setOtherError('Descreva o que precisa ser feito.');
+      return;
+    }
+    if (!dataConsent) {
+      setDataConsentError('Aceite o uso dos dados para enviar.');
       return;
     }
 
@@ -356,6 +365,19 @@ export function PublicVehicleNoticeForm({
           </strong>
           <span>{actionLabel}</span>
         </div>
+
+        <PublicDataConsent
+          purpose="vehicle"
+          churchName={metadata.churchName}
+          checked={dataConsent}
+          disabled={submitting}
+          error={dataConsentError}
+          legal={metadata.legal}
+          onChange={(checked) => {
+            setDataConsent(checked);
+            if (checked) setDataConsentError('');
+          }}
+        />
 
         <button type="submit" className="public-primary-button" disabled={submitting || !canSubmit}>
           {!submitting && <AppIcon name="send" />}

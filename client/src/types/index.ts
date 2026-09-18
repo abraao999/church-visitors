@@ -319,6 +319,10 @@ export interface PublicAccessMetadata {
   logoUrl?: string;
   primaryColor?: string;
   accentColor?: string;
+  legal?: {
+    termsUrl?: string;
+    privacyUrl?: string;
+  };
   visitorFollowUpEnabled?: boolean;
 }
 
