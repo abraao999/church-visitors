@@ -17,6 +17,7 @@ import { LivePrayerPage } from './pages/LivePrayerPage';
 import { LivePrayerObsPage } from './pages/LivePrayerObsPage';
 import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { PanelsPage } from './pages/PanelsPage';
@@ -54,7 +55,7 @@ export function App() {
         <BrandingProvider>
         <Routes>
           <Route element={<AdminRoot />}>
-            <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route element={<AdminProtectedRoute />}>
               <Route element={<AdminLayout />}>
                 <Route path="/admin" element={<AdminOverviewPage />} />
@@ -69,6 +70,7 @@ export function App() {
               </Route>
             </Route>
           </Route>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/confirmar-email" element={<ConfirmEmailPage />} />
           <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
@@ -93,7 +95,7 @@ export function App() {
           </Route>
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/inicio" element={<HomePage />} />
               <Route element={<PermissionRoute anyOf={['visitors:read', 'visitors:create']} />}>
                 <Route path="/visitantes" element={<VisitorsPage />} />
               </Route>

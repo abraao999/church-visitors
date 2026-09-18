@@ -21,7 +21,7 @@ describe('identidade visual no cliente', () => {
     assert.deepEqual(
       NAV_ITEMS.map((item) => item.to),
       [
-        '/',
+        '/inicio',
         '/visitantes',
         '/acompanhamento',
         '/avisos-veiculos',

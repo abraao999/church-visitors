@@ -19,7 +19,7 @@ export function LoginPage() {
   const { user, loading, login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from || '/';
+  const from = (location.state as { from?: string } | null)?.from || '/inicio';
 
   const [mode, setMode] = useState<Mode>('login');
   const [churchName, setChurchName] = useState('');

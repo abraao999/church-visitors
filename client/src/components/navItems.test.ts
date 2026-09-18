@@ -15,7 +15,7 @@ import {
 const root = dirname(fileURLToPath(import.meta.url));
 
 const EXPECTED_ITEMS = [
-  { to: '/', label: 'Início', section: 'home', icon: 'home' },
+  { to: '/inicio', label: 'Início', section: 'home', icon: 'home' },
   { to: '/visitantes', label: 'Visitantes', section: 'portaria', icon: 'users' },
   { to: '/acompanhamento', label: 'Acompanhamento', section: 'portaria', icon: 'heartHand' },
   { to: '/avisos-veiculos', label: 'Avisos de veículos', section: 'portaria', icon: 'car' },
@@ -61,7 +61,7 @@ test('desktop e mobile usam a mesma lista filtrada e a mesma ordem', () => {
       items: section.items.map((item) => item.to),
     })),
     [
-      { id: 'home', label: null, items: ['/'] },
+      { id: 'home', label: null, items: ['/inicio'] },
       { id: 'portaria', label: 'PORTARIA', items: ['/visitantes', '/acompanhamento', '/avisos-veiculos'] },
       { id: 'worship', label: 'CULTO E EXIBIÇÃO', items: ['/cultos', '/oracao', '/paineis'] },
       { id: 'admin', label: 'ADMINISTRAÇÃO', items: ['/relatorios', '/acessos', '/igreja', '/configuracoes'] },
@@ -70,7 +70,7 @@ test('desktop e mobile usam a mesma lista filtrada e a mesma ordem', () => {
 });
 
 test('seção vazia não é exibida', () => {
-  const visible = NAV_ITEMS.filter((item) => ['/', '/oracao'].includes(item.to));
+  const visible = NAV_ITEMS.filter((item) => ['/inicio', '/oracao'].includes(item.to));
   const sections = visibleNavSections(visible);
   assert.deepEqual(
     sections.map((section) => section.id),
@@ -87,8 +87,8 @@ test('rota filha destaca somente o item principal correto', () => {
   assert.equal(isNavItemActive('/igreja/identidade', '/igreja'), true);
   assert.equal(isNavItemActive('/acompanhamento', '/acompanhamento'), true);
   assert.equal(isNavItemActive('/acompanhamento', '/visitantes'), false);
-  assert.equal(isNavItemActive('/cultos/abc', '/'), false);
-  assert.equal(isNavItemActive('/igreja/equipe', '/'), false);
+  assert.equal(isNavItemActive('/cultos/abc', '/inicio'), false);
+  assert.equal(isNavItemActive('/igreja/equipe', '/inicio'), false);
 
   const highlighted = NAV_ITEMS.filter((item) => isNavItemActive('/igreja/equipe', item.to));
   assert.deepEqual(highlighted.map((item) => item.to), ['/igreja']);

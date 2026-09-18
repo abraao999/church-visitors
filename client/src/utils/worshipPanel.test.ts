@@ -101,7 +101,7 @@ test('o menu lateral mantém exatamente os mesmos itens, textos e ordem', () => 
   assert.deepEqual(
     NAV_ITEMS.map((item) => ({ to: item.to, label: item.label, short: item.short, icon: item.icon })),
     [
-      { to: '/', label: 'Início', short: 'Início', icon: 'home' },
+      { to: '/inicio', label: 'Início', short: 'Início', icon: 'home' },
       { to: '/visitantes', label: 'Visitantes', short: 'Visit.', icon: 'users' },
       { to: '/acompanhamento', label: 'Acompanhamento', short: 'Acomp.', icon: 'heartHand' },
       { to: '/avisos-veiculos', label: 'Avisos de veículos', short: 'Avisos', icon: 'car' },

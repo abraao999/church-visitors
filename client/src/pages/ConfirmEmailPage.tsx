@@ -94,7 +94,7 @@ export function ConfirmEmailPage() {
           <button
             type="button"
             className="btn btn-primary auth-submit"
-            onClick={() => navigate('/', { replace: true })}
+            onClick={() => navigate('/inicio', { replace: true })}
           >
             Entrar na Eclesiafy
           </button>

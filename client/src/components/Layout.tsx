@@ -144,7 +144,7 @@ function AuthenticatedShell({ pathname }: { pathname: string }) {
             Menu
           </button>
 
-          <Link to="/" className="logo">
+          <Link to="/inicio" className="logo">
             <BrandMark name={brandName} logoUrl={logoUrl} />
             <span className="logo-text">{brandName}</span>
           </Link>

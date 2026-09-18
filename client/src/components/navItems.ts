@@ -9,7 +9,7 @@ export type NavBadge = 'vehicleNotices';
 export type NavFeatureFlag = 'visitorFollowUpEnabled';
 
 export type NavItem = {
-  to: '/' | '/visitantes' | '/acompanhamento' | '/avisos-veiculos' | '/cultos' | '/oracao' | '/paineis' | '/relatorios' | '/acessos' | '/igreja' | '/configuracoes';
+  to: '/inicio' | '/visitantes' | '/acompanhamento' | '/avisos-veiculos' | '/cultos' | '/oracao' | '/paineis' | '/relatorios' | '/acessos' | '/igreja' | '/configuracoes';
   label: string;
   short: string;
   icon: 'home' | 'users' | 'heartHand' | 'car' | 'calendar' | 'prayer' | 'panels' | 'chart' | 'link' | 'pin' | 'music';
@@ -27,7 +27,7 @@ export const NAV_SECTION_LABELS: Record<Exclude<NavSectionId, 'home'>, string> =
 
 export const NAV_ITEMS: readonly NavItem[] = [
   {
-    to: '/',
+    to: '/inicio',
     label: 'Início',
     short: 'Início',
     icon: 'home',
