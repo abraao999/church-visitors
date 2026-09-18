@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { AppIcon } from '../components/AppIcon';
+import { PlatformLogo } from '../components/PlatformLogo';
 import { ThemeToggle } from '../components/ThemeToggle';
 import type { PublicInvitation } from '../types';
 import './AuthPages.css';
@@ -73,7 +74,7 @@ export function InviteAcceptPage() {
     <div className="invite-accept-page">
       <div className="invite-accept-card card">
         <div className="invite-accept-brand">
-          <span className="auth-logo-icon">✝</span>
+          <PlatformLogo className="auth-platform-logo compact" decorative />
           <div>
             <strong>{invite?.churchName || 'Church Visitors'}</strong>
             <small>Convite para a equipe</small>

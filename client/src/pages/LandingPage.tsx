@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { AppIcon, type AppIconName } from '../components/AppIcon';
+import { PlatformLogo } from '../components/PlatformLogo';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { useAuth } from '../auth/AuthContext';
 import './LandingPage.css';
@@ -56,8 +57,7 @@ export function LandingPage() {
     <main className="landing-page">
       <header className="landing-nav">
         <Link to="/" className="landing-brand" aria-label="Eclesiafy">
-          <span className="landing-brand-mark">✝</span>
-          <span>Eclesiafy</span>
+          <PlatformLogo className="landing-platform-logo" />
         </Link>
         <nav aria-label="Navegação da página inicial">
           <a href="#recursos">Recursos</a>
@@ -200,7 +200,7 @@ export function LandingPage() {
           <div className="landing-tv-preview-screen">
             <div className="landing-tv-preview-top">
               <div className="landing-tv-church">
-                <span>✝</span>
+                <PlatformLogo className="landing-tv-logo" decorative />
                 <div>
                   <strong>AD UMUARAMA</strong>
                   <small>Igreja conectada</small>

@@ -34,14 +34,20 @@
 }
 
 .auth-welcome::after {
-  content: '✝';
+  content: '';
   position: absolute;
-  right: -42px;
-  bottom: -100px;
+  right: -70px;
+  bottom: -80px;
+  width: 340px;
+  height: 316px;
+  background: url('/eclesiafy-logo-light.png') center / contain no-repeat;
+  opacity: 0.08;
   color: rgba(226, 164, 42, 0.11);
-  font-size: 360px;
-  line-height: 1;
   transform: rotate(4deg);
+}
+
+[data-theme='dark'] .auth-welcome::after {
+  background-image: url('/eclesiafy-logo-dark.png');
 }
 
 .auth-welcome-brand,
@@ -71,6 +77,16 @@
   background: var(--accent-soft);
   color: var(--accent);
   font-size: 1.35rem;
+}
+
+.auth-platform-logo {
+  height: 46px;
+  max-width: 170px;
+}
+
+.auth-mobile-brand .auth-platform-logo {
+  height: 38px;
+  max-width: 150px;
 }
 
 .auth-welcome-copy {

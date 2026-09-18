@@ -49,11 +49,15 @@ body:has(.landing-page) {
 .landing-brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.65rem;
   color: #fff;
   font-size: 1.45rem;
   font-weight: 900;
   letter-spacing: -0.04em;
+}
+
+.landing-platform-logo {
+  height: 44px;
+  max-width: 170px;
 }
 
 .landing-brand-mark {
@@ -614,6 +618,16 @@ body:has(.landing-page) {
   color: #9dccff;
   font-size: 1.5rem;
   font-weight: 900;
+}
+
+.landing-tv-logo {
+  width: 54px;
+  height: 54px;
+  padding: 0.22rem;
+  border: 1px solid rgba(125, 181, 255, 0.55);
+  border-radius: 999px;
+  background: rgba(36, 116, 255, 0.22);
+  object-fit: contain;
 }
 
 .landing-tv-church strong,

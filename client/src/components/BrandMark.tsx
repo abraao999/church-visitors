@@ -1,3 +1,5 @@
+import { PlatformLogo } from './PlatformLogo';
+
 export function BrandMark({
   name: _name,
   logoUrl,
@@ -19,9 +21,5 @@ export function BrandMark({
     );
   }
 
-  return (
-    <span className={`${fallbackClassName} ${className}`.trim()} aria-hidden="true">
-      ✝
-    </span>
-  );
+  return <PlatformLogo className={`${fallbackClassName} mark-only ${className}`.trim()} decorative />;
 }

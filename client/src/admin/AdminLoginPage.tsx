@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AppIcon } from '../components/AppIcon';
+import { PlatformLogo } from '../components/PlatformLogo';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { useAdminAuth } from './AdminAuthContext';
 import './AdminLayout.css';
@@ -38,9 +39,8 @@ export function AdminLoginPage() {
     <div className="admin-login">
       <section className="admin-login-copy">
         <div className="admin-brand">
-          <span className="admin-brand-mark" aria-hidden="true">✝</span>
+          <PlatformLogo className="admin-platform-logo" />
           <div>
-            <strong>Eclesiafy</strong>
             <span>Administração da plataforma</span>
           </div>
         </div>

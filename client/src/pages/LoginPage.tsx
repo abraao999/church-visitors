@@ -10,6 +10,7 @@ import {
 } from '../auth/pendingChallenge';
 import { AppIcon } from '../components/AppIcon';
 import { EmailConfirmationPanel } from '../components/EmailConfirmationPanel';
+import { PlatformLogo } from '../components/PlatformLogo';
 import { ThemeToggle } from '../components/ThemeToggle';
 import './AuthPages.css';
 
@@ -118,8 +119,7 @@ export function LoginPage() {
       <div className="auth-shell">
         <aside className="auth-welcome">
           <div className="auth-welcome-brand">
-            <span className="auth-logo-icon">✝</span>
-            <span>Church Visitors</span>
+            <PlatformLogo className="auth-platform-logo" />
             <ThemeToggle compact />
           </div>
           <div className="auth-welcome-copy">
@@ -136,8 +136,7 @@ export function LoginPage() {
 
         <section className="auth-card card">
           <div className="auth-mobile-brand">
-            <span className="auth-logo-icon">✝</span>
-            <strong>Church Visitors</strong>
+            <PlatformLogo className="auth-platform-logo compact" />
             <ThemeToggle compact />
           </div>
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { AppIcon } from '../components/AppIcon';
+import { PlatformLogo } from '../components/PlatformLogo';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { useAdminAuth } from './AdminAuthContext';
 import { PLATFORM_ROLE_LABELS } from './adminTypes';
@@ -33,7 +34,7 @@ export function AdminLayout() {
           <AppIcon name="menu" />
           Menu
         </button>
-        <strong>Eclesiafy Admin</strong>
+        <PlatformLogo className="admin-platform-logo compact" />
         <ThemeToggle compact />
       </header>
 
@@ -48,9 +49,8 @@ export function AdminLayout() {
 
       <aside id="admin-sidebar" className={`admin-sidebar${menuOpen ? ' is-open' : ''}`}>
         <div className="admin-brand">
-          <span className="admin-brand-mark" aria-hidden="true">✝</span>
+          <PlatformLogo className="admin-platform-logo" />
           <div>
-            <strong>Eclesiafy</strong>
             <span>ADMIN</span>
           </div>
         </div>

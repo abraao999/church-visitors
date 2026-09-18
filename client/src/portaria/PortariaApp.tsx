@@ -14,6 +14,7 @@ import { AppIcon } from '../components/AppIcon';
 import { CitySuggestField } from '../components/CitySuggestField';
 import { PanelObservationFields } from '../components/PanelObservationFields';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { PlatformLogo } from '../components/PlatformLogo';
 import { VEHICLE_NOTICE_ACTIONS, type PortariaOfflinePermission, type VehicleNoticeAction, type VisitKind } from '../types';
 import { VisitKindField } from '../components/VisitKindField';
 import { normalizeCityInput } from '../utils/citySuggest';
@@ -283,9 +284,7 @@ function Brand() {
   const { session } = usePortaria();
   return (
     <header className="portaria-brand">
-      <span className="portaria-cross" aria-hidden="true">
-        ✝
-      </span>
+      <PlatformLogo className="portaria-platform-logo compact" decorative />
       <div>
         <strong>{session?.churchName || 'Church Visitors'}</strong>
         <span>Portaria</span>
@@ -947,9 +946,9 @@ function PortariaPairing() {
   }
 
   return (
-    <main className="portaria-page">
+      <main className="portaria-page">
       <header className="portaria-brand">
-        <span className="portaria-cross">✝</span>
+        <PlatformLogo className="portaria-platform-logo compact" decorative />
         <div>
           <strong>{churchName || 'Church Visitors'}</strong>
           <span>Preparar aparelho</span>

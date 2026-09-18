@@ -1,4 +1,5 @@
 import { AppIcon } from '../components/AppIcon';
+import { PlatformLogo } from '../components/PlatformLogo';
 import { ThemeToggle } from '../components/ThemeToggle';
 import './LivePrayerPage.css';
 
@@ -7,8 +8,7 @@ export function LivePrayerPage() {
     <main className="live-page">
       <div className="live-header">
         <span className="live-brand">
-          <span className="live-brand-cross">✝</span>
-          Church Visitors
+          <PlatformLogo className="live-platform-logo compact" />
           <ThemeToggle compact />
         </span>
         <span className="live-badge live-badge-paused">Acesso encerrado</span>

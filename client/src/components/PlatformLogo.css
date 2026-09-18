@@ -1,0 +1,23 @@
+.platform-logo {
+  display: block;
+  width: auto;
+  height: 42px;
+  max-width: 180px;
+  object-fit: contain;
+}
+
+.platform-logo.mark-only {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.platform-logo.compact {
+  height: 34px;
+  max-width: 150px;
+}
+
+.platform-logo.large {
+  height: 58px;
+  max-width: 230px;
+}

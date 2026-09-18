@@ -41,6 +41,16 @@
   flex: 0 0 auto;
 }
 
+.admin-platform-logo {
+  height: 38px;
+  max-width: 140px;
+}
+
+.admin-mobile-bar .admin-platform-logo {
+  height: 34px;
+  max-width: 145px;
+}
+
 .admin-avatar {
   border-radius: 50%;
   background: var(--surface-muted);

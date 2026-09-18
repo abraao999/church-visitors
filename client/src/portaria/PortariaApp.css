@@ -38,6 +38,14 @@ body:has(.portaria-page) {
   font-weight: 800;
 }
 
+.portaria-platform-logo {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 14px;
+  object-fit: contain;
+}
+
 .portaria-brand > div {
   display: flex;
   flex-direction: column;

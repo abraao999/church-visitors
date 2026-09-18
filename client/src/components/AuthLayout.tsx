@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { AppIcon } from './AppIcon';
+import { PlatformLogo } from './PlatformLogo';
 import { ThemeToggle } from './ThemeToggle';
 import '../pages/AuthPages.css';
 
@@ -17,8 +18,7 @@ export function AuthLayout({
       <div className="auth-shell">
         <aside className="auth-welcome">
           <div className="auth-welcome-brand">
-            <span className="auth-logo-icon">✝</span>
-            <span>Church Visitors</span>
+            <PlatformLogo className="auth-platform-logo" />
             <ThemeToggle compact />
           </div>
           <div className="auth-welcome-copy">
@@ -53,8 +53,7 @@ export function AuthLayout({
 
         <section className="auth-card card">
           <div className="auth-mobile-brand">
-            <span className="auth-logo-icon">✝</span>
-            <strong>Church Visitors</strong>
+            <PlatformLogo className="auth-platform-logo compact" />
             <ThemeToggle compact />
           </div>
           <div className="auth-card-heading">
