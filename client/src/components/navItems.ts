@@ -9,10 +9,10 @@ export type NavBadge = 'vehicleNotices';
 export type NavFeatureFlag = 'visitorFollowUpEnabled';
 
 export type NavItem = {
-  to: '/inicio' | '/visitantes' | '/acompanhamento' | '/avisos-veiculos' | '/cultos' | '/oracao' | '/paineis' | '/relatorios' | '/acessos' | '/igreja' | '/configuracoes';
+  to: '/inicio' | '/visitantes' | '/acompanhamento' | '/avisos-veiculos' | '/cultos' | '/escalas' | '/oracao' | '/paineis' | '/relatorios' | '/acessos' | '/igreja' | '/configuracoes';
   label: string;
   short: string;
-  icon: 'home' | 'users' | 'heartHand' | 'car' | 'calendar' | 'prayer' | 'panels' | 'chart' | 'link' | 'pin' | 'music';
+  icon: 'home' | 'users' | 'heartHand' | 'car' | 'calendar' | 'clipboard' | 'prayer' | 'panels' | 'chart' | 'link' | 'pin' | 'music';
   section: NavSectionId;
   permissions: readonly Permission[];
   requiresFeature?: NavFeatureFlag;
@@ -67,6 +67,14 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: 'calendar',
     section: 'worship',
     permissions: ['services:read'],
+  },
+  {
+    to: '/escalas',
+    label: 'Escalas',
+    short: 'Escalas',
+    icon: 'clipboard',
+    section: 'worship',
+    permissions: ['schedules:read'],
   },
   {
     to: '/oracao',

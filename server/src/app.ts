@@ -24,6 +24,7 @@ import portariaDevicesRouter from './routes/portariaDevices.js';
 import retentionRouter from './routes/retention.js';
 import visitorFollowUpRouter from './routes/visitorFollowUp.js';
 import reportsRouter from './routes/reports.js';
+import schedulesRouter from './routes/schedules.js';
 
 const DEFAULT_MONGODB_URI = 'mongodb://localhost:27017/church-visitors';
 
@@ -101,6 +102,7 @@ export function createApp() {
   app.use('/api/retention', retentionRouter);
   app.use('/api/follow-up', visitorFollowUpRouter);
   app.use('/api/reports', reportsRouter);
+  app.use('/api/schedules', schedulesRouter);
 
   return app;
 }

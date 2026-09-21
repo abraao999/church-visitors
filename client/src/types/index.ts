@@ -668,6 +668,60 @@ export interface ServiceActivity {
   }>;
 }
 
+export type ScheduleAssignmentStatus =
+  | 'scheduled'
+  | 'confirmed'
+  | 'declined'
+  | 'served'
+  | 'absent';
+
+export interface WorkTeam {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  leaderName: string;
+  minVolunteers: number;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Volunteer {
+  id: string;
+  name: string;
+  phone: string;
+  teamIds: string[];
+  availability: string;
+  notes: string;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ScheduleAssignment {
+  volunteerId: string;
+  volunteerName: string;
+  status: ScheduleAssignmentStatus;
+  note: string;
+}
+
+export interface ServiceScheduleTeam {
+  teamId: string;
+  teamName: string;
+  minVolunteers: number;
+  assignments: ScheduleAssignment[];
+}
+
+export interface ServiceSchedule {
+  id: string;
+  serviceId: string;
+  teams: ServiceScheduleTeam[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export type HolyricsMode = 'local' | 'internet';
 
 export interface HolyricsSettings {

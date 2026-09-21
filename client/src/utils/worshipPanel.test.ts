@@ -106,6 +106,7 @@ test('o menu lateral mantém exatamente os mesmos itens, textos e ordem', () => 
       { to: '/acompanhamento', label: 'Acompanhamento', short: 'Acomp.', icon: 'heartHand' },
       { to: '/avisos-veiculos', label: 'Avisos de veículos', short: 'Avisos', icon: 'car' },
       { to: '/cultos', label: 'Cultos', short: 'Cultos', icon: 'calendar' },
+      { to: '/escalas', label: 'Escalas', short: 'Escalas', icon: 'clipboard' },
       { to: '/oracao', label: 'Pedidos de oração', short: 'Oração', icon: 'prayer' },
       { to: '/paineis', label: 'Painéis', short: 'Painéis', icon: 'panels' },
       { to: '/relatorios', label: 'Relatórios', short: 'Relat.', icon: 'chart' },

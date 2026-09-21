@@ -50,6 +50,7 @@ import type {
   ServiceActivity,
   ServicePreview,
   Service,
+  ServiceSchedule,
   TeamInvitation,
   TeamMember,
   TeamOverview,
@@ -63,6 +64,8 @@ import type {
   VehicleNoticeStatus,
   VehiclePanelNotice,
   Visitor,
+  Volunteer,
+  WorkTeam,
   WorshipPanelPayload,
 } from '../types';
 
@@ -544,6 +547,85 @@ export const api = {
       headers: authHeaders(),
     });
     await handleResponse(response);
+  },
+
+  async getScheduleTeams(): Promise<WorkTeam[]> {
+    const response = await apiFetch(`${API_BASE}/schedules/teams`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<WorkTeam[]>(response);
+  },
+
+  async createScheduleTeam(data: {
+    name: string;
+    description?: string;
+    leaderName?: string;
+    minVolunteers?: number;
+    icon?: string;
+    color?: string;
+  }): Promise<WorkTeam> {
+    const response = await apiFetch(`${API_BASE}/schedules/teams`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<WorkTeam>(response);
+  },
+
+  async updateScheduleTeam(id: string, data: Partial<WorkTeam>): Promise<WorkTeam> {
+    const response = await apiFetch(`${API_BASE}/schedules/teams/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<WorkTeam>(response);
+  },
+
+  async getVolunteers(): Promise<Volunteer[]> {
+    const response = await apiFetch(`${API_BASE}/schedules/volunteers`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<Volunteer[]>(response);
+  },
+
+  async createVolunteer(data: {
+    name: string;
+    phone?: string;
+    teamIds?: string[];
+    availability?: string;
+    notes?: string;
+  }): Promise<Volunteer> {
+    const response = await apiFetch(`${API_BASE}/schedules/volunteers`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<Volunteer>(response);
+  },
+
+  async updateVolunteer(id: string, data: Partial<Volunteer>): Promise<Volunteer> {
+    const response = await apiFetch(`${API_BASE}/schedules/volunteers/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<Volunteer>(response);
+  },
+
+  async getServiceSchedule(serviceId: string): Promise<ServiceSchedule> {
+    const response = await apiFetch(`${API_BASE}/schedules/services/${serviceId}`, {
+      headers: authHeaders(),
+    });
+    return handleResponse<ServiceSchedule>(response);
+  },
+
+  async updateServiceSchedule(serviceId: string, data: Pick<ServiceSchedule, 'teams'>): Promise<ServiceSchedule> {
+    const response = await apiFetch(`${API_BASE}/schedules/services/${serviceId}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<ServiceSchedule>(response);
   },
 
   async getChurch(): Promise<ChurchProfile> {

@@ -1,0 +1,380 @@
+.schedules-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.schedules-hero,
+.schedules-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
+}
+
+.schedules-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.6rem;
+  border-radius: 20px;
+  background: linear-gradient(120deg, var(--primary-soft), var(--surface) 62%);
+}
+
+.schedules-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.schedules-eyebrow .app-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.schedules-hero h1 {
+  margin-top: 0.55rem;
+  color: var(--text);
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.schedules-hero p,
+.schedules-muted,
+.schedules-card p {
+  color: var(--text-muted);
+}
+
+.schedules-hero-card {
+  align-self: stretch;
+  display: grid;
+  place-content: center;
+  min-width: 150px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-muted);
+  text-align: center;
+}
+
+.schedules-hero-card strong {
+  color: var(--primary);
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.schedules-hero-card span {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.schedules-tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.schedules-tabs button,
+.schedules-service-list button,
+.schedules-page select,
+.schedules-page input,
+.schedules-form-card button,
+.schedule-assignment-row button,
+.ghost-danger {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font: inherit;
+}
+
+.schedules-tabs button {
+  padding: 0.65rem 1rem;
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+.schedules-tabs button.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.schedules-feedback {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  font-weight: 800;
+}
+
+.schedules-feedback.success {
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.schedules-feedback.error {
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.schedules-service-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 330px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.schedules-card {
+  border-radius: 18px;
+  padding: 1.25rem;
+}
+
+.schedules-service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.schedules-service-list h2,
+.schedules-main-header h2,
+.schedules-form-card h2 {
+  color: var(--text);
+  font-size: 1.25rem;
+}
+
+.schedules-service-list button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.9rem;
+  text-align: left;
+}
+
+.schedules-service-list button.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.schedules-service-list button strong {
+  color: var(--text);
+}
+
+.schedules-service-list button span {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.schedules-main-card {
+  min-height: 420px;
+}
+
+.schedules-main-header,
+.schedule-team-title,
+.schedule-team-actions,
+.schedule-assignment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.schedules-main-header {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.schedules-main-header p {
+  margin-top: 0.25rem;
+}
+
+.schedules-page select,
+.schedules-page input {
+  min-height: 44px;
+  padding: 0.65rem 0.8rem;
+  outline: none;
+}
+
+.schedules-page select:focus,
+.schedules-page input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.schedule-team-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.schedule-team-card {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-muted);
+}
+
+.schedule-team-title strong,
+.schedules-list-item strong {
+  display: block;
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.schedule-team-title span,
+.schedules-list-item span,
+.schedules-list-item small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--text-muted);
+}
+
+.schedule-team-title em {
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.14);
+  color: #f59e0b;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.schedule-team-title em.ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.schedule-assignments {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem 0;
+}
+
+.schedule-assignment-row {
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.schedule-assignment-row span {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.schedule-assignment-row select {
+  min-width: 135px;
+}
+
+.schedule-assignment-row button,
+.ghost-danger {
+  min-height: 40px;
+  padding: 0.55rem 0.75rem;
+  color: #f87171;
+  font-weight: 800;
+}
+
+.schedule-team-actions select {
+  flex: 1;
+}
+
+.schedules-empty {
+  display: grid;
+  place-items: center;
+  gap: 0.55rem;
+  min-height: 260px;
+  border: 1px dashed var(--border);
+  border-radius: 18px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.schedules-empty .app-icon {
+  width: 42px;
+  height: 42px;
+  color: var(--primary);
+}
+
+.schedules-empty strong {
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+.schedules-two-columns {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.schedules-form-card {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.schedules-form-card label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.schedules-form-card button {
+  min-height: 46px;
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+  font-weight: 900;
+}
+
+.schedules-list-card {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.schedules-list-item {
+  box-shadow: none;
+}
+
+@media (max-width: 900px) {
+  .schedules-hero,
+  .schedules-main-header,
+  .schedule-team-actions,
+  .schedule-assignment-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .schedules-service-layout,
+  .schedules-two-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .schedules-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .schedules-tabs button {
+    flex: 1;
+    white-space: nowrap;
+  }
+
+  .schedules-page select,
+  .schedule-assignment-row button,
+  .ghost-danger {
+    width: 100%;
+  }
+}

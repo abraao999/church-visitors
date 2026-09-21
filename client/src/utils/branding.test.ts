@@ -26,6 +26,7 @@ describe('identidade visual no cliente', () => {
         '/acompanhamento',
         '/avisos-veiculos',
         '/cultos',
+        '/escalas',
         '/oracao',
         '/paineis',
         '/relatorios',

@@ -30,6 +30,7 @@ import { PrayerRequestsPage } from './pages/PrayerRequestsPage';
 import { PublicAccessPage } from './pages/PublicAccessPage';
 import { RecurrenceSeriesPage } from './pages/RecurrenceSeriesPage';
 import { ServiceOccurrencePage } from './pages/ServiceOccurrencePage';
+import { SchedulesPage } from './pages/SchedulesPage';
 import { ServicesPage } from './pages/ServicesPage';
 import { VehicleNoticesPage } from './pages/VehicleNoticesPage';
 import { VisitorsPage } from './pages/VisitorsPage';
@@ -115,6 +116,9 @@ export function App() {
                 <Route path="/cultos" element={<ServicesPage />} />
                 <Route path="/cultos/serie/:seriesId" element={<RecurrenceSeriesPage />} />
                 <Route path="/cultos/:serviceId" element={<ServiceOccurrencePage />} />
+              </Route>
+              <Route element={<PermissionRoute anyOf={['schedules:read']} />}>
+                <Route path="/escalas" element={<SchedulesPage />} />
               </Route>
               <Route element={<PermissionRoute anyOf={['vehicle_notices:read']} />}>
                 <Route path="/avisos-veiculos" element={<VehicleNoticesPage />} />
